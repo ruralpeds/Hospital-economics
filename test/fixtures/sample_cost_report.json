@@ -1,0 +1,170 @@
+{
+  "provider_number": "171301",
+  "hospital_name": "Prairie View Medical Center",
+  "fiscal_year_begin": "2023-01-01",
+  "fiscal_year_end": "2023-12-31",
+  "cost_centers": [
+    {
+      "code": "0500",
+      "name": "Adults & Pediatrics (General)",
+      "type": "inpatient_revenue",
+      "direct_costs": 1850000.00,
+      "total_charges": 4200000.00,
+      "medicare_charges": 2310000.00,
+      "medicaid_charges": 756000.00,
+      "other_charges": 1134000.00,
+      "square_footage": 12000,
+      "fte_count": 18.5
+    },
+    {
+      "code": "6100",
+      "name": "Emergency",
+      "type": "outpatient_revenue",
+      "direct_costs": 2100000.00,
+      "total_charges": 5500000.00,
+      "medicare_charges": 2750000.00,
+      "medicaid_charges": 990000.00,
+      "other_charges": 1760000.00,
+      "square_footage": 5000,
+      "fte_count": 22.0
+    },
+    {
+      "code": "2900",
+      "name": "Radiology - Diagnostic",
+      "type": "ancillary_revenue",
+      "direct_costs": 650000.00,
+      "total_charges": 1800000.00,
+      "medicare_charges": 900000.00,
+      "medicaid_charges": 324000.00,
+      "other_charges": 576000.00,
+      "square_footage": 3000,
+      "fte_count": 5.0
+    },
+    {
+      "code": "3200",
+      "name": "Laboratory",
+      "type": "ancillary_revenue",
+      "direct_costs": 520000.00,
+      "total_charges": 1400000.00,
+      "medicare_charges": 700000.00,
+      "medicaid_charges": 252000.00,
+      "other_charges": 448000.00,
+      "square_footage": 2500,
+      "fte_count": 6.0
+    },
+    {
+      "code": "3400",
+      "name": "Respiratory Therapy",
+      "type": "ancillary_revenue",
+      "direct_costs": 280000.00,
+      "total_charges": 750000.00,
+      "medicare_charges": 412500.00,
+      "medicaid_charges": 135000.00,
+      "other_charges": 202500.00,
+      "square_footage": 1200,
+      "fte_count": 3.0
+    },
+    {
+      "code": "3500",
+      "name": "Physical Therapy",
+      "type": "ancillary_revenue",
+      "direct_costs": 310000.00,
+      "total_charges": 820000.00,
+      "medicare_charges": 451000.00,
+      "medicaid_charges": 147600.00,
+      "other_charges": 221400.00,
+      "square_footage": 2000,
+      "fte_count": 4.0
+    },
+    {
+      "code": "4100",
+      "name": "Drugs Charged to Patients",
+      "type": "ancillary_revenue",
+      "direct_costs": 480000.00,
+      "total_charges": 1200000.00,
+      "medicare_charges": 600000.00,
+      "medicaid_charges": 216000.00,
+      "other_charges": 384000.00,
+      "square_footage": 800,
+      "fte_count": 3.5
+    },
+    {
+      "code": "6500",
+      "name": "Other Outpatient Services",
+      "type": "outpatient_revenue",
+      "direct_costs": 420000.00,
+      "total_charges": 1100000.00,
+      "medicare_charges": 550000.00,
+      "medicaid_charges": 198000.00,
+      "other_charges": 352000.00,
+      "square_footage": 3500,
+      "fte_count": 5.0
+    }
+  ],
+  "overhead_cost_centers": [
+    {
+      "code": "A000",
+      "name": "Capital - Buildings & Fixtures",
+      "total_costs": 450000.00,
+      "allocation_basis": "square_footage"
+    },
+    {
+      "code": "A100",
+      "name": "Capital - Movable Equipment",
+      "total_costs": 320000.00,
+      "allocation_basis": "direct_costs"
+    },
+    {
+      "code": "A200",
+      "name": "Employee Benefits",
+      "total_costs": 1200000.00,
+      "allocation_basis": "salaries"
+    },
+    {
+      "code": "A300",
+      "name": "Administrative & General",
+      "total_costs": 850000.00,
+      "allocation_basis": "accumulated_costs"
+    },
+    {
+      "code": "A400",
+      "name": "Plant Operations & Maintenance",
+      "total_costs": 380000.00,
+      "allocation_basis": "square_footage"
+    },
+    {
+      "code": "A500",
+      "name": "Laundry & Linen",
+      "total_costs": 95000.00,
+      "allocation_basis": "pounds_of_laundry"
+    },
+    {
+      "code": "A600",
+      "name": "Housekeeping",
+      "total_costs": 210000.00,
+      "allocation_basis": "square_footage"
+    },
+    {
+      "code": "A700",
+      "name": "Dietary",
+      "total_costs": 280000.00,
+      "allocation_basis": "meals_served"
+    }
+  ],
+  "summary": {
+    "total_direct_costs": 6610000.00,
+    "total_overhead_costs": 3785000.00,
+    "total_allowable_costs": 10395000.00,
+    "total_charges": 16770000.00,
+    "total_medicare_charges": 8673500.00,
+    "total_medicaid_charges": 3018600.00,
+    "overall_cost_to_charge_ratio": 0.6198,
+    "medicare_cost_share": 5376777.30,
+    "total_inpatient_days": 1825,
+    "total_ed_visits": 5200,
+    "total_outpatient_visits": 22000,
+    "total_ftes": 67.0,
+    "medicare_discharges": 280,
+    "total_discharges": 500
+  }
+}

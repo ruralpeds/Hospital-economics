@@ -1,0 +1,60 @@
+{
+  "description": "Default parameters for REH conversion analysis",
+  "effective_date": "2024-01-01",
+  "source": "CMS Final Rule CY 2024 OPPS/ASC; 42 CFR Part 419",
+  "facility_payment": {
+    "monthly_amount": 272866.30,
+    "annual_amount": 3274395.60,
+    "adjustment_factor": 1.0,
+    "notes": "Monthly facility payment subject to annual update; based on reasonable cost of maintaining ED and observation"
+  },
+  "outpatient_addon": {
+    "percentage": 0.05,
+    "applies_to": "OPPS_payments",
+    "notes": "5% additional payment on OPPS claims for REH services"
+  },
+  "eligibility": {
+    "former_designations": ["cah", "pps_rural_50_beds_or_fewer"],
+    "must_have_ed": true,
+    "no_inpatient_beds": true,
+    "observation_allowed": true,
+    "max_observation_hours": 48,
+    "annual_per_patient_average_stay_limit_hours": 24,
+    "must_have_transfer_agreement": true
+  },
+  "conversion_costs": {
+    "typical_range_low": 200000.0,
+    "typical_range_high": 1500000.0,
+    "median_estimate": 500000.0,
+    "categories": {
+      "facility_modifications": 150000.0,
+      "equipment_changes": 100000.0,
+      "it_systems_updates": 75000.0,
+      "legal_regulatory": 50000.0,
+      "staff_transition": 80000.0,
+      "marketing_communication": 25000.0,
+      "contingency": 50000.0
+    }
+  },
+  "financial_modeling": {
+    "default_discount_rate": 0.03,
+    "analysis_horizon_years": 10,
+    "facility_payment_annual_update": 0.028,
+    "opps_annual_update": 0.032,
+    "cost_inflation_rate": 0.03,
+    "volume_assumption": "maintain_outpatient_baseline"
+  },
+  "conditions_of_participation": {
+    "staffing_requirements": {
+      "physician_on_call_24_7": true,
+      "nursing_24_7": true,
+      "laboratory_services": "basic_or_reference",
+      "radiology_services": "basic"
+    },
+    "reporting_requirements": {
+      "quality_measures": true,
+      "cost_report_form": "CMS-2552-10-REH",
+      "condition_of_participation_survey": "annual"
+    }
+  }
+}

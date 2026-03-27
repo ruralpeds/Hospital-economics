@@ -1,0 +1,6 @@
+Manifest.toml
+data/uploads/
+data/exports/
+*.log
+.DS_Store
+app/config/secrets.jl

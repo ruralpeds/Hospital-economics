@@ -1,0 +1,56 @@
+{
+  "description": "Default payer mix for a typical Critical Access Hospital",
+  "source": "Medicare Payment Advisory Commission (MedPAC) / Flex Monitoring Team",
+  "year": 2023,
+  "payer_mix": {
+    "medicare": {
+      "percentage": 0.55,
+      "label": "Medicare (Parts A & B)",
+      "notes": "Includes Medicare Advantage; CAHs receive cost-based reimbursement for traditional Medicare"
+    },
+    "medicaid": {
+      "percentage": 0.18,
+      "label": "Medicaid",
+      "notes": "Varies significantly by state Medicaid expansion status; range 0.08–0.30"
+    },
+    "commercial": {
+      "percentage": 0.17,
+      "label": "Commercial / Private Insurance",
+      "notes": "Includes employer-sponsored and individual marketplace plans"
+    },
+    "self_pay": {
+      "percentage": 0.07,
+      "label": "Self-Pay / Uninsured",
+      "notes": "Includes patients with no insurance and those paying out of pocket; often results in bad debt"
+    },
+    "other_government": {
+      "percentage": 0.03,
+      "label": "Other Government Programs",
+      "notes": "TRICARE, VA, Indian Health Service, workers compensation, and other government payers"
+    }
+  },
+  "total": 1.00,
+  "variations": {
+    "medicaid_expansion_state": {
+      "medicare": 0.53,
+      "medicaid": 0.22,
+      "commercial": 0.16,
+      "self_pay": 0.05,
+      "other_government": 0.04
+    },
+    "non_expansion_state": {
+      "medicare": 0.56,
+      "medicaid": 0.12,
+      "commercial": 0.17,
+      "self_pay": 0.12,
+      "other_government": 0.03
+    },
+    "frontier_community": {
+      "medicare": 0.60,
+      "medicaid": 0.15,
+      "commercial": 0.13,
+      "self_pay": 0.08,
+      "other_government": 0.04
+    }
+  }
+}

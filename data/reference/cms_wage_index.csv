@@ -1,0 +1,11 @@
+state,cbsa,cbsa_name,wage_index,reclassified_wage_index,rural_floor_wage_index
+KS,99999,Kansas Rural,0.7842,0.7842,0.8156
+NE,99999,Nebraska Rural,0.8021,0.8021,0.8234
+IA,99999,Iowa Rural,0.8156,0.8156,0.8156
+OK,99999,Oklahoma Rural,0.7698,0.7698,0.7925
+TX,99999,Texas Rural,0.7534,0.7534,0.8012
+MO,99999,Missouri Rural,0.7912,0.7912,0.8078
+SD,99999,South Dakota Rural,0.7756,0.7756,0.7856
+GA,99999,Georgia Rural,0.7623,0.7623,0.8245
+MS,99999,Mississippi Rural,0.7289,0.7289,0.7512
+AL,99999,Alabama Rural,0.7401,0.7401,0.7634

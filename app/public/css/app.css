@@ -1,0 +1,68 @@
+/* Rural Hospital Economics Simulator - Custom Styles */
+
+:root {
+    --primary-color: #1976d2;
+    --secondary-color: #424242;
+    --accent-color: #82b1ff;
+    --positive-color: #21ba45;
+    --negative-color: #c10015;
+    --warning-color: #f2c037;
+    --info-color: #31ccec;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f5f5f5;
+}
+
+.dashboard-header {
+    background: linear-gradient(135deg, var(--primary-color), #0d47a1);
+    color: white;
+    padding: 16px 24px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+.kpi-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.risk-high { color: var(--negative-color); font-weight: bold; }
+.risk-mid-high { color: var(--warning-color); font-weight: bold; }
+.risk-mid-low { color: var(--info-color); }
+.risk-low { color: var(--positive-color); }
+
+.chart-container {
+    min-height: 300px;
+}
+
+.wizard-step-active {
+    border-left: 4px solid var(--primary-color);
+    padding-left: 12px;
+}
+
+.alert-critical {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Print styles for board reports */
+@media print {
+    .q-drawer, .q-header, .no-print {
+        display: none !important;
+    }
+    .q-page-container {
+        margin: 0;
+        padding: 0;
+    }
+}

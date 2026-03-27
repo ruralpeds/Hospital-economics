@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Test files
+test/
+
+# Development artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Julia compilation cache (rebuilt in container)
+*.ji
+compiled/
+
+# Data uploads and exports (mounted as volumes)
+data/uploads/*
+data/exports/*
+
+# Docker files (avoid recursive copy)
+docker/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
+*.secret
