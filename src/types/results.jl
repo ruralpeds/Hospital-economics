@@ -236,7 +236,7 @@ Analysis of converting an existing hospital (typically CAH) to Rural Emergency H
 @kwdef struct REHConversionAnalysis
     hospital_name::String = ""
     analysis_date::Date = Date(2025, 1, 1)
-    conversion_params::Union{Any, Nothing} = nothing  # ConversionParams
+    conversion_params::Union{ConversionParams, Nothing} = nothing
 
     # Pre-conversion baseline
     pre_conversion_margin::Float64 = 0.0

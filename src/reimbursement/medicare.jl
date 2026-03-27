@@ -2,41 +2,8 @@
 # Medicare Reimbursement Calculations — Multiple Dispatch
 # ============================================================================
 
-# ---------------------------------------------------------------------------
-# Concrete hospital types (defined here for dispatch; in full project these
-# would live in types/)
-# ---------------------------------------------------------------------------
-
-"""Critical Access Hospital — eligible for 101% cost-based reimbursement."""
-struct CriticalAccessHospital <: AbstractRuralHospital
-    name::String
-    provider_id::String
-    beds::Int
-    case_mix_index::Float64
-    wage_index::Float64
-    cost_to_charge_ratio::Float64
-    total_costs::Float64
-    total_charges::Float64
-    medicare_charges::Float64
-    medicare_days::Int
-    outpatient_visits::Int
-    payer_mix::Dict{String,Float64}
-end
-
-"""Rural Emergency Hospital — REH designation (no inpatient beds)."""
-struct RuralEmergencyHospital <: AbstractRuralHospital
-    name::String
-    provider_id::String
-    case_mix_index::Float64
-    wage_index::Float64
-    total_costs::Float64
-    total_charges::Float64
-    medicare_charges::Float64
-    outpatient_visits::Int
-    ed_visits::Int
-    payer_mix::Dict{String,Float64}
-    opps_relative_weights::Float64
-end
+# Uses CriticalAccessHospital and RuralEmergencyHospital types from
+# types/hospital.jl — no duplicate struct definitions needed here.
 
 # ---------------------------------------------------------------------------
 # Medicare reimbursement — Critical Access Hospital (cost-based, 101%)
@@ -58,21 +25,31 @@ Returns a named tuple with line-item detail:
 """
 function calculate_medicare_reimbursement(hospital::CriticalAccessHospital;
                                           sequestration::Bool=true)
+    # Retrieve cost report data from the hospital's cost_report field
+    cr = hospital.cost_report
+
     # Calculate Medicare cost share using CCR method
-    ccr = hospital.cost_to_charge_ratio
-    allowable_costs = hospital.medicare_charges * ccr
+    ccr = cr.overall_cost_to_charge_ratio
+    allowable_costs = cr.medicare_allowable_costs > 0.0 ?
+        cr.medicare_allowable_costs :
+        (cr.medicare_inpatient_costs + cr.medicare_outpatient_costs + cr.medicare_swing_bed_costs)
 
     # 101% cost-based reimbursement
-    cost_reimbursement = allowable_costs * 1.01
+    cost_reimbursement = allowable_costs * cr.reasonable_cost_percentage
 
     # Apply sequestration
     seq_amount = sequestration ? cost_reimbursement * 0.02 : 0.0
     net_after_seq = cost_reimbursement - seq_amount
 
     # Bad debt reimbursement (65% of Medicare bad debt)
-    medicare_share = hospital.total_charges > 0 ?
-        hospital.medicare_charges / hospital.total_charges : 0.0
-    estimated_bad_debt = hospital.total_charges * 0.05 * medicare_share  # assume 5% bad debt
+    # Estimate bad debt from historical financials if available
+    estimated_bad_debt = if !isempty(hospital.historical_financials)
+        latest = hospital.historical_financials[end]
+        latest.bad_debt_expense * latest.medicare_days_pct
+    else
+        cr.total_charges * 0.05 * (cr.total_charges > 0.0 ?
+            (cr.medicare_inpatient_costs + cr.medicare_outpatient_costs) / cr.total_costs : 0.0)
+    end
     bad_debt_payment = estimated_bad_debt * 0.65
 
     total = net_after_seq + bad_debt_payment
@@ -110,9 +87,9 @@ function calculate_medicare_reimbursement(hospital::RuralEmergencyHospital;
                                           sequestration::Bool=true)
     opps_base = calculate_opps_payment(hospital)
 
-    reh_addon = opps_base * 0.05
+    reh_addon = opps_base * hospital.outpatient_add_on_pct
 
-    facility_payment = 272866.30 * 12  # annual
+    facility_payment = hospital.monthly_facility_payment * 12  # annual
 
     gross = opps_base + reh_addon + facility_payment
 
@@ -145,12 +122,23 @@ function calculate_opps_payment(hospital::RuralEmergencyHospital)
     labor_share = 0.60
     nonlabor_share = 0.40
 
+    # Get wage index from payment designation or cost report
+    wage_idx = hospital.payment_designation.wage_index
+
     wage_adjusted = conversion_factor * (
-        labor_share * hospital.wage_index + nonlabor_share
+        labor_share * wage_idx + nonlabor_share
     )
 
     # Total OPPS = wage-adjusted CF × sum of relative weights for all services
-    total_opps = wage_adjusted * hospital.opps_relative_weights
+    # Use outpatient costs from cost report as a proxy for relative weight volume
+    opps_weights = if hospital.cost_report !== nothing
+        cr = hospital.cost_report
+        cr.medicare_outpatient_costs > 0.0 ? cr.medicare_outpatient_costs / conversion_factor : 0.0
+    else
+        0.0
+    end
+
+    total_opps = wage_adjusted * opps_weights
 
     return total_opps
 end

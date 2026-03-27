@@ -113,35 +113,7 @@ struct IterationResult
     sampled_params::Dict{Symbol, Float64}
 end
 
-"""
-    MonteCarloSummary <: AbstractSimulationResult
-
-Aggregated summary statistics from the full Monte Carlo simulation.
-
-# Fields
-- `params::MonteCarloParams`: Parameters used.
-- `n_iterations::Int`: Total iterations completed.
-- `mean_terminal_margin::Float64`: Mean terminal operating margin.
-- `std_terminal_margin::Float64`: Standard deviation of terminal operating margin.
-- `quantiles_terminal_margin::Dict{Float64, Float64}`: Quantile -> margin mapping.
-- `probability_of_loss::Float64`: P(terminal margin < 0).
-- `probability_of_closure_risk::Float64`: P(any year has margin < -10%).
-- `mean_cumulative_income::Float64`: Mean cumulative operating income.
-- `value_at_risk_95::Float64`: 5th percentile of cumulative operating income (VaR).
-- `iteration_results::Vector{IterationResult}`: All individual iteration results.
-"""
-struct MonteCarloSummary <: AbstractSimulationResult
-    params::MonteCarloParams
-    n_iterations::Int
-    mean_terminal_margin::Float64
-    std_terminal_margin::Float64
-    quantiles_terminal_margin::Dict{Float64, Float64}
-    probability_of_loss::Float64
-    probability_of_closure_risk::Float64
-    mean_cumulative_income::Float64
-    value_at_risk_95::Float64
-    iteration_results::Vector{IterationResult}
-end
+# MonteCarloSummary is defined in src/types/results.jl — do not redefine here.
 
 # ---------------------------------------------------------------------------
 # Core simulation
@@ -230,24 +202,47 @@ statistics and risk metrics.
 function _compute_summary(params::MonteCarloParams, results::Vector{IterationResult})::MonteCarloSummary
     margins = [r.terminal_operating_margin for r in results]
     incomes = [r.cumulative_operating_income for r in results]
+    cash_days = [r.terminal_days_cash for r in results]
 
+    n = length(results)
     mean_margin = mean(margins)
     std_margin = std(margins)
-    quantile_map = Dict{Float64, Float64}(
-        cl => quantile(margins, cl) for cl in params.confidence_levels
-    )
+    median_margin = quantile(margins, 0.50)
 
-    p_loss = probability_of_loss(results)
-    p_closure = sum(!isnothing(r.closure_risk_year) for r in results) / length(results)
+    p_closure = sum(!isnothing(r.closure_risk_year) for r in results) / n
+    closure_years = [Float64(r.closure_risk_year) for r in results if !isnothing(r.closure_risk_year)]
+    mean_cy = isempty(closure_years) ? nothing : mean(closure_years)
+
+    # Conversion probability (iterations where closure_risk_year is nothing but margin recovered)
+    conversion_prob = 0.0  # placeholder — no conversion tracking in IterationResult
+
     mean_income = mean(incomes)
-    var95 = value_at_risk(incomes, 0.05)
+    prob_neg = count(x -> x < 0.0, incomes) / n
+    mean_min_cash = mean(cash_days)
+
+    # Year-by-year statistics are not tracked per-iteration here; provide empty vectors
+    annual_means = Float64[]
+    annual_closures = Float64[]
 
     return MonteCarloSummary(
-        params, length(results),
-        mean_margin, std_margin, quantile_map,
-        p_loss, p_closure,
-        mean_income, var95,
-        results,
+        scenario_name = "",
+        n_trials = n,
+        n_years = params.projection_years,
+        mean_operating_margin = mean_margin,
+        median_operating_margin = median_margin,
+        std_operating_margin = std_margin,
+        p5_operating_margin = quantile(margins, 0.05),
+        p25_operating_margin = quantile(margins, 0.25),
+        p75_operating_margin = quantile(margins, 0.75),
+        p95_operating_margin = quantile(margins, 0.95),
+        closure_probability = p_closure,
+        mean_closure_year = mean_cy,
+        conversion_probability = conversion_prob,
+        mean_cumulative_income = mean_income,
+        prob_negative_cumulative = prob_neg,
+        mean_min_cash_days = mean_min_cash,
+        annual_mean_margins = annual_means,
+        annual_closure_rates = annual_closures,
     )
 end
 

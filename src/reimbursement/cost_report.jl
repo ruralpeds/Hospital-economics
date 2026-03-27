@@ -2,36 +2,8 @@
 # CMS Form 2552-10 Cost Report Simulation
 # ============================================================================
 
-"""
-    CostCenter
-
-Represents a single cost center in the Medicare cost report.
-"""
-struct CostCenter
-    code::String
-    name::String
-    direct_cost::Float64
-    total_charges::Float64
-    medicare_charges::Float64
-    is_overhead::Bool
-end
-
-"""
-    CostReport
-
-Aggregated cost report data following CMS Form 2552-10 structure.
-"""
-struct CostReport
-    provider_id::String
-    fiscal_year::Int
-    cost_centers::Vector{CostCenter}
-    total_costs::Float64
-    total_charges::Float64
-    total_medicare_charges::Float64
-    cost_to_charge_ratio::Float64
-    medicare_cost_share::Float64
-    allocated_costs::Dict{String,Float64}
-end
+# Uses CostCenter and CostReport types from types/financial.jl —
+# no duplicate struct definitions needed here.
 
 """
     default_cah_cost_centers() -> Vector{CostCenter}
@@ -41,31 +13,31 @@ using CMS codes 0500 through 6500. Values represent realistic medians.
 """
 function default_cah_cost_centers()
     return CostCenter[
-        CostCenter("0500", "Adults & Pediatrics (General)", 1_200_000.0, 3_000_000.0, 1_350_000.0, false),
-        CostCenter("0600", "Intensive Care Unit", 0.0, 0.0, 0.0, false),
-        CostCenter("1100", "Skilled Nursing Facility", 800_000.0, 1_600_000.0, 1_120_000.0, false),
-        CostCenter("2500", "Operating Room", 600_000.0, 2_400_000.0, 960_000.0, false),
-        CostCenter("2600", "Recovery Room", 120_000.0, 300_000.0, 120_000.0, false),
-        CostCenter("2900", "Radiology - Diagnostic", 450_000.0, 1_800_000.0, 810_000.0, false),
-        CostCenter("3000", "Radiology - Therapeutic", 80_000.0, 320_000.0, 144_000.0, false),
-        CostCenter("3200", "Laboratory", 500_000.0, 2_000_000.0, 900_000.0, false),
-        CostCenter("3400", "Respiratory Therapy", 150_000.0, 600_000.0, 270_000.0, false),
-        CostCenter("3500", "Physical Therapy", 200_000.0, 800_000.0, 360_000.0, false),
-        CostCenter("3600", "Occupational Therapy", 100_000.0, 400_000.0, 180_000.0, false),
-        CostCenter("3700", "Speech Pathology", 60_000.0, 240_000.0, 108_000.0, false),
-        CostCenter("4000", "Medical Supplies", 350_000.0, 1_400_000.0, 630_000.0, false),
-        CostCenter("4100", "Drugs Charged to Patients", 400_000.0, 1_600_000.0, 720_000.0, false),
-        CostCenter("6000", "Clinic", 300_000.0, 750_000.0, 337_500.0, false),
-        CostCenter("6100", "Emergency", 500_000.0, 2_000_000.0, 900_000.0, false),
-        CostCenter("6200", "Observation", 100_000.0, 400_000.0, 180_000.0, false),
-        CostCenter("6500", "Other Outpatient Services", 150_000.0, 600_000.0, 270_000.0, false),
+        CostCenter(cost_center_code="0500", name="Adults & Pediatrics (General)", category=:direct_patient, is_revenue_producing=true, direct_costs=1_200_000.0, charges=3_000_000.0),
+        CostCenter(cost_center_code="0600", name="Intensive Care Unit", category=:direct_patient, is_revenue_producing=true, direct_costs=0.0, charges=0.0),
+        CostCenter(cost_center_code="1100", name="Skilled Nursing Facility", category=:direct_patient, is_revenue_producing=true, direct_costs=800_000.0, charges=1_600_000.0),
+        CostCenter(cost_center_code="2500", name="Operating Room", category=:ancillary, is_revenue_producing=true, direct_costs=600_000.0, charges=2_400_000.0),
+        CostCenter(cost_center_code="2600", name="Recovery Room", category=:ancillary, is_revenue_producing=true, direct_costs=120_000.0, charges=300_000.0),
+        CostCenter(cost_center_code="2900", name="Radiology - Diagnostic", category=:ancillary, is_revenue_producing=true, direct_costs=450_000.0, charges=1_800_000.0),
+        CostCenter(cost_center_code="3000", name="Radiology - Therapeutic", category=:ancillary, is_revenue_producing=true, direct_costs=80_000.0, charges=320_000.0),
+        CostCenter(cost_center_code="3200", name="Laboratory", category=:ancillary, is_revenue_producing=true, direct_costs=500_000.0, charges=2_000_000.0),
+        CostCenter(cost_center_code="3400", name="Respiratory Therapy", category=:ancillary, is_revenue_producing=true, direct_costs=150_000.0, charges=600_000.0),
+        CostCenter(cost_center_code="3500", name="Physical Therapy", category=:ancillary, is_revenue_producing=true, direct_costs=200_000.0, charges=800_000.0),
+        CostCenter(cost_center_code="3600", name="Occupational Therapy", category=:ancillary, is_revenue_producing=true, direct_costs=100_000.0, charges=400_000.0),
+        CostCenter(cost_center_code="3700", name="Speech Pathology", category=:ancillary, is_revenue_producing=true, direct_costs=60_000.0, charges=240_000.0),
+        CostCenter(cost_center_code="4000", name="Medical Supplies", category=:ancillary, is_revenue_producing=true, direct_costs=350_000.0, charges=1_400_000.0),
+        CostCenter(cost_center_code="4100", name="Drugs Charged to Patients", category=:ancillary, is_revenue_producing=true, direct_costs=400_000.0, charges=1_600_000.0),
+        CostCenter(cost_center_code="6000", name="Clinic", category=:direct_patient, is_revenue_producing=true, direct_costs=300_000.0, charges=750_000.0),
+        CostCenter(cost_center_code="6100", name="Emergency", category=:direct_patient, is_revenue_producing=true, direct_costs=500_000.0, charges=2_000_000.0),
+        CostCenter(cost_center_code="6200", name="Observation", category=:direct_patient, is_revenue_producing=true, direct_costs=100_000.0, charges=400_000.0),
+        CostCenter(cost_center_code="6500", name="Other Outpatient Services", category=:direct_patient, is_revenue_producing=true, direct_costs=150_000.0, charges=600_000.0),
         # Overhead cost centers
-        CostCenter("8800", "Administrative & General", 1_500_000.0, 0.0, 0.0, true),
-        CostCenter("8810", "Maintenance & Repairs", 350_000.0, 0.0, 0.0, true),
-        CostCenter("8820", "Employee Benefits", 1_200_000.0, 0.0, 0.0, true),
-        CostCenter("8830", "Housekeeping", 200_000.0, 0.0, 0.0, true),
-        CostCenter("8840", "Dietary", 280_000.0, 0.0, 0.0, true),
-        CostCenter("8850", "Depreciation", 600_000.0, 0.0, 0.0, true),
+        CostCenter(cost_center_code="8800", name="Administrative & General", category=:overhead, is_revenue_producing=false, direct_costs=1_500_000.0, charges=0.0),
+        CostCenter(cost_center_code="8810", name="Maintenance & Repairs", category=:overhead, is_revenue_producing=false, direct_costs=350_000.0, charges=0.0),
+        CostCenter(cost_center_code="8820", name="Employee Benefits", category=:overhead, is_revenue_producing=false, direct_costs=1_200_000.0, charges=0.0),
+        CostCenter(cost_center_code="8830", name="Housekeeping", category=:overhead, is_revenue_producing=false, direct_costs=200_000.0, charges=0.0),
+        CostCenter(cost_center_code="8840", name="Dietary", category=:overhead, is_revenue_producing=false, direct_costs=280_000.0, charges=0.0),
+        CostCenter(cost_center_code="8850", name="Depreciation", category=:overhead, is_revenue_producing=false, direct_costs=600_000.0, charges=0.0),
     ]
 end
 
@@ -105,18 +77,18 @@ function step_down_allocation(cost_centers::Vector{CostCenter};
     # Separate overhead from revenue-producing centers
     overhead = Dict{String,Float64}()
     revenue = Dict{String,Float64}()
-    charges = Dict{String,Float64}()
+    charges_map = Dict{String,Float64}()
 
     for cc in cost_centers
-        if cc.is_overhead
-            overhead[cc.code] = cc.direct_cost
+        if !cc.is_revenue_producing
+            overhead[cc.cost_center_code] = cc.direct_costs
         else
-            revenue[cc.code] = cc.direct_cost
-            charges[cc.code] = cc.total_charges
+            revenue[cc.cost_center_code] = cc.direct_costs
+            charges_map[cc.cost_center_code] = cc.charges
         end
     end
 
-    total_rev_charges = sum(values(charges))
+    total_rev_charges = sum(values(charges_map))
 
     # Allocate each overhead center in order
     for oh_code in order
@@ -128,7 +100,7 @@ function step_down_allocation(cost_centers::Vector{CostCenter};
             continue
         end
 
-        for (rev_code, rev_charges) in charges
+        for (rev_code, rev_charges) in charges_map
             share = rev_charges / total_rev_charges
             revenue[rev_code] += amount_to_allocate * share
         end
@@ -150,14 +122,15 @@ function calculate_medicare_cost_share(allocated_costs::Dict{String,Float64},
                                        cost_centers::Vector{CostCenter})
     medicare_cost = 0.0
 
-    cc_lookup = Dict(cc.code => cc for cc in cost_centers if !cc.is_overhead)
+    cc_lookup = Dict(cc.cost_center_code => cc for cc in cost_centers if cc.is_revenue_producing)
 
     for (code, total_cost) in allocated_costs
         cc = get(cc_lookup, code, nothing)
-        if cc === nothing || cc.total_charges <= 0.0
+        if cc === nothing || cc.charges <= 0.0
             continue
         end
-        medicare_ratio = cc.medicare_charges / cc.total_charges
+        # Use cost_to_charge_ratio as a proxy for Medicare share when available
+        medicare_ratio = cc.cost_to_charge_ratio > 0.0 ? cc.cost_to_charge_ratio : 0.0
         medicare_cost += total_cost * medicare_ratio
     end
 
@@ -165,32 +138,42 @@ function calculate_medicare_cost_share(allocated_costs::Dict{String,Float64},
 end
 
 """
-    build_cost_report(provider_id::String, fiscal_year::Int,
+    build_cost_report(provider_number::String, fiscal_year_begin::Date,
+                      fiscal_year_end::Date,
                       cost_centers::Vector{CostCenter}) -> CostReport
 
 Build a complete cost report from a set of cost centers by performing
 step-down allocation and computing Medicare cost shares.
 """
-function build_cost_report(provider_id::String, fiscal_year::Int,
+function build_cost_report(provider_number::String, fiscal_year_begin::Date,
+                           fiscal_year_end::Date,
                            cost_centers::Vector{CostCenter})
     allocated = step_down_allocation(cost_centers)
 
-    total_costs = sum(cc.direct_cost for cc in cost_centers)
-    total_charges = sum(cc.total_charges for cc in cost_centers if !cc.is_overhead)
-    total_medicare = sum(cc.medicare_charges for cc in cost_centers if !cc.is_overhead)
+    total_costs = sum(cc.direct_costs for cc in cost_centers)
+    total_charges = sum(cc.charges for cc in cost_centers if cc.is_revenue_producing)
 
     ccr = total_charges > 0.0 ? total_costs / total_charges : 0.0
     medicare_share = calculate_medicare_cost_share(allocated, cost_centers)
 
+    # Update each cost center's allocated_costs and total_costs
+    for cc in cost_centers
+        if cc.is_revenue_producing && haskey(allocated, cc.cost_center_code)
+            cc.allocated_costs = allocated[cc.cost_center_code] - cc.direct_costs
+            cc.total_costs = allocated[cc.cost_center_code]
+            cc.cost_to_charge_ratio = cc.charges > 0.0 ? cc.total_costs / cc.charges : 0.0
+        end
+    end
+
     return CostReport(
-        provider_id,
-        fiscal_year,
-        cost_centers,
-        total_costs,
-        total_charges,
-        total_medicare,
-        ccr,
-        medicare_share,
-        allocated,
+        provider_number = provider_number,
+        fiscal_year_begin = fiscal_year_begin,
+        fiscal_year_end = fiscal_year_end,
+        cost_centers = cost_centers,
+        allocation_basis = AllocationBasis(method=:step_down, overhead_order=default_step_down_order()),
+        total_costs = total_costs,
+        total_charges = total_charges,
+        overall_cost_to_charge_ratio = ccr,
+        medicare_allowable_costs = medicare_share,
     )
 end

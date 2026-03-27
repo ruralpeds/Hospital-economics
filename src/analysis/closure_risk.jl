@@ -62,21 +62,13 @@ struct MarketData
     uninsured_rate::Float64
 end
 
-"""
-    ClosureRiskAssessment
-
-Result of a closure risk analysis for a single hospital.
-"""
-struct ClosureRiskAssessment
-    hospital_name::String
-    financial_risk_score::Float64
-    operational_risk_score::Float64
-    market_risk_score::Float64
-    composite_score::Float64
-    risk_tier::String
-    years_to_distress::Float64
-    key_risk_factors::Vector{String}
-end
+# ClosureRiskAssessment is defined in types/results.jl — uses that struct.
+# Fields: hospital_name, assessment_date, financial_risk_score,
+#   operational_risk_score, market_risk_score, workforce_risk_score,
+#   policy_risk_score, composite_risk_score, risk_category,
+#   risk_drivers, mitigating_factors, closure_probability_1yr/3yr/5yr,
+#   population_losing_access, nearest_alternative_hospital_miles,
+#   jobs_at_risk, annual_economic_impact, mc_summary
 
 # ---------------------------------------------------------------------------
 # Helper functions
@@ -269,15 +261,33 @@ function assess_closure_risk(hospital::AbstractHospital, market::MarketData;
 
     name = hasproperty(hospital, :name) ? getproperty(hospital, :name) : "Unknown"
 
+    # Map composite score to closure probabilities
+    p1yr = composite >= 0.75 ? composite * 0.4 : composite * 0.15
+    p3yr = composite >= 0.55 ? composite * 0.6 : composite * 0.25
+    p5yr = min(composite * 0.8, 0.95)
+
+    risk_cat = if composite >= 0.75
+        :critical
+    elseif composite >= 0.55
+        :high
+    elseif composite >= 0.35
+        :moderate
+    else
+        :low
+    end
+
     return ClosureRiskAssessment(
-        name,
-        financial_risk,
-        operational_risk,
-        market_risk,
-        composite,
-        tier,
-        ytd,
-        key_factors,
+        hospital_name = name,
+        assessment_date = Dates.today(),
+        financial_risk_score = financial_risk,
+        operational_risk_score = operational_risk,
+        market_risk_score = market_risk,
+        composite_risk_score = composite,
+        risk_category = risk_cat,
+        risk_drivers = key_factors,
+        closure_probability_1yr = p1yr,
+        closure_probability_3yr = p3yr,
+        closure_probability_5yr = p5yr,
     )
 end
 

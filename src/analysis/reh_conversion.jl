@@ -8,22 +8,16 @@ using Dates
 # Data structures
 # ---------------------------------------------------------------------------
 
-"""
-    ConversionParams
+# ConversionParams is defined in types/scenarios.jl — do not redefine here.
+# Fields from types/scenarios.jl: conversion_type, conversion_date,
+#   one_time_conversion_cost, annual_reh_facility_payment, outpatient_add_on_pct,
+#   retained_service_lines, eliminated_service_lines, staff_reduction_pct,
+#   severance_weeks_per_year, ramp_up_months, capital_repurposing_cost,
+#   inpatient_transfer_distance_miles, community_impact_score
 
-Parameters governing a CAH-to-REH conversion analysis.
-"""
-struct ConversionParams
-    conversion_date::Date
-    projection_years::Int
-    discount_rate::Float64
-    inflation_rate::Float64
-    medicare_update_factor::Float64
-    reh_monthly_facility_payment::Float64
-    transition_costs::Float64          # one-time conversion costs
-    annual_cost_savings::Float64       # from closing inpatient unit
-    volume_retention_pct::Float64      # outpatient volume retained post-conversion
-end
+# Default projection constants for fields removed from ConversionParams
+const _REH_DEFAULT_PROJECTION_YEARS = 10
+const _REH_DEFAULT_DISCOUNT_RATE    = 0.05
 
 """
     ConversionTransition
@@ -58,23 +52,10 @@ struct CommunityImpact
     ambulance_response_impact::String
 end
 
-"""
-    REHConversionAnalysis
-
-Complete results of a CAH-to-REH conversion financial analysis.
-"""
-struct REHConversionAnalysis
-    hospital_name::String
-    conversion_date::Date
-    transition_timeline::Vector{ConversionTransition}
-    npv_cah::Float64
-    npv_reh::Float64
-    npv_difference::Float64
-    breakeven_year::Union{Int,Nothing}
-    irr_estimate::Float64
-    recommendation::String
-    community_impact::CommunityImpact
-end
+# REHConversionAnalysis is defined in types/results.jl — uses that @kwdef struct.
+# Key fields: hospital_name, analysis_date, conversion_params,
+#   pre/post_conversion_margin/revenue/costs, year_1/3/5_net_impact,
+#   breakeven_year, conversion_costs, severance_costs, is_recommended, etc.
 
 # ---------------------------------------------------------------------------
 # Default assumptions
@@ -167,9 +148,9 @@ function project_reh_financials(base_revenue::Float64, base_costs::Float64,
                                 assumptions::Dict{String,Float64}=default_reh_assumptions())
     rev_growth = get(assumptions, "annual_revenue_growth", 0.020)
     cost_growth = get(assumptions, "annual_cost_growth", 0.030)
-    savings_pct = get(assumptions, "annual_cost_savings_pct", 0.25)
-    volume_retention = params.volume_retention_pct
-    facility_payment = params.reh_monthly_facility_payment * 12
+    savings_pct = params.staff_reduction_pct
+    volume_retention = 1.0 - savings_pct * 0.5  # approximate volume retention
+    facility_payment = params.annual_reh_facility_payment
 
     projections = Tuple{Float64,Float64}[]
 
@@ -182,7 +163,7 @@ function project_reh_financials(base_revenue::Float64, base_costs::Float64,
 
     for yr in 1:years
         # Year 1 includes transition costs
-        extra = yr == 1 ? params.transition_costs : 0.0
+        extra = yr == 1 ? params.one_time_conversion_cost : 0.0
         rev *= (1.0 + rev_growth)
         cost *= (1.0 + cost_growth)
         push!(projections, (rev, cost + extra))
@@ -216,8 +197,8 @@ Model the year-by-year financial comparison between maintaining CAH status
 and converting to REH.
 """
 function model_reh_transition(base_revenue::Float64, base_costs::Float64,
-                              params::ConversionParams)
-    years = params.projection_years
+                              params::ConversionParams; projection_years::Int=10)
+    years = projection_years
     cah_proj = project_cah_financials(base_revenue, base_costs, years)
     reh_proj = project_reh_financials(base_revenue, base_costs, years, params)
 
@@ -231,7 +212,7 @@ function model_reh_transition(base_revenue::Float64, base_costs::Float64,
         cah_margin = cah_rev - cah_cost
         reh_margin = reh_rev - reh_cost
 
-        diff = discount(reh_margin - cah_margin, params.discount_rate, yr)
+        diff = discount(reh_margin - cah_margin, _REH_DEFAULT_DISCOUNT_RATE, yr)
         cumulative_npv += diff
 
         push!(timeline, ConversionTransition(
@@ -300,32 +281,39 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    analyze_reh_conversion(hospital::CriticalAccessHospital,
+    analyze_reh_conversion(hospital::AbstractRuralHospital,
                            params::ConversionParams;
                            base_revenue::Float64=0.0,
                            base_costs::Float64=0.0,
                            nearest_inpatient_miles::Float64=30.0) -> REHConversionAnalysis
 
-Perform a comprehensive REH conversion analysis for a Critical Access Hospital,
+Perform a comprehensive REH conversion analysis for a rural hospital,
 as specified in Chapter 15.
 
 Computes NPV comparison, breakeven year, IRR estimate, community impact,
 and generates a recommendation.
 """
-function analyze_reh_conversion(hospital::CriticalAccessHospital,
+function analyze_reh_conversion(hospital::AbstractRuralHospital,
                                 params::ConversionParams;
                                 base_revenue::Float64=0.0,
                                 base_costs::Float64=0.0,
                                 nearest_inpatient_miles::Float64=30.0)
-    # Use hospital data if base values not provided
-    rev = base_revenue > 0 ? base_revenue : hospital.total_charges * hospital.cost_to_charge_ratio
-    costs = base_costs > 0 ? base_costs : hospital.total_costs
+    # Extract base financials from hospital history if not provided
+    rev = base_revenue
+    costs = base_costs
+    if rev <= 0.0 && !isempty(hospital.historical_financials)
+        fy = hospital.historical_financials[end]
+        rev = fy.total_operating_revenue
+        costs = fy.total_operating_expenses
+    end
+    rev = max(rev, 1.0)
+    costs = max(costs, 1.0)
 
     timeline = model_reh_transition(rev, costs, params)
 
     # NPV calculations
-    npv_cah = sum(discount(t.cah_margin, params.discount_rate, t.year) for t in timeline)
-    npv_reh = sum(discount(t.reh_margin, params.discount_rate, t.year) for t in timeline)
+    npv_cah = sum(discount(t.cah_margin, _REH_DEFAULT_DISCOUNT_RATE, t.year) for t in timeline)
+    npv_reh = sum(discount(t.reh_margin, _REH_DEFAULT_DISCOUNT_RATE, t.year) for t in timeline)
     npv_diff = npv_reh - npv_cah
 
     # Breakeven year
@@ -341,7 +329,7 @@ function analyze_reh_conversion(hospital::CriticalAccessHospital,
     irr_est = _estimate_irr(timeline, params)
 
     # Community impact
-    beds = hasproperty(hospital, :beds) ? hospital.beds : 25
+    beds = hasproperty(hospital, :licensed_beds) ? hospital.licensed_beds : 25
     community = assess_community_impact(hospital;
         beds=beds,
         nearest_inpatient_miles=nearest_inpatient_miles)
@@ -350,24 +338,45 @@ function analyze_reh_conversion(hospital::CriticalAccessHospital,
     recommendation = if npv_diff > 0 && breakeven !== nothing && breakeven <= 3
         "Strongly consider REH conversion — positive NPV with breakeven in $breakeven years"
     elseif npv_diff > 0
-        "REH conversion financially favorable but breakeven is $(something(breakeven, ">$(params.projection_years)")) years — weigh against community impact"
+        "REH conversion financially favorable but breakeven is $(something(breakeven, ">$(_REH_DEFAULT_PROJECTION_YEARS)")) years — weigh against community impact"
     elseif npv_diff > -500_000
         "Marginal case — REH conversion roughly neutral; decision should emphasize community need"
     else
         "Maintain CAH status — REH conversion shows negative NPV of $(round(npv_diff; digits=0))"
     end
 
+    # Compute summary values for the types/results.jl REHConversionAnalysis
+    is_recommended = npv_diff > 0
+    cah_yr1 = !isempty(timeline) ? timeline[1].cah_margin : 0.0
+    reh_yr1 = !isempty(timeline) ? timeline[1].reh_margin : 0.0
+    cah_rev1 = !isempty(timeline) ? timeline[1].cah_revenue : rev
+    reh_rev1 = !isempty(timeline) ? timeline[1].reh_revenue : rev
+    cah_cost1 = !isempty(timeline) ? timeline[1].cah_costs : costs
+    reh_cost1 = !isempty(timeline) ? timeline[1].reh_costs : costs
+
     return REHConversionAnalysis(
-        hospital.name,
-        params.conversion_date,
-        timeline,
-        npv_cah,
-        npv_reh,
-        npv_diff,
-        breakeven,
-        irr_est,
-        recommendation,
-        community,
+        hospital_name = hospital.name,
+        analysis_date = params.conversion_date,
+        conversion_params = params,
+        pre_conversion_margin = cah_yr1 / max(cah_rev1, 1.0),
+        pre_conversion_net_revenue = cah_rev1,
+        pre_conversion_total_costs = cah_cost1,
+        post_conversion_margin = reh_yr1 / max(reh_rev1, 1.0),
+        post_conversion_net_revenue = reh_rev1,
+        post_conversion_total_costs = reh_cost1,
+        annual_facility_payment = params.annual_reh_facility_payment,
+        year_1_net_impact = reh_yr1 - cah_yr1,
+        year_3_cumulative_impact = length(timeline) >= 3 ? timeline[3].cumulative_npv_difference : npv_diff,
+        year_5_cumulative_impact = length(timeline) >= 5 ? timeline[5].cumulative_npv_difference : npv_diff,
+        breakeven_year = breakeven,
+        conversion_costs = params.one_time_conversion_cost,
+        capital_repurposing_costs = params.capital_repurposing_cost,
+        inpatient_transfers_annual = 0,
+        avg_transfer_distance_miles = params.inpatient_transfer_distance_miles,
+        services_eliminated = String[string(s) for s in params.eliminated_service_lines],
+        services_retained = String[string(s) for s in params.retained_service_lines],
+        is_recommended = is_recommended,
+        recommendation_rationale = recommendation,
     )
 end
 
@@ -377,7 +386,7 @@ function _estimate_irr(timeline::Vector{ConversionTransition},
                        tol::Float64=0.001, max_iter::Int=100)
     cashflows = [t.reh_margin - t.cah_margin for t in timeline]
     # Include initial transition cost as negative year-0 flow
-    pushfirst!(cashflows, -params.transition_costs)
+    pushfirst!(cashflows, -params.one_time_conversion_cost)
 
     lo, hi = -0.50, 2.0
     for _ in 1:max_iter

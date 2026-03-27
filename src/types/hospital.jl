@@ -68,15 +68,14 @@ cost-based reimbursement from Medicare.
     location::GeoLocation
     service_area::ServiceArea
     nearest_hospital_miles::Float64
-    # Forward-referenced types use Union with Nothing for optional
-    departments::Vector{<:Any} = []        # Vector{Department} — populated after Department is defined
-    service_lines::Vector{<:Any} = []      # Vector{ServiceLine}
-    staff::Any = nothing                   # StaffingModel
-    payer_mix::Any = nothing               # PayerMix
-    cost_report::Union{Any, Nothing} = nothing       # CostReport
-    capital_plan::Union{Any, Nothing} = nothing       # CapitalPlan
-    historical_financials::Vector{<:Any} = []         # Vector{AnnualFinancials}
-    system_affiliation::Union{Any, Nothing} = nothing # HealthSystem
+    departments::Vector{Department} = Department[]
+    service_lines::Vector{ServiceLine} = ServiceLine[]
+    staff::Union{StaffingModel, Nothing} = nothing
+    payer_mix::Union{PayerMix, Nothing} = nothing
+    cost_report::Union{CostReport, Nothing} = nothing
+    capital_plan::Union{CapitalPlan, Nothing} = nothing
+    historical_financials::Vector{AnnualFinancials} = AnnualFinancials[]
+    system_affiliation::Union{HealthSystem, Nothing} = nothing
     is_government_owned::Bool = false
     tax_status::Symbol = :nonprofit  # :nonprofit, :government, :for_profit
     is_340b_eligible::Bool = false
@@ -112,19 +111,19 @@ a monthly facility payment plus enhanced outpatient reimbursement.
     # REH has no inpatient beds
     observation_beds::Int = 0
     ed_treatment_stations::Int = 8
-    monthly_facility_payment::Float64 = 272_866.0  # CY2024 base amount
+    monthly_facility_payment::Float64 = 272_866.30  # FY2026 base amount
     outpatient_add_on_pct::Float64 = 0.05  # 5% additional OPPS payment
     location::GeoLocation
     service_area::ServiceArea
     nearest_hospital_miles::Float64
-    departments::Vector{<:Any} = []
-    service_lines::Vector{<:Any} = []
-    staff::Any = nothing
-    payer_mix::Any = nothing
-    cost_report::Union{Any, Nothing} = nothing
-    capital_plan::Union{Any, Nothing} = nothing
-    historical_financials::Vector{<:Any} = []
-    system_affiliation::Union{Any, Nothing} = nothing
+    departments::Vector{Department} = Department[]
+    service_lines::Vector{ServiceLine} = ServiceLine[]
+    staff::Union{StaffingModel, Nothing} = nothing
+    payer_mix::Union{PayerMix, Nothing} = nothing
+    cost_report::Union{CostReport, Nothing} = nothing
+    capital_plan::Union{CapitalPlan, Nothing} = nothing
+    historical_financials::Vector{AnnualFinancials} = AnnualFinancials[]
+    system_affiliation::Union{HealthSystem, Nothing} = nothing
     is_government_owned::Bool = false
     tax_status::Symbol = :nonprofit
     is_340b_eligible::Bool = false
@@ -158,14 +157,14 @@ or Outpatient Prospective Payment System (OPPS).
     location::GeoLocation
     service_area::ServiceArea
     nearest_hospital_miles::Float64 = 0.0
-    departments::Vector{<:Any} = []
-    service_lines::Vector{<:Any} = []
-    staff::Any = nothing
-    payer_mix::Any = nothing
-    cost_report::Union{Any, Nothing} = nothing
-    capital_plan::Union{Any, Nothing} = nothing
-    historical_financials::Vector{<:Any} = []
-    system_affiliation::Union{Any, Nothing} = nothing
+    departments::Vector{Department} = Department[]
+    service_lines::Vector{ServiceLine} = ServiceLine[]
+    staff::Union{StaffingModel, Nothing} = nothing
+    payer_mix::Union{PayerMix, Nothing} = nothing
+    cost_report::Union{CostReport, Nothing} = nothing
+    capital_plan::Union{CapitalPlan, Nothing} = nothing
+    historical_financials::Vector{AnnualFinancials} = AnnualFinancials[]
+    system_affiliation::Union{HealthSystem, Nothing} = nothing
     is_government_owned::Bool = false
     tax_status::Symbol = :nonprofit
     is_340b_eligible::Bool = false
