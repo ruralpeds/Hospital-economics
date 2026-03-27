@@ -1,68 +1,207 @@
-/* Rural Hospital Economics Simulator - Custom Styles */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Rural Hospital Economics Simulator — Custom Styles
+   Supplements Quasar/Stipple default styling.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-:root {
-    --primary-color: #1976d2;
-    --secondary-color: #424242;
-    --accent-color: #82b1ff;
-    --positive-color: #21ba45;
-    --negative-color: #c10015;
-    --warning-color: #f2c037;
-    --info-color: #31ccec;
-}
-
+/* ── Typography ──────────────────────────────────────────────────────────── */
 body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #f5f5f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f5f7fa;
+    color: #2c3e50;
 }
 
-.dashboard-header {
-    background: linear-gradient(135deg, var(--primary-color), #0d47a1);
-    color: white;
-    padding: 16px 24px;
-    margin-bottom: 16px;
-    border-radius: 4px;
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: #1a2332;
 }
 
+/* ── KPI Cards ───────────────────────────────────────────────────────────── */
 .kpi-card {
-    transition: transform 0.2s ease-in-out;
+    border-radius: 12px;
+    border: 1px solid #e8ecf1;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+    background: white;
 }
 
 .kpi-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.risk-high { color: var(--negative-color); font-weight: bold; }
-.risk-mid-high { color: var(--warning-color); font-weight: bold; }
-.risk-mid-low { color: var(--info-color); }
-.risk-low { color: var(--positive-color); }
-
-.chart-container {
-    min-height: 300px;
+.kpi-card .q-card__section {
+    padding: 16px 20px;
 }
 
-.wizard-step-active {
-    border-left: 4px solid var(--primary-color);
-    padding-left: 12px;
+.kpi-card-sm {
+    border-radius: 8px;
+    border: 1px solid #e8ecf1;
+    background: white;
+    transition: box-shadow 0.2s ease;
 }
 
-.alert-critical {
-    animation: pulse 2s infinite;
+.kpi-card-sm:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
+/* ── Dashboard Specific ──────────────────────────────────────────────────── */
+.text-overline {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7f8c9b;
 }
 
-/* Print styles for board reports */
+/* ── Alert Banners ───────────────────────────────────────────────────────── */
+.q-banner {
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+/* ── Navigation Drawer ───────────────────────────────────────────────────── */
+.q-drawer .q-item {
+    border-radius: 8px;
+    margin: 2px 8px;
+    min-height: 40px;
+}
+
+.q-drawer .q-item:hover {
+    background: rgba(25, 118, 210, 0.08);
+}
+
+.q-drawer .q-item--active,
+.q-drawer .q-item.router-link-active {
+    background: rgba(25, 118, 210, 0.12);
+    color: #1976d2;
+    font-weight: 500;
+}
+
+.q-drawer .q-item__section--avatar {
+    min-width: 40px;
+}
+
+/* ── Charts ──────────────────────────────────────────────────────────────── */
+.js-plotly-plot {
+    border-radius: 8px;
+}
+
+.plotly .modebar {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.plotly:hover .modebar {
+    opacity: 1;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+.q-table th {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #5a6b7d;
+    background: #f8f9fb;
+}
+
+.q-table td {
+    font-size: 0.875rem;
+}
+
+.q-table tbody tr:hover {
+    background: #f0f4ff;
+}
+
+/* ── Wizard Stepper ──────────────────────────────────────────────────────── */
+.q-stepper__step-inner {
+    padding: 16px 0;
+}
+
+.q-stepper__tab--active .q-stepper__dot {
+    background: #1976d2 !important;
+}
+
+/* ── Form Elements ───────────────────────────────────────────────────────── */
+.q-field--filled .q-field__control {
+    border-radius: 8px;
+}
+
+.q-field--dense .q-field__control {
+    height: 40px;
+}
+
+/* ── Risk Score Indicators ───────────────────────────────────────────────── */
+.risk-critical { color: #d32f2f; }
+.risk-high { color: #f57c00; }
+.risk-moderate { color: #fbc02d; }
+.risk-low { color: #388e3c; }
+
+/* ── Responsive Adjustments ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .kpi-card h4 {
+        font-size: 1.5rem;
+    }
+
+    .kpi-card-sm h6 {
+        font-size: 1rem;
+    }
+
+    .q-drawer {
+        width: 260px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .q-toolbar__title {
+        font-size: 1rem;
+    }
+}
+
+/* ── Print Styles ────────────────────────────────────────────────────────── */
 @media print {
-    .q-drawer, .q-header, .no-print {
+    .q-drawer,
+    .q-header,
+    .q-btn {
         display: none !important;
     }
+
     .q-page-container {
-        margin: 0;
-        padding: 0;
+        margin-left: 0 !important;
     }
+
+    .kpi-card,
+    .kpi-card-sm {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.q-page {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ── Custom Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
