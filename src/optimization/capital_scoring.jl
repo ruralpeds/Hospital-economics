@@ -46,6 +46,16 @@ function score_capital_projects(projects::Vector{CapitalRequest};
     n = length(projects)
     n == 0 && return NamedTuple[]
 
+    for p in projects
+        p.estimated_cost >= 0.0 || error("estimated_cost must be non-negative for $(p.project_name); got $(p.estimated_cost)")
+        0.0 <= p.safety_compliance_score <= 1.0 || error("safety_compliance_score must be between 0 and 1 for $(p.project_name); got $(p.safety_compliance_score)")
+        0.0 <= p.failure_risk_score <= 1.0 || error("failure_risk_score must be between 0 and 1 for $(p.project_name); got $(p.failure_risk_score)")
+        0.0 <= p.strategic_alignment_score <= 1.0 || error("strategic_alignment_score must be between 0 and 1 for $(p.project_name); got $(p.strategic_alignment_score)")
+        p.revenue_impact_annual >= 0.0 || error("revenue_impact_annual must be non-negative for $(p.project_name); got $(p.revenue_impact_annual)")
+        p.efficiency_gain_annual >= 0.0 || error("efficiency_gain_annual must be non-negative for $(p.project_name); got $(p.efficiency_gain_annual)")
+        p.useful_life_years > 0 || error("useful_life_years must be positive for $(p.project_name); got $(p.useful_life_years)")
+    end
+
     # Normalize revenue and efficiency to 0-1 using max across projects
     max_revenue    = max(maximum(p.revenue_impact_annual for p in projects), 1.0)
     max_efficiency = max(maximum(p.efficiency_gain_annual for p in projects), 1.0)
@@ -85,6 +95,9 @@ Greedy knapsack: rank by MCDA score, select until budget exhausted.
 """
 function select_within_budget(projects::Vector{CapitalRequest}, budget::Float64;
                               weights::NamedTuple=DEFAULT_CAPITAL_WEIGHTS)::CapitalScoreResult
+    !isempty(projects) || error("projects must not be empty")
+    budget > 0.0 || error("budget must be positive; got $budget")
+
     scored = score_capital_projects(projects; weights=weights)
     n = length(projects)
 
@@ -126,6 +139,12 @@ Sort by failure_risk_score descending. Urgency tiers: `:critical` (>=0.8),
 `:high` (>=0.6), `:moderate` (>=0.4), `:low` (<0.4).
 """
 function replacement_priority_report(projects::Vector{CapitalRequest})::Vector{NamedTuple}
+    !isempty(projects) || error("projects must not be empty")
+    for p in projects
+        0.0 <= p.failure_risk_score <= 1.0 || error("failure_risk_score must be between 0 and 1 for $(p.project_name); got $(p.failure_risk_score)")
+        p.estimated_cost >= 0.0 || error("estimated_cost must be non-negative for $(p.project_name); got $(p.estimated_cost)")
+    end
+
     sorted = sort(projects, by=p -> p.failure_risk_score, rev=true)
 
     return [(

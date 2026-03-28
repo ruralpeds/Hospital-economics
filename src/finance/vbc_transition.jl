@@ -144,6 +144,8 @@ management matures. Year 1 captures 30% of potential savings, year 2 captures
 """
 function vbc_transition_timeline(params::VBCParams; years::Int = 5)::Vector{NamedTuple}
     years > 0 || error("years must be positive; got $years")
+    params.benchmark > 0.0 || error("Benchmark must be positive; got $(params.benchmark)")
+    params.patient_panel_size > 0 || error("Patient panel size must be positive; got $(params.patient_panel_size)")
 
     # Savings maturity curve: fraction of achievable savings realized each year
     maturity = [0.30, 0.60, 0.90, 0.95, 1.0]
