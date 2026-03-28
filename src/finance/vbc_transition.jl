@@ -80,6 +80,7 @@ Compute shared savings or losses for a value-based care arrangement.
 5. Net against care management investment.
 """
 function calculate_vbc_outcome(params::VBCParams)::VBCResult
+    params.model_type in (:mssp_basic, :mssp_enhanced, :aco_lead, :aco_flex) || error("model_type must be one of :mssp_basic, :mssp_enhanced, :aco_lead, :aco_flex; got $(params.model_type)")
     params.benchmark > 0.0 || error("Benchmark must be positive; got $(params.benchmark)")
     params.patient_panel_size > 0 || error("Patient panel size must be positive; got $(params.patient_panel_size)")
     params.risk_track in (:one_sided, :two_sided) || error("risk_track must be :one_sided or :two_sided; got $(params.risk_track)")
@@ -162,8 +163,10 @@ function vbc_transition_timeline(params::VBCParams; years::Int = 5)::Vector{Name
         # Adjust actual cost to reflect improving care management
         potential_savings = params.benchmark - params.total_cost_of_care
         yr_actual = if potential_savings > 0
-            params.total_cost_of_care - (potential_savings * (mat - 1.0))
+            # Maturity fraction of savings realized: costs decrease toward benchmark
+            params.total_cost_of_care - (potential_savings * mat)
         else
+            # When over benchmark, maturity reduces cost overruns
             params.total_cost_of_care + abs(potential_savings) * (1.0 - mat)
         end
 

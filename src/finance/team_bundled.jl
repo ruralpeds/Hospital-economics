@@ -108,7 +108,7 @@ function calculate_team_reconciliation(params::TEAMParams)::TEAMResult
 
     is_exempt = n < params.low_volume_threshold
 
-    total_target = sum(e.target_price for e in eps)
+    total_target = sum(e.target_price * (1.0 - params.discount_factor) for e in eps)
     total_actual = sum(e.actual_cost for e in eps)
     raw_recon = total_target - total_actual
 

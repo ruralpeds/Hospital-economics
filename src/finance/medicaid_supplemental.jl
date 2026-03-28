@@ -99,7 +99,7 @@ function calculate_medicaid_supplemental(params::MedicaidSupplementalParams)::Me
     # UPL room = what Medicare would pay - what Medicaid actually pays (base + DSH)
     cost_to_charge = params.total_operating_expenses > 0.0 ?
         params.total_operating_expenses / max(params.gross_patient_revenue, 1.0) : 0.60
-    medicare_equivalent = params.medicaid_costs / max(cost_to_charge, 0.01) * cost_to_charge * 1.00
+    medicare_equivalent = params.medicaid_costs / 0.92  # Medicare pays ~92% of cost
     # UPL allows payments up to Medicare-equivalent level
     medicaid_total_before_upl = params.medicaid_payments + dsh_payment
     upl_room = max(0.0, medicare_equivalent - medicaid_total_before_upl)

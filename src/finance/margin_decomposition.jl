@@ -98,7 +98,7 @@ function decompose_margin(payer_data::Vector{<:NamedTuple}, total_expenses::Floa
 
     total_revenue = total_patient_revenue + non_patient_revenue
     np_contribution = non_patient_revenue / total_expenses
-    total_margin_pct = total_revenue != 0.0 ? (total_revenue - total_expenses) / total_revenue : 0.0
+    total_margin_pct = total_expenses != 0.0 ? (total_revenue - total_expenses) / total_expenses : 0.0
 
     return MarginDecomposition(
         components = components,
