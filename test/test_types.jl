@@ -6,9 +6,14 @@ using Test
 using Dates
 using UUIDs
 
-# Include source files directly for testing
-include(joinpath(@__DIR__, "..", "src", "types", "abstract.jl"))
-include(joinpath(@__DIR__, "..", "src", "types", "hospital.jl"))
+# Include source files directly for testing (in dependency order)
+include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "department.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "staffing.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "payer.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "financial.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "capital.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "hospital.jl"))
 
 # ---------------------------------------------------------------------------
 # Helper: create a minimal GeoLocation for testing
@@ -222,7 +227,7 @@ end
         @test reh.reh_conversion_date == Date(2024, 1, 1)
         @test reh.observation_beds == 0
         @test reh.ed_treatment_stations == 8
-        @test reh.monthly_facility_payment == 272_866.0
+        @test reh.monthly_facility_payment == 272_866.30
         @test reh.outpatient_add_on_pct == 0.05
         @test reh.id isa UUID
 
@@ -309,24 +314,37 @@ end
 
     # -----------------------------------------------------------------------
     @testset "PayerMix validation (field-level)" begin
-        # PayerMix is forward-referenced as Any; test that payer_mix can be
-        # assigned and that we can validate proportions manually
+        # Test that payer proportions sum to 1.0
         cah = make_test_cah()
-        payer_mix = (
-            medicare=0.55, medicaid=0.18, commercial=0.17,
-            self_pay=0.07, other_government=0.03,
-        )
-        total = sum(values(payer_mix))
+
+        # Valid payer mix using the PayerMix type
+        contracts = PayerContract[
+            PayerContract(payer_name="Medicare", payer_type=:medicare,
+                          overall_volume_pct=0.55, payment_method=:cost_based),
+            PayerContract(payer_name="Medicaid", payer_type=:medicaid,
+                          overall_volume_pct=0.18, payment_method=:fee_for_service),
+            PayerContract(payer_name="Commercial", payer_type=:commercial,
+                          overall_volume_pct=0.17, payment_method=:fee_for_service),
+            PayerContract(payer_name="Self-Pay", payer_type=:self_pay,
+                          overall_volume_pct=0.07, payment_method=:fee_for_service),
+            PayerContract(payer_name="Other Gov", payer_type=:other,
+                          overall_volume_pct=0.03, payment_method=:fee_for_service),
+        ]
+        pm = PayerMix(contracts, Date(2024, 1, 1))
+        cah.payer_mix = pm
+        @test cah.payer_mix isa PayerMix
+        @test length(cah.payer_mix.contracts) == 5
+
+        # Check volume shares sum to 1.0
+        total = sum(c.overall_volume_pct for c in pm.contracts)
         @test isapprox(total, 1.0; atol=1e-10)
 
-        cah.payer_mix = payer_mix
-        @test cah.payer_mix.medicare == 0.55
-        @test cah.payer_mix.medicaid == 0.18
-
-        # Invalid payer mix: does not sum to 1.0
-        bad_mix = (medicare=0.60, medicaid=0.20, commercial=0.25,
-                   self_pay=0.10, other_government=0.05)
-        bad_total = sum(values(bad_mix))
-        @test !isapprox(bad_total, 1.0; atol=0.01)
+        # Invalid payer mix: does not sum to 1.0 — constructor should error
+        bad_contracts = PayerContract[
+            PayerContract(payer_name="Medicare", payer_type=:medicare, overall_volume_pct=0.60),
+            PayerContract(payer_name="Medicaid", payer_type=:medicaid, overall_volume_pct=0.20),
+            PayerContract(payer_name="Commercial", payer_type=:commercial, overall_volume_pct=0.25),
+        ]
+        @test_throws ErrorException PayerMix(bad_contracts, Date(2024, 1, 1))
     end
 end

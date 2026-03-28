@@ -4,8 +4,8 @@
 
 using Test
 
-include(joinpath(@__DIR__, "..", "src", "types", "abstract.jl"))
-include(joinpath(@__DIR__, "..", "src", "engines", "deterministic.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
+include(joinpath(@__DIR__, "..", "src", "simulation", "deterministic.jl"))
 
 # ---------------------------------------------------------------------------
 # Helper: create a standard base financials NamedTuple for a typical CAH

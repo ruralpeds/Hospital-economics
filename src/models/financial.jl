@@ -1,0 +1,205 @@
+# Financial types for Rural Hospital Economics Simulator
+
+using Dates
+using UUIDs
+
+"""
+    AnnualFinancials
+
+Complete annual financial summary for a hospital entity. Encompasses revenue,
+expense, balance sheet, and key financial performance indicators.
+"""
+@kwdef mutable struct AnnualFinancials
+    fiscal_year::Int
+    fiscal_year_end::Date
+
+    # Revenue
+    gross_patient_revenue::Float64 = 0.0
+    inpatient_revenue::Float64 = 0.0
+    outpatient_revenue::Float64 = 0.0
+    swing_bed_revenue::Float64 = 0.0
+    emergency_revenue::Float64 = 0.0
+    physician_revenue::Float64 = 0.0
+    other_operating_revenue::Float64 = 0.0
+    non_operating_revenue::Float64 = 0.0
+
+    # Deductions from revenue
+    contractual_adjustments::Float64 = 0.0
+    charity_care::Float64 = 0.0
+    bad_debt_expense::Float64 = 0.0
+    total_deductions::Float64 = 0.0
+
+    # Net revenue
+    net_patient_revenue::Float64 = 0.0
+    total_operating_revenue::Float64 = 0.0
+    total_revenue::Float64 = 0.0
+
+    # Operating expenses
+    salaries_wages::Float64 = 0.0
+    employee_benefits::Float64 = 0.0
+    physician_fees::Float64 = 0.0
+    purchased_services::Float64 = 0.0
+    supplies::Float64 = 0.0
+    pharmaceuticals::Float64 = 0.0
+    utilities::Float64 = 0.0
+    insurance::Float64 = 0.0
+    lease_rental::Float64 = 0.0
+    depreciation::Float64 = 0.0
+    amortization::Float64 = 0.0
+    interest_expense::Float64 = 0.0
+    other_operating_expenses::Float64 = 0.0
+    total_operating_expenses::Float64 = 0.0
+
+    # Margins and performance
+    operating_income::Float64 = 0.0
+    operating_margin::Float64 = 0.0
+    total_margin::Float64 = 0.0
+    ebitda::Float64 = 0.0
+    ebitda_margin::Float64 = 0.0
+
+    # Balance sheet items
+    total_assets::Float64 = 0.0
+    current_assets::Float64 = 0.0
+    cash_and_equivalents::Float64 = 0.0
+    net_accounts_receivable::Float64 = 0.0
+    total_liabilities::Float64 = 0.0
+    current_liabilities::Float64 = 0.0
+    long_term_debt::Float64 = 0.0
+    net_assets::Float64 = 0.0
+
+    # Key ratios
+    current_ratio::Float64 = 0.0
+    days_cash_on_hand::Float64 = 0.0
+    days_in_accounts_receivable::Float64 = 0.0
+    debt_to_capitalization::Float64 = 0.0
+    average_age_of_plant::Float64 = 0.0
+
+    # Volume statistics
+    inpatient_days::Int = 0
+    inpatient_discharges::Int = 0
+    observation_hours::Float64 = 0.0
+    ed_visits::Int = 0
+    outpatient_visits::Int = 0
+    surgical_cases::Int = 0
+    births::Int = 0
+
+    # Medicare/Medicaid specifics
+    medicare_days_pct::Float64 = 0.0
+    medicaid_days_pct::Float64 = 0.0
+    medicare_cost_to_charge_ratio::Float64 = 0.0
+    cost_per_adjusted_discharge::Float64 = 0.0
+
+    # Sustainability flags
+    is_operating_loss::Bool = false
+    consecutive_loss_years::Int = 0
+end
+
+function Base.show(io::IO, f::AnnualFinancials)
+    print(io, "AnnualFinancials(FY$(f.fiscal_year), margin=$(round(f.operating_margin * 100, digits=1))%)")
+end
+
+"""
+    CostCenter
+
+An individual cost center within a hospital's cost accounting system.
+"""
+@kwdef mutable struct CostCenter
+    cost_center_code::String
+    name::String
+    category::Symbol  # :overhead, :direct_patient, :ancillary, :support
+    is_revenue_producing::Bool = false
+    direct_costs::Float64 = 0.0
+    allocated_costs::Float64 = 0.0
+    total_costs::Float64 = 0.0
+    charges::Float64 = 0.0
+    cost_to_charge_ratio::Float64 = 0.0
+    statistical_basis::Symbol = :square_footage  # allocation statistic
+    statistical_value::Float64 = 0.0
+end
+
+"""
+    AllocationBasis
+
+Defines how overhead costs are allocated across cost centers using step-down
+or reciprocal allocation methods.
+"""
+@kwdef struct AllocationBasis
+    method::Symbol = :step_down  # :step_down, :reciprocal, :direct
+    overhead_order::Vector{String} = String[]  # cost center codes in allocation order
+    statistics::Dict{String, Dict{String, Float64}} = Dict{String, Dict{String, Float64}}()
+end
+
+"""
+    CostReport
+
+Medicare cost report data (Form CMS-2552) for a hospital.
+"""
+@kwdef mutable struct CostReport
+    provider_number::String
+    fiscal_year_begin::Date
+    fiscal_year_end::Date
+    report_status::Symbol = :filed  # :filed, :settled, :reopened, :final
+
+    # Cost centers
+    cost_centers::Vector{CostCenter} = CostCenter[]
+    allocation_basis::AllocationBasis = AllocationBasis()
+
+    # Aggregate cost report values
+    total_costs::Float64 = 0.0
+    total_charges::Float64 = 0.0
+    overall_cost_to_charge_ratio::Float64 = 0.0
+
+    # Medicare-specific
+    medicare_inpatient_costs::Float64 = 0.0
+    medicare_outpatient_costs::Float64 = 0.0
+    medicare_swing_bed_costs::Float64 = 0.0
+    medicare_allowable_costs::Float64 = 0.0
+    medicare_payments_received::Float64 = 0.0
+    medicare_settlement_amount::Float64 = 0.0
+
+    # For CAH cost-based reimbursement
+    reasonable_cost_percentage::Float64 = 1.01  # 101% for CAH
+end
+
+function Base.show(io::IO, cr::CostReport)
+    print(io, "CostReport($(cr.provider_number), FY$(year(cr.fiscal_year_end)), status=:$(cr.report_status))")
+end
+
+"""
+    MedicareReimbursement
+
+Tracks Medicare reimbursement calculation components for a given period.
+"""
+@kwdef mutable struct MedicareReimbursement
+    provider_number::String
+    payment_year::Int
+    designation::Symbol  # :cah, :reh, :pps, :sch
+
+    # CAH cost-based fields
+    allowable_costs::Float64 = 0.0
+    cost_reimbursement_pct::Float64 = 1.01  # 101% for CAH
+    interim_payments::Float64 = 0.0
+    settlement_amount::Float64 = 0.0
+
+    # PPS fields
+    base_rate::Float64 = 0.0
+    wage_index::Float64 = 1.0
+    case_mix_index::Float64 = 1.0
+    drg_payments::Float64 = 0.0
+    outlier_payments::Float64 = 0.0
+    dsh_payments::Float64 = 0.0
+    ime_payments::Float64 = 0.0
+
+    # REH fields
+    monthly_facility_payment::Float64 = 0.0
+    outpatient_add_on_payments::Float64 = 0.0
+
+    # Common
+    total_medicare_payment::Float64 = 0.0
+    total_medicare_costs::Float64 = 0.0
+    payment_to_cost_ratio::Float64 = 0.0
+end
+
+function Base.show(io::IO, mr::MedicareReimbursement)
+    print(io, "MedicareReimbursement($(mr.provider_number), $(mr.payment_year), :$(mr.designation))")
+end

@@ -7,8 +7,8 @@ using Random
 using Statistics
 
 # Include deterministic engine (Monte Carlo builds on it)
-include(joinpath(@__DIR__, "..", "src", "types", "abstract.jl"))
-include(joinpath(@__DIR__, "..", "src", "engines", "deterministic.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
+include(joinpath(@__DIR__, "..", "src", "simulation", "deterministic.jl"))
 
 # ---------------------------------------------------------------------------
 # Stub Monte Carlo engine for testing (until full implementation exists)

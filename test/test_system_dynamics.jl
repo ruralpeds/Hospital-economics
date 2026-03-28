@@ -4,7 +4,7 @@
 
 using Test
 
-include(joinpath(@__DIR__, "..", "src", "types", "abstract.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
 
 # ---------------------------------------------------------------------------
 # Stub system dynamics ODE model (until DifferentialEquations integration)
