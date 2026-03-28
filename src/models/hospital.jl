@@ -111,7 +111,7 @@ a monthly facility payment plus enhanced outpatient reimbursement.
     # REH has no inpatient beds
     observation_beds::Int = 0
     ed_treatment_stations::Int = 8
-    monthly_facility_payment::Float64 = 272_866.30  # FY2026 base amount
+    monthly_facility_payment::Float64 = 295_000.00  # FY2026 base amount (CMS update)
     outpatient_add_on_pct::Float64 = 0.05  # 5% additional OPPS payment
     location::GeoLocation
     service_area::ServiceArea
