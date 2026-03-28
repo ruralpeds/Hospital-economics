@@ -188,4 +188,4 @@ financial viability, community economic impact, and strategic decision-making.
 | 2026-03-28 | 36fe8c5 | Fix exports, imports, type mappings |
 | 2026-03-28 | f430a82 | Fix include ordering, field names, test imports |
 | 2026-03-28 | e5bc801 | Add missing Dates import to HospitalProfileModel |
-| 2026-03-28 | — | V3.1 advanced simulations & economic measures |
+| 2026-03-28 | cb02893 | V3.1 advanced simulations & economic measures (15 modules) |
