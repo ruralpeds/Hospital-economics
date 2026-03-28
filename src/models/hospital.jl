@@ -46,6 +46,28 @@ Defines the geographic service area and demographics for a hospital.
 end
 
 """
+    HealthSystem
+
+A health system that may own or be affiliated with multiple hospitals.
+"""
+@kwdef mutable struct HealthSystem
+    id::UUID = uuid4()
+    name::String
+    system_type::Symbol = :integrated  # :integrated, :holding_company, :alliance
+    headquarters_state::String = ""
+    total_hospitals::Int = 0
+    total_licensed_beds::Int = 0
+    annual_net_revenue::Float64 = 0.0
+    credit_rating::String = ""
+    has_medical_school::Bool = false
+    member_hospital_ids::Vector{UUID} = UUID[]
+end
+
+function Base.show(io::IO, s::HealthSystem)
+    print(io, "HealthSystem(\"$(s.name)\", hospitals=$(s.total_hospitals))")
+end
+
+"""
     CriticalAccessHospital <: AbstractRuralHospital
 
 A Critical Access Hospital (CAH) certified under the Medicare Rural Hospital
@@ -177,26 +199,4 @@ end
 
 function Base.show(io::IO, h::ProspectivePaymentHospital)
     print(io, "PPS(\"$(h.name)\", beds=$(h.licensed_beds), cmi=$(round(h.case_mix_index, digits=2)))")
-end
-
-"""
-    HealthSystem
-
-A health system that may own or be affiliated with multiple hospitals.
-"""
-@kwdef mutable struct HealthSystem
-    id::UUID = uuid4()
-    name::String
-    system_type::Symbol = :integrated  # :integrated, :holding_company, :alliance
-    headquarters_state::String = ""
-    total_hospitals::Int = 0
-    total_licensed_beds::Int = 0
-    annual_net_revenue::Float64 = 0.0
-    credit_rating::String = ""
-    has_medical_school::Bool = false
-    member_hospital_ids::Vector{UUID} = UUID[]
-end
-
-function Base.show(io::IO, s::HealthSystem)
-    print(io, "HealthSystem(\"$(s.name)\", hospitals=$(s.total_hospitals))")
 end

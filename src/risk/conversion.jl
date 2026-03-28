@@ -388,7 +388,7 @@ function _estimate_irr(timeline::Vector{ConversionTransition},
     # Include initial transition cost as negative year-0 flow
     pushfirst!(cashflows, -params.one_time_conversion_cost)
 
-    lo, hi = -0.50, 2.0
+    lo, hi = -0.99, 2.0
     for _ in 1:max_iter
         mid = (lo + hi) / 2.0
         npv = sum(cf / (1.0 + mid)^(i-1) for (i, cf) in enumerate(cashflows))

@@ -32,6 +32,7 @@ using JuMP
 using HiGHS
 using DifferentialEquations
 using StatsBase
+using Agents
 
 # ═══════════════════════════════════════════════════════════════
 # DOMAIN MODEL (must be loaded first, in dependency order)

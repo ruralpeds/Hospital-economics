@@ -116,6 +116,7 @@ where A = rho_total.
 function _erlang_c(c::Int, rho_total::Float64)::Float64
     c >= 1 || error("Number of servers must be >= 1")
     rho_total < c || return 1.0  # system is overloaded
+    rho_total <= 0.0 && return 0.0  # no load, no waiting
 
     # Compute in log-space to avoid overflow for large c
     # log(A^c / c!) = c*log(A) - log(c!)

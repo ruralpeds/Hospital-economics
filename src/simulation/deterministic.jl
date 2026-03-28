@@ -247,8 +247,8 @@ function project_single_year(base_financials::NamedTuple, year::Int,
     oi = total_rev - total_exp
     margin = compute_operating_margin(total_rev, total_exp)
 
-    # Approximate cash reserves: base cash + cumulative operating income (simplified)
-    approx_cash = base_financials.cash_reserves + oi * year
+    # Approximate cash reserves: base cash + operating income for this year (simplified)
+    approx_cash = base_financials.cash_reserves + oi
     daily_exp = total_exp / 365.0
     dcoh = compute_days_cash_on_hand(max(approx_cash, 0.0), daily_exp)
     dscr = compute_debt_service_coverage(oi, base_financials.depreciation,

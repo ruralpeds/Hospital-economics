@@ -48,7 +48,7 @@ function calculate_medicare_reimbursement(hospital::CriticalAccessHospital;
         latest = hospital.historical_financials[end]
         latest.bad_debt_expense * latest.medicare_days_pct
     else
-        cr.total_charges * 0.05 * (cr.total_charges > 0.0 ?
+        cr.total_charges * 0.05 * (cr.total_costs > 0.0 ?
             (cr.medicare_inpatient_costs + cr.medicare_outpatient_costs) / cr.total_costs : 0.0)
     end
     bad_debt_payment = estimated_bad_debt * 0.65
