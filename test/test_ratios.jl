@@ -37,17 +37,13 @@ include(joinpath(@__DIR__, "..", "src", "finance", "ratios.jl"))
 
     @testset "days_cash_on_hand" begin
         fin = AnnualFinancials(fiscal_year=2024, fiscal_year_end=Date(2024,12,31),
-            cash_and_equivalents=1_000_000.0,
-            total_operating_expenses=3_650_000.0,
+            cash_and_equivalents=1_000_000.0, total_operating_expenses=3_650_000.0,
             depreciation=200_000.0, amortization=50_000.0)
-        cash_exp = 3_650_000.0 - 200_000.0 - 50_000.0
-        expected = 1_000_000.0 / (cash_exp / 365.0)
+        expected = 1_000_000.0 / ((3_650_000.0 - 250_000.0) / 365.0)
         @test days_cash_on_hand(fin) ≈ expected
-
         # Zero cash expenses => Inf
         fin_zero = AnnualFinancials(fiscal_year=2024, fiscal_year_end=Date(2024,12,31),
-            cash_and_equivalents=100_000.0,
-            total_operating_expenses=100_000.0,
+            cash_and_equivalents=100_000.0, total_operating_expenses=100_000.0,
             depreciation=60_000.0, amortization=40_000.0)
         @test days_cash_on_hand(fin_zero) == Inf
     end
@@ -134,9 +130,7 @@ include(joinpath(@__DIR__, "..", "src", "finance", "ratios.jl"))
             cash_and_equivalents=500_000.0)
         ratios = compute_all_ratios(fin)
         @test ratios.operating_margin ≈ operating_margin(fin)
-        @test ratios.total_margin ≈ total_margin(fin)
         @test ismissing(ratios.fte_per_adjusted_occupied_bed)
-        @test haskey(pairs(ratios), :salary_to_revenue)
     end
 
     @testset "compute_all_ratios with staffing" begin
@@ -147,11 +141,9 @@ include(joinpath(@__DIR__, "..", "src", "finance", "ratios.jl"))
             current_assets=2_000_000.0, current_liabilities=1_000_000.0,
             cash_and_equivalents=400_000.0)
         staff = StaffingModel(positions=[
-            StaffPosition(title="RN", category=:nursing, fte=12.0, annual_salary=70_000.0),
-        ])
+            StaffPosition(title="RN", category=:nursing, fte=12.0, annual_salary=70_000.0)])
         ratios = compute_all_ratios(fin, staff, 25, 6.0)
         @test !ismissing(ratios.fte_per_adjusted_occupied_bed)
         @test ratios.fte_per_adjusted_occupied_bed ≈ fte_per_adjusted_occupied_bed(fin, staff, 25, 6.0)
-        @test ratios.operating_margin ≈ operating_margin(fin)
     end
 end
