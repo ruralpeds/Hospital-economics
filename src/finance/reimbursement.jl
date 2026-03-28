@@ -240,8 +240,7 @@ function calculate_medicaid_reimbursement(hospital::AbstractHospital,
                                           medicaid_charges::Float64=0.0)
     if fee_schedule.cost_based
         # Cost-based states reimburse at the cost-to-charge ratio
-        ccr = hasproperty(hospital, :cost_to_charge_ratio) ?
-            getproperty(hospital, :cost_to_charge_ratio) : 0.40
+        ccr = hospital.cost_report !== nothing ? hospital.cost_report.overall_cost_to_charge_ratio : 0.40
         inpatient_payment = medicaid_charges * 0.6 * ccr  # approx inpatient share
         outpatient_payment = medicaid_charges * 0.4 * ccr
         ed_payment = 0.0  # included in outpatient
@@ -312,8 +311,7 @@ function calculate_commercial_reimbursement(hospital::AbstractHospital;
         net_payment = commercial_charges * pct_of_charges
     elseif method == :pct_medicare
         # Estimate Medicare-equivalent payment using CCR
-        ccr = hasproperty(hospital, :cost_to_charge_ratio) ?
-            getproperty(hospital, :cost_to_charge_ratio) : 0.40
+        ccr = hospital.cost_report !== nothing ? hospital.cost_report.overall_cost_to_charge_ratio : 0.40
         medicare_equiv = commercial_charges * ccr
         net_payment = medicare_equiv * pct_of_medicare
     elseif method == :per_diem
@@ -375,8 +373,7 @@ function calculate_uncompensated_care(hospital::AbstractHospital;
                                       charity_ccr_discount::Float64=1.0,
                                       medicare_bad_debt_eligible_pct::Float64=0.30,
                                       medicare_bad_debt_reimbursement::Float64=0.65)
-    ccr = hasproperty(hospital, :cost_to_charge_ratio) ?
-        getproperty(hospital, :cost_to_charge_ratio) : 0.40
+    ccr = hospital.cost_report !== nothing ? hospital.cost_report.overall_cost_to_charge_ratio : 0.40
 
     # Charity care
     charity_charges = total_charges * charity_pct

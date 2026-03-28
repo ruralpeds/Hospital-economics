@@ -433,6 +433,14 @@ function run_abm(params::ABMParams, hospitals)::ABMResult
 
     model_step!(model) = begin
         model.properties[:tick] += 1
+        # Increment years_at_facility for all providers at year boundaries (every 52 ticks)
+        if mod(model.properties[:tick], 52) == 0
+            for agent in allagents(model)
+                if agent isa ProviderAgent && agent.fte > 0.0
+                    agent.years_at_facility += 1
+                end
+            end
+        end
     end
 
     # Agent data to collect

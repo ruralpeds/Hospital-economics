@@ -243,8 +243,59 @@ function assess_closure_risk(hospital::AbstractHospital, market::MarketData;
 
     market_risk = total_mkt_weight > 0 ? market_score_val / total_mkt_weight : 0.5
 
+    # --- Workforce risk score ---
+    workforce_risk = 0.5  # default when data unavailable
+    workforce_factors = String[]
+
+    fte_per_aob = get(operational_data, "fte_per_aob", nothing)
+    if fte_per_aob !== nothing
+        # Low FTE per adjusted occupied bed increases risk
+        workforce_risk = normalize(fte_per_aob, 3.0, 8.0)
+    end
+
+    # Check travel FTE ratio if available
+    travel_fte_ratio = get(operational_data, "travel_fte_ratio", nothing)
+    if travel_fte_ratio !== nothing
+        # High travel reliance is risky (unstable workforce)
+        travel_score = clamp(travel_fte_ratio / 0.40, 0.0, 1.0)
+        workforce_risk = 0.6 * workforce_risk + 0.4 * travel_score
+        if travel_fte_ratio > 0.20
+            push!(workforce_factors, "High travel staff reliance ($(round(travel_fte_ratio * 100, digits=1))%)")
+        end
+    end
+
+    physician_vacancy = get(operational_data, "physician_vacancy", nothing)
+    if physician_vacancy !== nothing && physician_vacancy > 0.15
+        workforce_risk = clamp(workforce_risk + 0.1, 0.0, 1.0)
+        push!(workforce_factors, "Elevated physician vacancy rate")
+    end
+
+    append!(key_factors, workforce_factors)
+
+    # --- Policy risk score ---
+    policy_risk = 0.5  # default when data unavailable
+    policy_factors = String[]
+
+    # Medicaid expansion status (non-expansion states face higher uncompensated care)
+    if !market.medicaid_expansion
+        policy_risk += 0.15
+        push!(policy_factors, "Non-expansion state increases policy risk")
+    else
+        policy_risk -= 0.10
+    end
+
+    # DSH adjustment risk: high poverty + high uninsured signals DSH dependence
+    dsh_exposure = (market.poverty_rate + market.uninsured_rate) / 2.0
+    if dsh_exposure > 0.15
+        policy_risk += 0.10
+        push!(policy_factors, "High DSH payment dependence risk")
+    end
+
+    policy_risk = clamp(policy_risk, 0.0, 1.0)
+    append!(key_factors, policy_factors)
+
     # --- Composite score ---
-    composite = 0.45 * financial_risk + 0.30 * operational_risk + 0.25 * market_risk
+    composite = 0.35 * financial_risk + 0.25 * operational_risk + 0.20 * market_risk + 0.10 * workforce_risk + 0.10 * policy_risk
     composite = logistic_score(composite; midpoint=0.50, steepness=8.0)
 
     # --- Tier classification ---
@@ -284,6 +335,8 @@ function assess_closure_risk(hospital::AbstractHospital, market::MarketData;
         financial_risk_score = financial_risk,
         operational_risk_score = operational_risk,
         market_risk_score = market_risk,
+        workforce_risk_score = workforce_risk,
+        policy_risk_score = policy_risk,
         composite_risk_score = composite,
         risk_category = risk_cat,
         risk_drivers = key_factors,
