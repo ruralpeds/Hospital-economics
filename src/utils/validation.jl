@@ -14,12 +14,12 @@ function validate_hospital(hospital::AbstractHospital)
     errors = String[]
 
     # Check bed count
-    if hasproperty(hospital, :beds)
-        beds = getproperty(hospital, :beds)
+    if hasproperty(hospital, :licensed_beds)
+        beds = getproperty(hospital, :licensed_beds)
         if beds <= 0
             push!(errors, "Bed count must be positive; got $beds")
         end
-        if hospital isa AbstractRuralHospital && beds > 25
+        if hospital isa CriticalAccessHospital && beds > 25
             push!(errors, "Critical Access Hospitals are limited to 25 beds; got $beds")
         end
     end

@@ -77,7 +77,6 @@ include("simulation/montecarlo.jl")
 include("simulation/abm.jl")
 include("simulation/systemdynamics.jl")
 include("simulation/des.jl")
-include("simulation/scenarios.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # OPTIMIZATION (JuMP.jl)
@@ -101,6 +100,12 @@ include("finance/sensitivity.jl")
 include("analysis/comparison.jl")
 include("analysis/community.jl")
 include("analysis/payer_negotiation.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# SCENARIO FRAMEWORK (depends on simulation engines + analysis)
+# ═══════════════════════════════════════════════════════════════
+
+include("simulation/scenarios.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # DATA IMPORT/EXPORT

@@ -338,7 +338,7 @@ function analyze_reh_conversion(hospital::AbstractRuralHospital,
     recommendation = if npv_diff > 0 && breakeven !== nothing && breakeven <= 3
         "Strongly consider REH conversion — positive NPV with breakeven in $breakeven years"
     elseif npv_diff > 0
-        "REH conversion financially favorable but breakeven is $(something(breakeven, ">$(_REH_DEFAULT_PROJECTION_YEARS)")) years — weigh against community impact"
+        "REH conversion financially favorable but breakeven is $(breakeven !== nothing ? breakeven : ">$(_REH_DEFAULT_PROJECTION_YEARS)") years — weigh against community impact"
     elseif npv_diff > -500_000
         "Marginal case — REH conversion roughly neutral; decision should emphasize community need"
     else
