@@ -29,7 +29,7 @@ function import_hospital_from_csv(filepath::String;
     df = CSV.read(filepath, DataFrame)
 
     # Standardize column names to lowercase with underscores
-    rename!(df, [Symbol(lowercase(replace(string(n), r"[\s\-]" => "_"))) => n
+    rename!(df, [n => Symbol(lowercase(replace(string(n), r"[\s\-]" => "_")))
                  for n in names(df)]...)
 
     hospitals = Dict{String,Any}[]
