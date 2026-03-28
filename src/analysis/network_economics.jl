@@ -80,29 +80,30 @@ function evaluate_network(members::Vector{NetworkMember},
 
     per_member = NamedTuple[]
 
+    # Total implementation cost is a one-time network-wide cost, split across members
+    total_impl = sum(s.implementation_cost for s in services)
+
     for m in members
         member_current = 0.0
         member_network = 0.0
-        member_impl    = 0.0
 
         for s in services
             member_current += s.current_cost_per_member
             member_network += s.network_cost_per_member
-            member_impl    += s.implementation_cost
         end
 
         member_savings = member_current - member_network
+        member_impl_share = total_impl / n_members
 
         total_current += member_current
         total_network += member_network
-        total_impl    += member_impl
 
         push!(per_member, (
             name                = m.name,
             current_cost        = round(member_current; digits=2),
             network_cost        = round(member_network; digits=2),
             annual_savings      = round(member_savings; digits=2),
-            implementation_cost = round(member_impl; digits=2),
+            implementation_cost = round(member_impl_share; digits=2),
         ))
     end
 

@@ -127,8 +127,8 @@ function calculate_sdoh_adjustments(profile::SDOHProfile)::SDOHAdjustment
     composite = clamp(
         0.30 * profile.svi_score +
         0.20 * adi_norm +
-        0.15 * profile.uninsured_rate / 0.30 +   # normalise vs high-end rate
-        0.15 * profile.poverty_rate / 0.40 +
+        0.15 * clamp(profile.uninsured_rate / 0.30, 0.0, 1.0) +
+        0.15 * clamp(profile.poverty_rate / 0.40, 0.0, 1.0) +
         0.10 * profile.food_desert_pct +
         0.10 * (profile.transportation_desert ? 1.0 : 0.0),
         0.0, 1.0,

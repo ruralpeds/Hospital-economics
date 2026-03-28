@@ -74,7 +74,7 @@ function haversine_distance(lat1::Real, lon1::Real, lat2::Real, lon2::Real)::Flo
 end
 
 """Estimate drive time in minutes with 1.3× rural winding factor."""
-function estimate_drive_time(distance_km::Float64; avg_speed_kmh::Float64=80.0)::Float64
+function estimate_drive_time(distance_km::Real; avg_speed_kmh::Real=80.0)::Float64
     winding_factor = 1.3
     return (distance_km * winding_factor / avg_speed_kmh) * 60.0
 end
@@ -127,7 +127,7 @@ function calculate_catchment(facility::FacilityLocation,
 
     # Estimate utilisation: ~100 discharges per 1000 pop per year, scaled by access
     base_utilisation_rate = 0.10
-    market_share = clamp(facility.capacity * access_score * 1000.0, 0.0, 1.0)
+    market_share = clamp(access_score * 1000.0, 0.0, 1.0)
     volume_est = total_pop * base_utilisation_rate * market_share
 
     return AccessResult(
