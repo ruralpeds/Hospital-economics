@@ -8,7 +8,14 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx playwright test",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:headed": "npx playwright test --headed",
+    "test:e2e:report": "npx playwright show-report",
+    "test:e2e:api": "npx playwright test api-health",
+    "test:e2e:navigation": "npx playwright test navigation",
+    "test:e2e:dashboard": "npx playwright test dashboard"
   },
   "repository": {
     "type": "git",
@@ -19,6 +26,7 @@
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0",
     "typescript": "^6.0.2"
   }
 }

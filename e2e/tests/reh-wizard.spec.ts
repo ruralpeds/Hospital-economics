@@ -59,7 +59,8 @@ test.describe('REH Conversion Wizard', () => {
     if (isDisabled !== null) {
       // Force step change via Vue model (Stipple exposes the model on the window)
       await page.evaluate(() => {
-        const app = (window as any).__vue_app__ || document.querySelector('[data-v-app]')?.__vue_app__;
+        const appEl = document.querySelector('[data-v-app]') as any;
+        const app = (window as any).__vue_app__ || (appEl ? appEl.__vue_app__ : null);
         if (app) {
           // Try to set via Vue reactivity
           const vm = app.config?.globalProperties;
