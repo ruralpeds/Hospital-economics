@@ -156,28 +156,23 @@ and whether cash reserves survive. Net impact accounts for insurance.
 function disaster_stress_test(profile::DisasterProfile,
                               annual_revenue::Float64,
                               cash_reserves::Float64;
+                              annual_expenses::Float64=annual_revenue * 0.95,
                               scenarios::Vector{Symbol}=[:flood, :tornado, :pandemic, :ice_storm])::Vector{NamedTuple}
     annual_revenue >= 0.0 || error("annual_revenue must be non-negative; got $annual_revenue")
+    annual_expenses >= 0.0 || error("annual_expenses must be non-negative; got $annual_expenses")
     cash_reserves >= 0.0 || error("cash_reserves must be non-negative; got $cash_reserves")
     !isempty(scenarios) || error("scenarios must not be empty")
     0.0 <= profile.fema_risk_score <= 1.0 || error("fema_risk_score must be between 0 and 1; got $(profile.fema_risk_score)")
     0.0 <= profile.insurance_coverage_pct <= 1.0 || error("insurance_coverage_pct must be between 0 and 1; got $(profile.insurance_coverage_pct)")
 
-    daily_revenue = annual_revenue / 365.0
+    daily_revenue  = annual_revenue / 365.0
+    daily_expenses = annual_expenses / 365.0
     results = NamedTuple[]
 
     for scenario in scenarios
         params = get(DISASTER_SCENARIO_PARAMS, scenario, nothing)
         if params === nothing
-            push!(results, (
-                scenario              = scenario,
-                revenue_loss          = 0.0,
-                extra_costs           = 0.0,
-                total_financial_impact = 0.0,
-                days_to_recovery      = 0.0,
-                cash_reserves_survive = true,
-                reserve_margin        = cash_reserves,
-            ))
+            @warn "Unknown disaster scenario: $scenario — skipping"
             continue
         end
 
@@ -190,7 +185,7 @@ function disaster_stress_test(profile::DisasterProfile,
         recovery   = interruption * supply_mod
 
         revenue_loss = daily_revenue * interruption * params.revenue_loss_pct
-        extra_costs  = daily_revenue * interruption * params.cost_surge_pct
+        extra_costs  = daily_expenses * interruption * params.cost_surge_pct
         total_impact = revenue_loss + extra_costs
 
         insured_recovery = total_impact * profile.insurance_coverage_pct
