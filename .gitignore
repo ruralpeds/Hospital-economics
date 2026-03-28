@@ -4,3 +4,6 @@ data/exports/
 *.log
 .DS_Store
 app/config/secrets.jl
+node_modules/
+playwright-report/
+test-results/
