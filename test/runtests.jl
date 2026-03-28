@@ -15,4 +15,22 @@ using Test
     include("test_closure_risk.jl")
     include("test_reh_conversion.jl")
     include("test_hcris_parser.jl")
+
+    # Finance module tests
+    include("test_ratios.jl")
+    include("test_breakeven.jl")
+    include("test_cashflow.jl")
+    include("test_depreciation.jl")
+    include("test_program340b.jl")
+    include("test_sensitivity.jl")
+
+    # Simulation engine tests
+    include("test_des.jl")
+    include("test_scenario_framework.jl")
+
+    # Analysis module tests
+    include("test_comparison.jl")
+    include("test_community.jl")
+    include("test_payer_negotiation.jl")
+    include("test_benchmarks.jl")
 end
