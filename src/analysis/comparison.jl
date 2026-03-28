@@ -65,12 +65,19 @@ when the result carries the field directly; otherwise applies common derived
 metric logic for Monte Carlo summaries and system dynamics results.
 """
 function _extract_metric(result::AbstractSimulationResult, metric::Symbol)::Float64
-    # MonteCarloSummary-style results
+    # MonteCarloResult (single trial)
     if result isa MonteCarloResult
         metric == :operating_margin && return result.final_year_margin
         metric == :total_revenue && return isempty(result.net_revenues) ? 0.0 : last(result.net_revenues)
         metric == :days_cash_on_hand && return isempty(result.cash_on_hand_days) ? 0.0 : last(result.cash_on_hand_days)
         metric == :closure_probability && return result.is_closure ? 1.0 : 0.0
+    end
+
+    # DeterministicResult
+    if result isa DeterministicResult
+        metric == :operating_margin && return result.terminal_operating_margin
+        metric == :total_revenue && return isempty(result.projections) ? 0.0 : result.projections[end].total_revenue
+        metric == :days_cash_on_hand && return isempty(result.projections) ? 0.0 : result.projections[end].days_cash_on_hand
     end
 
     if result isa SystemDynamicsResult

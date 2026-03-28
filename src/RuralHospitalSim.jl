@@ -160,11 +160,11 @@ export apply_wage_index, apply_sequestration, apply_bad_debt_adjustment
 export default_cah_cost_centers, default_step_down_order
 
 # Financial ratios
-export compute_operating_margin, compute_total_margin, compute_days_cash_on_hand
-export compute_current_ratio, compute_debt_to_capitalization
-export compute_average_age_of_plant, compute_fte_per_adjusted_occupied_bed
-export compute_salary_to_revenue, compute_outpatient_revenue_share
-export compute_medicare_cost_to_charge_ratio, compute_all_ratios
+export operating_margin, total_margin, days_cash_on_hand
+export current_ratio, debt_to_capitalization
+export average_age_of_plant, fte_per_adjusted_occupied_bed
+export salary_to_revenue, outpatient_revenue_share
+export medicare_cost_to_charge_ratio, compute_all_ratios
 
 # Depreciation
 export straight_line_depreciation, declining_balance_depreciation
@@ -180,7 +180,7 @@ export MonthlyCashFlow, project_monthly_cash_flow, find_cash_nadir, line_of_cred
 export Program340BParams, Program340BResult, calculate_340b_impact, policy_risk_scenarios
 
 # Simulation engine functions
-export DeterministicParams, DeterministicResult, project_financials, project_single_year
+export DeterministicParams, DeterministicResult, project_financials, project_single_year, base_financials
 export MonteCarloParams, DistributionalParameter, run_monte_carlo
 export probability_of_loss, value_at_risk
 export ABMParams, ABMResult, initialize_abm, run_abm
