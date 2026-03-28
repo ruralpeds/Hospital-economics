@@ -2,6 +2,7 @@
 # Simulates individual patient and provider decisions using Agents.jl.
 
 using Agents
+using Random
 
 # ---------------------------------------------------------------------------
 # Agent definitions

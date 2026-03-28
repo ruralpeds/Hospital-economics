@@ -48,6 +48,7 @@ include("types/results.jl")
 # ═══════════════════════════════════════════════════════════════
 
 include("utils/constants.jl")
+using .Constants
 include("utils/validation.jl")
 include("utils/formatting.jl")
 
@@ -160,9 +161,9 @@ export export_results_to_csv, export_results_to_json
 export format_currency, format_percentage, format_ratio
 export validate_hospital, validate_payer_mix, validate_cost_report
 
-# Constants
+# Constants (from Constants submodule)
 export CAH_COST_REIMBURSEMENT_RATE, REH_MONTHLY_FACILITY_PAYMENT
-export REH_OUTPATIENT_ADDON, MEDICARE_SEQUESTRATION_RATE
-export MEDICARE_BAD_DEBT_REIMBURSEMENT_RATE
+export REH_OPPS_ADDON, SEQUESTRATION_RATE
+export BAD_DEBT_REIMBURSEMENT_RATE
 
 end # module RuralHospitalSim
