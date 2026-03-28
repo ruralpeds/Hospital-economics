@@ -4,9 +4,9 @@ Manages methodology selection, parameter configuration, and execution tracking.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname SimulationRunnerApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Methodology Selection ────────────────────────────────────────────
     @in methodology::String = "monte_carlo"
     @in selected_scenario_id::Int = 1

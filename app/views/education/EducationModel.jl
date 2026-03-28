@@ -4,9 +4,9 @@ Manages topic navigation, glossary search, and tutorial progress.
 """
 using Stipple, StippleUI
 
-@appname EducationApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Navigation ───────────────────────────────────────────────────────
     @in active_section::String = "topics"
     @in selected_topic::String = ""

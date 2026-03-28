@@ -4,9 +4,9 @@ Computes CMS TEAM reconciliation amounts with quality adjustments and stop-gain/
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname TEAMBundledApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in episode_count::Int = 50
     @in avg_target_price::Float64 = 25_000.0

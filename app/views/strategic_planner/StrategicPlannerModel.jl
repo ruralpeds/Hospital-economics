@@ -4,9 +4,9 @@ Projects 5-year financial trajectory with timed strategic initiatives.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname StrategicPlannerApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Base Financial Inputs ───────────────────────────────────────────
     @in base_revenue::Float64 = 18_500_000.0
     @in base_expenses::Float64 = 19_200_000.0

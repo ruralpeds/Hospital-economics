@@ -4,9 +4,9 @@ Models rate changes across service categories and projects revenue impact.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname PayerNegotiationApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Category Inputs (5 categories x volume, charges, current rate, proposed rate) ──
     @in cat1_name::String = "Inpatient"
     @in cat1_volume::Int = 620

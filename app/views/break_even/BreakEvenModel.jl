@@ -4,9 +4,9 @@ Calculates break-even volume with fixed/variable cost structure.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname BreakEvenApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in fixed_costs::Float64 = 12_500_000.0
     @in variable_cost_per_encounter::Float64 = 280.0

@@ -4,9 +4,9 @@ Computes maximum borrowing capacity, DSCR curves, and capital structure.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname DebtCapacityApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in ebitda::Float64 = 1_200_000.0
     @in current_debt::Float64 = 3_500_000.0

@@ -4,9 +4,9 @@ Estimates total economic footprint and closure devastation metrics.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname CommunityImpactApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in annual_payroll::Float64 = 9_760_000.0
     @in employee_count::Int = 142

@@ -4,9 +4,9 @@ Analyzes fixed vs variable cost breakdown and operating leverage.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname CostStructureApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in beds::Int = 25
     @in avg_daily_census::Float64 = 8.3

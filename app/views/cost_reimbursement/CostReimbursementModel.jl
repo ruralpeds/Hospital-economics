@@ -4,9 +4,9 @@ Models step-down cost allocation and cost-to-charge ratios for 101% reimbursemen
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname CostReimbursementApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Department Cost Inputs (9 departments) ──────────────────────────
     @in cost_admin::Float64 = 2_100_000.0
     @in cost_nursing::Float64 = 3_380_000.0

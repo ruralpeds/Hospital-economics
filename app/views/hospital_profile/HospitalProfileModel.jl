@@ -4,9 +4,9 @@ Captures all hospital parameters needed for financial modeling.
 """
 using Stipple, StippleUI, Dates
 
-@appname HospitalProfileApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Identification ───────────────────────────────────────────────────
     @in hospital_id::Int = 0
     @in hospital_name::String = ""

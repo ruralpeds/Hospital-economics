@@ -4,9 +4,9 @@ Compares provider wRVU production against benchmarks and compensation.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname WorkforceRVUApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Provider Inputs (5 providers) ───────────────────────────────────
     @in prov1_name::String = "Dr. Smith (FM)"
     @in prov1_wrvus::Float64 = 4200.0

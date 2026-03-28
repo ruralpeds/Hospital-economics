@@ -4,9 +4,9 @@ Ranks variable impacts on net income through perturbation analysis.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname SensitivityApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Base Inputs ─────────────────────────────────────────────────────
     @in base_revenue::Float64 = 18_500_000.0
     @in base_expenses::Float64 = 19_200_000.0

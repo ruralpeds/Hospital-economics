@@ -4,9 +4,9 @@ Toggle federal/state policy scenarios and see stacked 5-year revenue impact.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname PolicyImpactApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Policy Toggle Inputs ────────────────────────────────────────────
     @in sequestration::Bool = true
     @in bad_debt_reduction::Bool = false

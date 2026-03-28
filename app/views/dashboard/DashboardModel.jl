@@ -4,9 +4,9 @@ Tracks KPIs, chart data, alerts, and user filter selections.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname DashboardApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Reactive Inputs ──────────────────────────────────────────────────
     @in selected_hospital_id::Int = 1
     @in projection_months::Int = 12

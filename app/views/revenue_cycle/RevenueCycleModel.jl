@@ -4,9 +4,9 @@ Tracks current vs target metrics and dollar impact per initiative.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname RevenueCycleApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Current Metric Inputs ───────────────────────────────────────────
     @in days_in_ar::Float64 = 58.0
     @in clean_claim_rate::Float64 = 0.82

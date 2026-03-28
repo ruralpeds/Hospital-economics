@@ -4,9 +4,9 @@ Projects 5-year financials based on 7 key operational sliders.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname FinancialSimApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── 7 Slider Inputs ─────────────────────────────────────────────────
     @in ed_visits::Int = 4200
     @in ip_discharges::Int = 620

@@ -4,9 +4,9 @@ Models financial return on telehealth investments including direct revenue and a
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname TelehealthApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Service Inputs ──────────────────────────────────────────────────
     @in svc1_name::String = "Telestroke"
     @in svc1_volume::Int = 120

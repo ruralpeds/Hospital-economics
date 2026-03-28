@@ -4,9 +4,9 @@ Breaks down margin by payer class and produces waterfall visualization.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname PayerMarginApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Revenue by Payer Inputs ─────────────────────────────────────────
     @in revenue_medicare::Float64 = 11_470_000.0
     @in revenue_medicaid::Float64 = 3_330_000.0

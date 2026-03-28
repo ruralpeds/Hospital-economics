@@ -4,9 +4,9 @@ Projects 12-month cash flow with nadir identification and days cash on hand.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname CashFlowApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in starting_cash::Float64 = 2_100_000.0
     @in monthly_revenue::Float64 = 1_540_000.0

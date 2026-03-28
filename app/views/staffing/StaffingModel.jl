@@ -4,9 +4,9 @@ Analyzes staffing levels, benchmarks, and labor cost optimization.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname StaffingApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Selection ────────────────────────────────────────────────────────
     @in selected_hospital_id::Int = 1
     @out hospital_options::Vector{Dict{String,Any}} = [

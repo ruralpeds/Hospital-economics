@@ -4,9 +4,9 @@ Compares hospital metrics against 50th and 75th percentile peers.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname BenchmarkApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Metric Inputs (6 key metrics) ───────────────────────────────────
     @in metric_operating_margin::Float64 = -3.8
     @in metric_days_cash::Float64 = 42.0

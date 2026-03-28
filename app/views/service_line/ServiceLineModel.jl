@@ -4,9 +4,9 @@ Tracks revenue, cost, and contribution margin for each hospital service line.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname ServiceLineApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Service Line Revenue Inputs ─────────────────────────────────────
     @in sl_ed_revenue::Float64 = 4_200_000.0
     @in sl_inpatient_revenue::Float64 = 5_800_000.0

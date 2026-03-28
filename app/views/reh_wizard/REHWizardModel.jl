@@ -4,9 +4,9 @@ Guides users through evaluating a CAH-to-REH conversion.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname REHWizardApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Wizard State ─────────────────────────────────────────────────────
     @in wizard_step::Int = 1
     @out total_steps::Int = 4

@@ -4,9 +4,9 @@ Models shared savings/loss calculations for Medicare ACO programs.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname VBCTransitionApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in model_type::String = "mssp_basic"
     @in total_cost_of_care::Float64 = 55_000_000.0

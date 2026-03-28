@@ -158,6 +158,65 @@ route("/policy") do
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
+# V3.1 Module Routes
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/team-bundled") do
+    model = team_bundled_model |> init
+    page(model, ui_team_bundled) |> html
+end
+
+route("/telehealth") do
+    model = telehealth_model |> init
+    page(model, ui_telehealth) |> html
+end
+
+route("/vbc-transition") do
+    model = vbc_transition_model |> init
+    page(model, ui_vbc_transition) |> html
+end
+
+route("/medicaid-supplemental") do
+    model = medicaid_supplemental_model |> init
+    page(model, ui_medicaid_supplemental) |> html
+end
+
+route("/rhc-optimization") do
+    model = rhc_optimization_model |> init
+    page(model, ui_rhc_optimization) |> html
+end
+
+route("/sdoh") do
+    model = sdoh_model |> init
+    page(model, ui_sdoh) |> html
+end
+
+route("/geographic-access") do
+    model = geographic_access_model |> init
+    page(model, ui_geographic_access) |> html
+end
+
+route("/community-benefit") do
+    model = community_benefit_model |> init
+    page(model, ui_community_benefit) |> html
+end
+
+route("/network-economics") do
+    model = network_economics_model |> init
+    page(model, ui_network_economics) |> html
+end
+
+route("/disaster-resilience") do
+    model = disaster_resilience_model |> init
+    page(model, ui_disaster_resilience) |> html
+end
+
+route("/capital-scoring") do
+    model = capital_scoring_model |> init
+    page(model, ui_capital_scoring) |> html
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Simulation
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -310,6 +369,6 @@ route("/api/health") do
         "version" => "0.2.0",
         "timestamp" => string(Dates.now()),
         "engines" => ["deterministic", "monte_carlo", "abm", "system_dynamics", "des", "optimization"],
-        "tools" => 27,
+        "tools" => 38,
     ))
 end

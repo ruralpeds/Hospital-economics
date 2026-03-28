@@ -4,9 +4,9 @@ Manages simulation result display, comparison, and export.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname ResultsApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Simulation Selection ─────────────────────────────────────────────
     @in selected_simulation::String = "sim_10001"
     @in comparison_simulation::String = ""

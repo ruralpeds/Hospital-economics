@@ -4,9 +4,9 @@ Models drug savings, contract pharmacy economics, and policy risk scenarios.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname Program340BApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in drug_spend::Float64 = 2_800_000.0
     @in discount_rate::Float64 = 0.35
