@@ -72,10 +72,8 @@ include(joinpath(@__DIR__, "..", "src", "analysis", "geographic_access.jl"))
 
     @testset "edge cases" begin
         facility = FacilityLocation(name="H", latitude=0.0, longitude=0.0)
-        # Empty population list
-        result = calculate_catchment(facility, PopulationCenter[])
-        @test result.catchment_population == 0
-        @test result.volume_estimate == 0.0
+        # Empty population list should error (validation requires non-empty)
+        @test_throws ErrorException calculate_catchment(facility, PopulationCenter[])
 
         # closure_access_impact: out of range index errors
         @test_throws ErrorException closure_access_impact(

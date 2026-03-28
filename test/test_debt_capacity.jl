@@ -1,7 +1,4 @@
 using Test
-using Random
-using Distributions
-using Statistics
 
 include(joinpath(@__DIR__, "..", "src", "finance", "debt_capacity.jl"))
 

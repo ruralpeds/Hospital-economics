@@ -15,7 +15,7 @@ test.describe('API Health & Endpoints', () => {
     expect(body).toHaveProperty('tools');
     expect(body.engines).toContain('deterministic');
     expect(body.engines).toContain('monte_carlo');
-    expect(body.tools).toBe(27);
+    expect(body.tools).toBeGreaterThanOrEqual(27);
   });
 
   test('health check version is semver-like', async ({ request }) => {

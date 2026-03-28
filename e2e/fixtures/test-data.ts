@@ -19,7 +19,7 @@ export const FINANCIAL_DEFAULTS = {
   totalOperatingExpenses: 17_500_000,
   operatingMargin: -0.028,
   daysCashOnHand: 45,
-  casesMixIndex: 1.05,
+  caseMixIndex: 1.05,
 } as const;
 
 export const SLIDER_DEFAULTS = {

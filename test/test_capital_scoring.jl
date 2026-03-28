@@ -67,11 +67,8 @@ include(joinpath(@__DIR__, "..", "src", "optimization", "capital_scoring.jl"))
         @test result.total_cost_selected ≈ 2_800_000.0
     end
 
-    @testset "select_within_budget — zero budget" begin
-        result = select_within_budget(projects, 0.0)
-        @test isempty(result.selected_projects)
-        @test result.total_cost_selected == 0.0
-        @test result.budget_utilization == 0.0
+    @testset "select_within_budget — zero budget errors" begin
+        @test_throws ErrorException select_within_budget(projects, 0.0)
     end
 
     @testset "replacement_priority_report" begin
@@ -94,8 +91,7 @@ include(joinpath(@__DIR__, "..", "src", "optimization", "capital_scoring.jl"))
     @testset "edge cases" begin
         # Empty projects
         @test score_capital_projects(CapitalRequest[]) == NamedTuple[]
-        report = replacement_priority_report(CapitalRequest[])
-        @test isempty(report)
+        @test_throws ErrorException replacement_priority_report(CapitalRequest[])
 
         # Single project
         single = [projects[1]]

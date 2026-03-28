@@ -24,6 +24,15 @@ using Test
     include("test_program340b.jl")
     include("test_sensitivity.jl")
 
+    # V3.1 Finance module tests
+    include("test_team_bundled.jl")
+    include("test_telehealth.jl")
+    include("test_vbc_transition.jl")
+    include("test_medicaid_supplemental.jl")
+    include("test_debt_capacity.jl")
+    include("test_margin_decomposition.jl")
+    include("test_rhc_optimization.jl")
+
     # Simulation engine tests
     include("test_des.jl")
     include("test_scenario_framework.jl")

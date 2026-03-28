@@ -79,8 +79,8 @@ include(joinpath(@__DIR__, "..", "src", "finance", "medicaid_supplemental.jl"))
     @testset "edge cases" begin
         @test_throws ErrorException calculate_medicaid_supplemental(
             MedicaidSupplementalParams(medicaid_costs=-1.0, medicaid_payments=0.0,
-                uncompensated_care_costs=0.0, gross_patient_revenue=0.0,
-                total_operating_expenses=0.0))
+                uncompensated_care_costs=0.0, gross_patient_revenue=1000.0,
+                total_operating_expenses=500.0))
         @test_throws ErrorException calculate_medicaid_supplemental(
             MedicaidSupplementalParams(medicaid_costs=100.0, medicaid_payments=50.0,
                 uncompensated_care_costs=0.0, gross_patient_revenue=1000.0,

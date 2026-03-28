@@ -82,9 +82,7 @@ include(joinpath(@__DIR__, "..", "src", "analysis", "sdoh.jl"))
         @test adj.volume_adjustment > 0.0
         @test 0.0 <= adj.composite_risk_score <= 1.0
 
-        # Zero base revenue/expenses
-        result = sdoh_financial_impact(SDOHProfile(), 0.0, 0.0)
-        @test result.adjusted_revenue == 0.0
-        @test result.adjusted_expenses == 0.0
+        # Zero base expenses should error (validation requires positive)
+        @test_throws ErrorException sdoh_financial_impact(SDOHProfile(), 0.0, 0.0)
     end
 end
