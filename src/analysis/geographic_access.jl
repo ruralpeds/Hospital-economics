@@ -87,6 +87,18 @@ Compute catchment using exponential distance-decay (`exp(-0.05 * min)`).
 function calculate_catchment(facility::FacilityLocation,
                              populations::Vector{PopulationCenter};
                              max_drive_minutes::Float64=30.0)::AccessResult
+    -90.0 <= facility.latitude <= 90.0 || error("facility latitude must be between -90 and 90; got $(facility.latitude)")
+    -180.0 <= facility.longitude <= 180.0 || error("facility longitude must be between -180 and 180; got $(facility.longitude)")
+    facility.capacity > 0.0 || error("facility capacity must be positive; got $(facility.capacity)")
+    !isempty(populations) || error("populations must not be empty")
+    max_drive_minutes > 0.0 || error("max_drive_minutes must be positive; got $max_drive_minutes")
+    for pc in populations
+        -90.0 <= pc.latitude <= 90.0 || error("latitude must be between -90 and 90 for $(pc.name); got $(pc.latitude)")
+        -180.0 <= pc.longitude <= 180.0 || error("longitude must be between -180 and 180 for $(pc.name); got $(pc.longitude)")
+        pc.population >= 0 || error("population must be non-negative for $(pc.name); got $(pc.population)")
+        0.0 <= pc.pct_over_65 <= 1.0 || error("pct_over_65 must be between 0 and 1 for $(pc.name); got $(pc.pct_over_65)")
+    end
+
     total_pop = 0
     weighted_demand = 0.0
     weighted_time_sum = 0.0
@@ -138,8 +150,13 @@ the facility absorbing most displaced patients.
 function closure_access_impact(facilities::Vector{FacilityLocation},
                                populations::Vector{PopulationCenter},
                                closed_idx::Int)::NamedTuple
+    !isempty(facilities) || error("facilities must not be empty")
+    !isempty(populations) || error("populations must not be empty")
     1 <= closed_idx <= length(facilities) ||
         error("closed_idx ($closed_idx) out of range 1:$(length(facilities))")
+    for pc in populations
+        pc.population >= 0 || error("population must be non-negative for $(pc.name); got $(pc.population)")
+    end
 
     closed = facilities[closed_idx]
     remaining = [f for (i, f) in enumerate(facilities) if i != closed_idx]

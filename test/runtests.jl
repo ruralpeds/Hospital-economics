@@ -33,4 +33,17 @@ using Test
     include("test_community.jl")
     include("test_payer_negotiation.jl")
     include("test_benchmarks.jl")
+
+    # V3.1 Analysis module tests
+    include("test_sdoh.jl")
+    include("test_geographic_access.jl")
+    include("test_community_benefit.jl")
+    include("test_network_economics.jl")
+
+    # V3.1 Risk module tests
+    include("test_closure_ml.jl")
+    include("test_disaster_resilience.jl")
+
+    # V3.1 Optimization module tests
+    include("test_capital_scoring.jl")
 end

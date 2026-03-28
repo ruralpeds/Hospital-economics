@@ -80,9 +80,15 @@ Compute shared savings or losses for a value-based care arrangement.
 5. Net against care management investment.
 """
 function calculate_vbc_outcome(params::VBCParams)::VBCResult
-    params.benchmark > 0.0 || error("Benchmark must be positive")
-    params.patient_panel_size > 0 || error("Patient panel size must be positive")
-    params.risk_track in (:one_sided, :two_sided) || error("risk_track must be :one_sided or :two_sided")
+    params.benchmark > 0.0 || error("Benchmark must be positive; got $(params.benchmark)")
+    params.patient_panel_size > 0 || error("Patient panel size must be positive; got $(params.patient_panel_size)")
+    params.risk_track in (:one_sided, :two_sided) || error("risk_track must be :one_sided or :two_sided; got $(params.risk_track)")
+    params.total_cost_of_care >= 0.0 || error("total_cost_of_care must be non-negative; got $(params.total_cost_of_care)")
+    0.0 <= params.quality_score <= 1.0 || error("quality_score must be between 0 and 1; got $(params.quality_score)")
+    0.0 <= params.shared_savings_rate <= 1.0 || error("shared_savings_rate must be between 0 and 1; got $(params.shared_savings_rate)")
+    0.0 <= params.shared_loss_rate <= 1.0 || error("shared_loss_rate must be between 0 and 1; got $(params.shared_loss_rate)")
+    0.0 <= params.min_savings_rate <= 1.0 || error("min_savings_rate must be between 0 and 1; got $(params.min_savings_rate)")
+    params.care_management_investment >= 0.0 || error("care_management_investment must be non-negative; got $(params.care_management_investment)")
 
     gross_savings = params.benchmark - params.total_cost_of_care
     savings_rate = gross_savings / params.benchmark

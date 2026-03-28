@@ -51,6 +51,14 @@ Chartis-style 10-variable logistic regression. Risk tiers: `:low` (<0.15),
 `:moderate` (0.15-0.35), `:high` (0.35-0.65), `:critical` (>=0.65).
 """
 function predict_closure_logistic(features::ClosureMLFeatures)::ClosureMLResult
+    0.0 <= features.occupancy_rate <= 1.0 || error("occupancy_rate must be between 0 and 1; got $(features.occupancy_rate)")
+    0.0 <= features.traditional_medicare_pct_days <= 1.0 || error("traditional_medicare_pct_days must be between 0 and 1; got $(features.traditional_medicare_pct_days)")
+    features.case_mix_index > 0.0 || error("case_mix_index must be positive; got $(features.case_mix_index)")
+    features.avg_age_of_plant >= 0.0 || error("avg_age_of_plant must be non-negative; got $(features.avg_age_of_plant)")
+    features.avg_length_of_stay >= 0.0 || error("avg_length_of_stay must be non-negative; got $(features.avg_length_of_stay)")
+    features.years_negative_operating_margin >= 0 || error("years_negative_operating_margin must be non-negative; got $(features.years_negative_operating_margin)")
+    features.adc_swing_snf >= 0.0 || error("adc_swing_snf must be non-negative; got $(features.adc_swing_snf)")
+
     # Compute log-odds
     log_odds = CHARTIS_INTERCEPT +
         CHARTIS_COEFFICIENTS[:years_negative_operating_margin] * Float64(features.years_negative_operating_margin) +
@@ -122,6 +130,10 @@ end
 0-100 composite vulnerability score. Higher = greater vulnerability.
 """
 function chartis_vulnerability_score(features::ClosureMLFeatures)::Float64
+    0.0 <= features.occupancy_rate <= 1.0 || error("occupancy_rate must be between 0 and 1; got $(features.occupancy_rate)")
+    features.years_negative_operating_margin >= 0 || error("years_negative_operating_margin must be non-negative; got $(features.years_negative_operating_margin)")
+    features.avg_age_of_plant >= 0.0 || error("avg_age_of_plant must be non-negative; got $(features.avg_age_of_plant)")
+
     # Normalize each feature to a 0-1 risk contribution
     occ_risk    = clamp(1.0 - features.occupancy_rate / 0.70, 0.0, 1.0)
     age_risk    = clamp(features.avg_age_of_plant / 25.0, 0.0, 1.0)
@@ -153,6 +165,8 @@ Track closure probability over multiple years and flag acceleration.
 Returns `(year_index, probability, risk_tier, delta, accelerating)`.
 """
 function closure_risk_trend(features_by_year::Vector{ClosureMLFeatures})::Vector{NamedTuple}
+    !isempty(features_by_year) || error("features_by_year must not be empty")
+
     results = NamedTuple[]
     prev_prob = 0.0
     prev_delta = 0.0

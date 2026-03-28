@@ -87,6 +87,15 @@ telehealth viability; food desert prevalence increases chronic disease
 burden; transportation deserts increase ED reliance.
 """
 function calculate_sdoh_adjustments(profile::SDOHProfile)::SDOHAdjustment
+    0.0 <= profile.svi_score <= 1.0 || error("svi_score must be between 0 and 1; got $(profile.svi_score)")
+    1 <= profile.adi_national_rank <= 100 || error("adi_national_rank must be between 1 and 100; got $(profile.adi_national_rank)")
+    0.0 <= profile.food_desert_pct <= 1.0 || error("food_desert_pct must be between 0 and 1; got $(profile.food_desert_pct)")
+    0.0 <= profile.broadband_pct <= 1.0 || error("broadband_pct must be between 0 and 1; got $(profile.broadband_pct)")
+    0.0 <= profile.health_literacy_score <= 1.0 || error("health_literacy_score must be between 0 and 1; got $(profile.health_literacy_score)")
+    0.0 <= profile.uninsured_rate <= 1.0 || error("uninsured_rate must be between 0 and 1; got $(profile.uninsured_rate)")
+    0.0 <= profile.poverty_rate <= 1.0 || error("poverty_rate must be between 0 and 1; got $(profile.poverty_rate)")
+    profile.median_household_income >= 0.0 || error("median_household_income must be non-negative; got $(profile.median_household_income)")
+
     # Normalise ADI to 0-1
     adi_norm = clamp(profile.adi_national_rank / 100.0, 0.0, 1.0)
 
@@ -146,6 +155,9 @@ Returns a `NamedTuple` with fields `adjusted_revenue`, `adjusted_expenses`,
 """
 function sdoh_financial_impact(profile::SDOHProfile, base_revenue::Float64,
                                base_expenses::Float64)::NamedTuple
+    base_revenue >= 0.0 || error("base_revenue must be non-negative; got $base_revenue")
+    base_expenses > 0.0 || error("base_expenses must be positive; got $base_expenses")
+
     adj = calculate_sdoh_adjustments(profile)
 
     # Revenue affected by volume changes and uncompensated care

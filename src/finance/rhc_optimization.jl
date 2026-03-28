@@ -53,8 +53,13 @@ Analyze an RHC's cost structure and identify revenue optimization opportunities.
 AIR = min(cost_per_visit, cap). Models BH, telehealth, and CCM service additions.
 """
 function optimize_rhc_revenue(params::RHCParams)::RHCOptimizationResult
-    params.annual_visits <= 0 && error("annual_visits must be positive")
-    params.current_cost_per_visit < 0.0 && error("current_cost_per_visit must be non-negative")
+    params.annual_visits > 0 || error("annual_visits must be positive; got $(params.annual_visits)")
+    params.current_cost_per_visit >= 0.0 || error("current_cost_per_visit must be non-negative; got $(params.current_cost_per_visit)")
+    params.payment_cap_per_visit > 0.0 || error("payment_cap_per_visit must be positive; got $(params.payment_cap_per_visit)")
+    params.behavioral_health_visits >= 0 || error("behavioral_health_visits must be non-negative; got $(params.behavioral_health_visits)")
+    params.telehealth_visits >= 0 || error("telehealth_visits must be non-negative; got $(params.telehealth_visits)")
+    params.ccm_eligible_patients >= 0 || error("ccm_eligible_patients must be non-negative; got $(params.ccm_eligible_patients)")
+    params.ccm_monthly_revenue >= 0.0 || error("ccm_monthly_revenue must be non-negative; got $(params.ccm_monthly_revenue)")
 
     # Current AIR is the lesser of cost per visit and payment cap
     current_air = min(params.current_cost_per_visit, params.payment_cap_per_visit)

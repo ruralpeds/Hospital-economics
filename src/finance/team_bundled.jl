@@ -93,6 +93,18 @@ function calculate_team_reconciliation(params::TEAMParams)::TEAMResult
 
     n > 0 || error("TEAMParams must contain at least one episode")
     params.risk_track in (:track1, :track2) || error("risk_track must be :track1 or :track2; got $(params.risk_track)")
+    0.0 <= params.discount_factor <= 1.0 || error("discount_factor must be between 0 and 1; got $(params.discount_factor)")
+    0.0 <= params.quality_adjustment_pct <= 1.0 || error("quality_adjustment_pct must be between 0 and 1; got $(params.quality_adjustment_pct)")
+    params.low_volume_threshold > 0 || error("low_volume_threshold must be positive; got $(params.low_volume_threshold)")
+
+    valid_episode_types = (:lejr, :hip_fracture, :spinal_fusion, :cabg, :major_bowel)
+    for e in eps
+        e.episode_type in valid_episode_types || error("Invalid episode_type $(e.episode_type); must be one of $valid_episode_types")
+        e.base_drg_payment >= 0.0 || error("base_drg_payment must be non-negative; got $(e.base_drg_payment)")
+        e.target_price >= 0.0 || error("target_price must be non-negative; got $(e.target_price)")
+        e.actual_cost >= 0.0 || error("actual_cost must be non-negative; got $(e.actual_cost)")
+        0.0 <= e.quality_score <= 1.0 || error("quality_score must be between 0 and 1; got $(e.quality_score)")
+    end
 
     is_exempt = n < params.low_volume_threshold
 
@@ -135,6 +147,8 @@ end
 Per-episode breakdown with episode type, target price, actual cost, and margin.
 """
 function team_episode_summary(params::TEAMParams)::Vector{NamedTuple}
+    !isempty(params.episodes) || error("episodes must not be empty")
+
     return [(
         episode_type = e.episode_type,
         target_price = e.target_price,

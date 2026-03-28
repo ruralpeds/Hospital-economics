@@ -107,8 +107,18 @@ Monte Carlo debt capacity analysis. Simulates operating income and interest
 rate paths, finds max debt service where P(DSCR < threshold) <= (1 - confidence).
 """
 function calculate_debt_capacity(params::DebtCapacityParams)::DebtCapacityResult
-    params.current_operating_income > 0.0 || error("current_operating_income must be positive")
-    params.n_simulations > 0 || error("n_simulations must be positive")
+    params.current_operating_income > 0.0 || error("current_operating_income must be positive; got $(params.current_operating_income)")
+    params.current_depreciation >= 0.0 || error("current_depreciation must be non-negative; got $(params.current_depreciation)")
+    params.current_debt_service >= 0.0 || error("current_debt_service must be non-negative; got $(params.current_debt_service)")
+    params.projection_years > 0 || error("projection_years must be positive; got $(params.projection_years)")
+    params.n_simulations > 0 || error("n_simulations must be positive; got $(params.n_simulations)")
+    0.0 <= params.revenue_volatility <= 1.0 || error("revenue_volatility must be between 0 and 1; got $(params.revenue_volatility)")
+    0.0 <= params.expense_volatility <= 1.0 || error("expense_volatility must be between 0 and 1; got $(params.expense_volatility)")
+    params.base_interest_rate >= 0.0 || error("base_interest_rate must be non-negative; got $(params.base_interest_rate)")
+    params.rate_mean_reversion >= 0.0 || error("rate_mean_reversion must be non-negative; got $(params.rate_mean_reversion)")
+    params.rate_volatility >= 0.0 || error("rate_volatility must be non-negative; got $(params.rate_volatility)")
+    params.min_dscr_threshold > 0.0 || error("min_dscr_threshold must be positive; got $(params.min_dscr_threshold)")
+    0.0 < params.target_confidence <= 1.0 || error("target_confidence must be in (0, 1]; got $(params.target_confidence)")
 
     rng = MersenneTwister(params.random_seed)
 
@@ -160,6 +170,9 @@ end
 
 """Sensitivity analysis varying base interest rate +/-200bp in 100bp steps."""
 function debt_capacity_sensitivity(params::DebtCapacityParams)::Vector{NamedTuple}
+    params.current_operating_income > 0.0 || error("current_operating_income must be positive; got $(params.current_operating_income)")
+    params.base_interest_rate >= 0.0 || error("base_interest_rate must be non-negative; got $(params.base_interest_rate)")
+
     results = NamedTuple[]
     for bp_shift in [-200, -100, 0, 100, 200]
         shifted_rate = max(0.005, params.base_interest_rate + bp_shift / 10_000.0)

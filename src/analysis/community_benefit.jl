@@ -112,6 +112,15 @@ function calculate_community_benefit(data::CommunityBenefitData;
                                      tax_rate::Float64=0.21,
                                      property_tax_rate::Float64=0.015,
                                      assessed_value::Float64=0.0)::CommunityBenefitResult
+    data.total_expenses > 0.0 || error("total_expenses must be positive; got $(data.total_expenses)")
+    data.charity_care_charges >= 0.0 || error("charity_care_charges must be non-negative; got $(data.charity_care_charges)")
+    data.charity_care_costs >= 0.0 || error("charity_care_costs must be non-negative; got $(data.charity_care_costs)")
+    data.medicaid_shortfall >= 0.0 || error("medicaid_shortfall must be non-negative; got $(data.medicaid_shortfall)")
+    data.community_health_services >= 0.0 || error("community_health_services must be non-negative; got $(data.community_health_services)")
+    0.0 <= tax_rate <= 1.0 || error("tax_rate must be between 0 and 1; got $tax_rate")
+    0.0 <= property_tax_rate <= 1.0 || error("property_tax_rate must be between 0 and 1; got $property_tax_rate")
+    assessed_value >= 0.0 || error("assessed_value must be non-negative; got $assessed_value")
+
     # Build category breakdown
     categories = [
         (category="Charity Care (at cost)",          amount=data.charity_care_costs),
@@ -169,6 +178,9 @@ Returns a `NamedTuple` with fields `hospital_pct`, `national_median_pct`,
 """
 function community_benefit_comparison(hospital_data::CommunityBenefitData;
                                       national_median_pct::Float64=0.076)::NamedTuple
+    hospital_data.total_expenses > 0.0 || error("total_expenses must be positive; got $(hospital_data.total_expenses)")
+    0.0 < national_median_pct <= 1.0 || error("national_median_pct must be in (0, 1]; got $national_median_pct")
+
     result = calculate_community_benefit(hospital_data)
     hospital_pct = result.benefit_as_pct_expenses
 

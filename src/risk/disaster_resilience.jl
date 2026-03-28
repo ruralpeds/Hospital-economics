@@ -57,6 +57,16 @@ a resilience score (0-100, higher = more resilient).
 function assess_disaster_resilience(profile::DisasterProfile,
                                     annual_revenue::Float64,
                                     annual_expenses::Float64)::DisasterImpactResult
+    annual_revenue >= 0.0 || error("annual_revenue must be non-negative; got $annual_revenue")
+    annual_expenses > 0.0 || error("annual_expenses must be positive; got $annual_expenses")
+    0.0 <= profile.fema_risk_score <= 1.0 || error("fema_risk_score must be between 0 and 1; got $(profile.fema_risk_score)")
+    profile.flood_zone in (:minimal, :moderate, :high, :very_high) || error("flood_zone must be :minimal, :moderate, :high, or :very_high; got $(profile.flood_zone)")
+    profile.wildfire_risk in (:low, :moderate, :high, :very_high) || error("wildfire_risk must be :low, :moderate, :high, or :very_high; got $(profile.wildfire_risk)")
+    profile.days_generator_fuel >= 0.0 || error("days_generator_fuel must be non-negative; got $(profile.days_generator_fuel)")
+    profile.surge_bed_capacity >= 0 || error("surge_bed_capacity must be non-negative; got $(profile.surge_bed_capacity)")
+    0.0 <= profile.supply_chain_redundancy <= 1.0 || error("supply_chain_redundancy must be between 0 and 1; got $(profile.supply_chain_redundancy)")
+    0.0 <= profile.insurance_coverage_pct <= 1.0 || error("insurance_coverage_pct must be between 0 and 1; got $(profile.insurance_coverage_pct)")
+
     daily_revenue  = annual_revenue / 365.0
     daily_expenses = annual_expenses / 365.0
 
@@ -147,6 +157,12 @@ function disaster_stress_test(profile::DisasterProfile,
                               annual_revenue::Float64,
                               cash_reserves::Float64;
                               scenarios::Vector{Symbol}=[:flood, :tornado, :pandemic, :ice_storm])::Vector{NamedTuple}
+    annual_revenue >= 0.0 || error("annual_revenue must be non-negative; got $annual_revenue")
+    cash_reserves >= 0.0 || error("cash_reserves must be non-negative; got $cash_reserves")
+    !isempty(scenarios) || error("scenarios must not be empty")
+    0.0 <= profile.fema_risk_score <= 1.0 || error("fema_risk_score must be between 0 and 1; got $(profile.fema_risk_score)")
+    0.0 <= profile.insurance_coverage_pct <= 1.0 || error("insurance_coverage_pct must be between 0 and 1; got $(profile.insurance_coverage_pct)")
+
     daily_revenue = annual_revenue / 365.0
     results = NamedTuple[]
 

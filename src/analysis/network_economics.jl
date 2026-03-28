@@ -61,6 +61,16 @@ function evaluate_network(members::Vector{NetworkMember},
                           services::Vector{SharedService})::NetworkResult
     isempty(members) && error("At least one NetworkMember is required")
     isempty(services) && error("At least one SharedService is required")
+    for m in members
+        m.annual_revenue >= 0.0 || error("annual_revenue must be non-negative for $(m.name); got $(m.annual_revenue)")
+        m.annual_expenses >= 0.0 || error("annual_expenses must be non-negative for $(m.name); got $(m.annual_expenses)")
+        m.fte_count >= 0 || error("fte_count must be non-negative for $(m.name); got $(m.fte_count)")
+    end
+    for s in services
+        s.current_cost_per_member >= 0.0 || error("current_cost_per_member must be non-negative for $(s.service_name); got $(s.current_cost_per_member)")
+        s.network_cost_per_member >= 0.0 || error("network_cost_per_member must be non-negative for $(s.service_name); got $(s.network_cost_per_member)")
+        s.implementation_cost >= 0.0 || error("implementation_cost must be non-negative for $(s.service_name); got $(s.implementation_cost)")
+    end
 
     n_members = length(members)
 
@@ -115,6 +125,10 @@ end
 function network_aco_formation(members::Vector{NetworkMember};
                                benchmark_per_beneficiary::Float64=12_000.0,
                                total_beneficiaries::Int=5000)::NamedTuple
+    !isempty(members) || error("members must not be empty")
+    benchmark_per_beneficiary > 0.0 || error("benchmark_per_beneficiary must be positive; got $benchmark_per_beneficiary")
+    total_beneficiaries > 0 || error("total_beneficiaries must be positive; got $total_beneficiaries")
+
     total_revenue  = sum(m.annual_revenue for m in members)
     total_expenses = sum(m.annual_expenses for m in members)
 
@@ -158,6 +172,10 @@ end
 function joint_purchasing_savings(members::Vector{NetworkMember};
                                   base_discount::Float64=0.05,
                                   volume_bonus_per_million::Float64=0.01)::NamedTuple
+    !isempty(members) || error("members must not be empty")
+    0.0 <= base_discount <= 1.0 || error("base_discount must be between 0 and 1; got $base_discount")
+    volume_bonus_per_million >= 0.0 || error("volume_bonus_per_million must be non-negative; got $volume_bonus_per_million")
+
     # Assume supply costs are ~30% of total expenses
     supply_pct = 0.30
     individual_savings = NamedTuple[]

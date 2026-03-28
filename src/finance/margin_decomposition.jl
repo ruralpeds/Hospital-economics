@@ -66,6 +66,12 @@ overall margin percentage.
 function decompose_margin(payer_data::Vector{<:NamedTuple}, total_expenses::Float64;
                           non_patient_revenue::Float64=0.0)::MarginDecomposition
     total_expenses <= 0.0 && error("total_expenses must be positive")
+    !isempty(payer_data) || error("payer_data must not be empty")
+    non_patient_revenue >= 0.0 || error("non_patient_revenue must be non-negative; got $non_patient_revenue")
+    for pd in payer_data
+        pd.revenue >= 0.0 || error("revenue must be non-negative for payer $(pd.payer_name); got $(pd.revenue)")
+        0.0 <= pd.volume_share <= 1.0 || error("volume_share must be between 0 and 1 for payer $(pd.payer_name); got $(pd.volume_share)")
+    end
 
     components = PayerMarginComponent[]
     total_patient_revenue = 0.0

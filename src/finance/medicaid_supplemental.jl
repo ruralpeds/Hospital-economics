@@ -71,7 +71,12 @@ Calculate Medicaid supplemental payments under DSH, UPL, and SDP programs.
 - SDP = state-directed payment estimated from operating expenses and provider class
 """
 function calculate_medicaid_supplemental(params::MedicaidSupplementalParams)::MedicaidSupplementalResult
-    params.medicaid_costs >= 0.0 || error("medicaid_costs must be non-negative")
+    params.medicaid_costs >= 0.0 || error("medicaid_costs must be non-negative; got $(params.medicaid_costs)")
+    params.medicaid_payments >= 0.0 || error("medicaid_payments must be non-negative; got $(params.medicaid_payments)")
+    params.uncompensated_care_costs >= 0.0 || error("uncompensated_care_costs must be non-negative; got $(params.uncompensated_care_costs)")
+    params.gross_patient_revenue >= 0.0 || error("gross_patient_revenue must be non-negative; got $(params.gross_patient_revenue)")
+    params.total_operating_expenses > 0.0 || error("total_operating_expenses must be positive; got $(params.total_operating_expenses)")
+    0.0 <= params.provider_tax_rate <= 1.0 || error("provider_tax_rate must be between 0 and 1; got $(params.provider_tax_rate)")
     params.provider_class in (:state_owned, :non_state_govt, :private) ||
         error("provider_class must be :state_owned, :non_state_govt, or :private; got $(params.provider_class)")
 
@@ -142,6 +147,9 @@ Model three Medicaid supplemental payment reform scenarios:
 3. Significant reform: Medicaid expansion rollback + SDP elimination
 """
 function medicaid_reform_scenarios(params::MedicaidSupplementalParams)::Vector{NamedTuple}
+    params.medicaid_costs >= 0.0 || error("medicaid_costs must be non-negative; got $(params.medicaid_costs)")
+    params.total_operating_expenses > 0.0 || error("total_operating_expenses must be positive; got $(params.total_operating_expenses)")
+
     # Scenario 1: Current law
     current = calculate_medicaid_supplemental(params)
 

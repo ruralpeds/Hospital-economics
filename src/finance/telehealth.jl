@@ -94,6 +94,19 @@ function calculate_telehealth_roi(services::Vector{TelehealthService},
                                   investment::TelehealthInvestment;
                                   projection_years::Int = 3)::TelehealthROI
     projection_years > 0 || error("projection_years must be positive; got $projection_years")
+    !isempty(services) || error("services must not be empty")
+    investment.infrastructure_cost >= 0.0 || error("infrastructure_cost must be non-negative; got $(investment.infrastructure_cost)")
+    investment.annual_licensing >= 0.0 || error("annual_licensing must be non-negative; got $(investment.annual_licensing)")
+    investment.annual_staffing >= 0.0 || error("annual_staffing must be non-negative; got $(investment.annual_staffing)")
+    investment.broadband_upgrade >= 0.0 || error("broadband_upgrade must be non-negative; got $(investment.broadband_upgrade)")
+    investment.training_cost >= 0.0 || error("training_cost must be non-negative; got $(investment.training_cost)")
+    for s in services
+        s.annual_volume >= 0 || error("annual_volume must be non-negative; got $(s.annual_volume) for $(s.service_type)")
+        s.revenue_per_encounter >= 0.0 || error("revenue_per_encounter must be non-negative; got $(s.revenue_per_encounter) for $(s.service_type)")
+        s.cost_per_encounter >= 0.0 || error("cost_per_encounter must be non-negative; got $(s.cost_per_encounter) for $(s.service_type)")
+        s.avoided_transfers_per_year >= 0 || error("avoided_transfers_per_year must be non-negative; got $(s.avoided_transfers_per_year) for $(s.service_type)")
+        s.avg_transfer_cost_avoided >= 0.0 || error("avg_transfer_cost_avoided must be non-negative; got $(s.avg_transfer_cost_avoided) for $(s.service_type)")
+    end
 
     # Annual direct revenue and variable costs at base volume
     annual_revenue = sum(s.annual_volume * s.revenue_per_encounter for s in services)
@@ -155,6 +168,8 @@ Rank telehealth services by contribution margin (revenue minus variable cost
 plus transfer savings), sorted descending.
 """
 function telehealth_service_comparison(services::Vector{TelehealthService})::Vector{NamedTuple}
+    !isempty(services) || error("services must not be empty")
+
     rows = [(
         service_type = s.service_type,
         annual_volume = s.annual_volume,
