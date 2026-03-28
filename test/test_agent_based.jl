@@ -5,7 +5,7 @@
 using Test
 using Random
 
-include(joinpath(@__DIR__, "..", "src", "types", "abstract.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
 
 # ---------------------------------------------------------------------------
 # Stub ABM types and functions (until Agents.jl integration is complete)

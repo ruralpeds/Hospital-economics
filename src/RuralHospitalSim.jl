@@ -5,15 +5,18 @@ A comprehensive simulation and projection tool for rural hospital economics,
 with focus on Critical Access Hospitals (CAHs) and Rural Emergency Hospitals (REHs).
 
 Provides deterministic financial projections, Monte Carlo simulation,
-agent-based modeling, system dynamics, and mathematical optimization
+agent-based modeling, system dynamics, discrete event simulation,
+mathematical optimization, and interactive educational tools
 for rural hospital strategic decision-making.
 
 # Main Components
-- **Type System**: Complete domain model for hospitals, financials, staffing, payer mix
-- **Reimbursement Engine**: CMS Form 2552-10 cost report, Medicare/Medicaid/Commercial
-- **Simulation Engines**: Deterministic, Monte Carlo, Agent-Based, System Dynamics, Optimization
-- **Analysis**: Closure risk prediction, REH conversion analysis, sensitivity, benchmarking
-- **Data**: HCRIS parser, import/export utilities
+- **Domain Model**: Complete type system for hospitals, financials, staffing, payer mix
+- **Finance Engine**: CMS 2552-10 cost report, reimbursement, ratios, depreciation, 340B
+- **Simulation Engines**: Deterministic, Monte Carlo, Agent-Based, System Dynamics, DES
+- **Optimization**: JuMP.jl staffing and service portfolio optimization
+- **Risk Assessment**: Closure risk prediction, REH conversion analysis
+- **Analysis**: Sensitivity, benchmarking, community impact, payer negotiation, scenario comparison
+- **Data**: HCRIS parser, CSV/Excel import, export utilities
 """
 module RuralHospitalSim
 
@@ -31,17 +34,18 @@ using DifferentialEquations
 using StatsBase
 
 # ═══════════════════════════════════════════════════════════════
-# TYPE SYSTEM (must be loaded first, in dependency order)
+# DOMAIN MODEL (must be loaded first, in dependency order)
 # ═══════════════════════════════════════════════════════════════
 
-include("types/abstract.jl")
-include("types/service_lines.jl")
-include("types/staffing.jl")
-include("types/payer_mix.jl")
-include("types/financial.jl")
-include("types/hospital.jl")
-include("types/scenarios.jl")
-include("types/results.jl")
+include("models/abstract.jl")
+include("models/department.jl")
+include("models/staffing.jl")
+include("models/payer.jl")
+include("models/financial.jl")
+include("models/capital.jl")
+include("models/hospital.jl")
+include("models/scenarios.jl")
+include("models/results.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # UTILITIES
@@ -53,42 +57,59 @@ include("utils/validation.jl")
 include("utils/formatting.jl")
 
 # ═══════════════════════════════════════════════════════════════
-# REIMBURSEMENT ENGINE
+# FINANCE ENGINE
 # ═══════════════════════════════════════════════════════════════
 
-include("reimbursement/cost_report.jl")
-include("reimbursement/medicare.jl")
-include("reimbursement/medicaid.jl")
-include("reimbursement/commercial.jl")
-include("reimbursement/uncompensated.jl")
-include("reimbursement/adjustments.jl")
+include("finance/costreport.jl")
+include("finance/reimbursement.jl")
+include("finance/ratios.jl")
+include("finance/depreciation.jl")
+include("finance/breakeven.jl")
+include("finance/cashflow.jl")
+include("finance/program340b.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # SIMULATION ENGINES
 # ═══════════════════════════════════════════════════════════════
 
-include("engines/deterministic.jl")
-include("engines/monte_carlo.jl")
-include("engines/agent_based.jl")
-include("engines/system_dynamics.jl")
-include("engines/optimization.jl")
+include("simulation/deterministic.jl")
+include("simulation/montecarlo.jl")
+include("simulation/abm.jl")
+include("simulation/systemdynamics.jl")
+include("simulation/des.jl")
+include("simulation/scenarios.jl")
 
 # ═══════════════════════════════════════════════════════════════
-# ANALYSIS MODULES
+# OPTIMIZATION (JuMP.jl)
 # ═══════════════════════════════════════════════════════════════
 
-include("analysis/closure_risk.jl")
-include("analysis/reh_conversion.jl")
-include("analysis/sensitivity.jl")
-include("analysis/benchmarking.jl")
+include("optimization/staffing.jl")
+include("optimization/portfolio.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# RISK ASSESSMENT
+# ═══════════════════════════════════════════════════════════════
+
+include("risk/closure.jl")
+include("risk/conversion.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# ANALYSIS
+# ═══════════════════════════════════════════════════════════════
+
+include("finance/sensitivity.jl")
+include("analysis/comparison.jl")
+include("analysis/community.jl")
+include("analysis/payer_negotiation.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # DATA IMPORT/EXPORT
 # ═══════════════════════════════════════════════════════════════
 
-include("data/hcris_parser.jl")
-include("data/import_utils.jl")
-include("data/export_utils.jl")
+include("data/import_hcris.jl")
+include("data/import_csv.jl")
+include("data/export.jl")
+include("data/benchmarks.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # EXPORTS
@@ -129,7 +150,7 @@ export MonteCarloResult, MonteCarloSummary
 export SystemDynamicsResult, StaffingOptimizationResult, PortfolioOptimizationResult
 export ClosureRiskAssessment, REHConversionAnalysis
 
-# Reimbursement functions
+# Finance functions
 export step_down_allocation, calculate_medicare_cost_share
 export calculate_medicare_reimbursement
 export calculate_medicaid_reimbursement
@@ -138,18 +159,49 @@ export calculate_uncompensated_care
 export apply_wage_index, apply_sequestration, apply_bad_debt_adjustment
 export default_cah_cost_centers, default_step_down_order
 
+# Financial ratios
+export compute_operating_margin, compute_total_margin, compute_days_cash_on_hand
+export compute_current_ratio, compute_debt_to_capitalization
+export compute_average_age_of_plant, compute_fte_per_adjusted_occupied_bed
+export compute_salary_to_revenue, compute_outpatient_revenue_share
+export compute_medicare_cost_to_charge_ratio, compute_all_ratios
+
+# Depreciation
+export straight_line_depreciation, declining_balance_depreciation
+export depreciation_schedule, total_annual_depreciation, replacement_needs
+
+# Break-even
+export BreakEvenResult, calculate_break_even, break_even_by_payer, target_margin_volume
+
+# Cash flow
+export MonthlyCashFlow, project_monthly_cash_flow, find_cash_nadir, line_of_credit_needed
+
+# 340B
+export Program340BParams, Program340BResult, calculate_340b_impact, policy_risk_scenarios
+
 # Simulation engine functions
-export DeterministicParams, project_financials, project_single_year
+export DeterministicParams, DeterministicResult, project_financials, project_single_year
 export MonteCarloParams, DistributionalParameter, run_monte_carlo
 export probability_of_loss, value_at_risk
-export ABMParams, initialize_abm, run_abm
+export ABMParams, ABMResult, initialize_abm, run_abm
 export SystemDynamicsParams, run_system_dynamics, hospital_dynamics!
+export DESParams, DESResult, run_des
+export SimulationScenario, ScenarioSet, run_scenario_set, compare_scenario_set
+
+# Optimization functions
 export optimize_staffing, optimize_service_portfolio
 
-# Analysis functions
+# Risk assessment functions
 export MarketData, assess_closure_risk, estimate_distress_timeline
 export analyze_reh_conversion, default_cah_assumptions, default_reh_assumptions
-export SensitivityResult, run_sensitivity_analysis
+
+# Analysis functions
+export SensitivityResult, run_sensitivity_analysis, build_tornado_data
+export ScenarioComparison, compare_scenarios, rank_scenarios, scenario_delta
+export CommunityImpactParams, CommunityImpactResult
+export calculate_community_impact, closure_impact_projection
+export NegotiationCategory, NegotiationResult
+export simulate_negotiation, optimal_rate_target
 export BenchmarkData, default_cah_benchmarks, compare_to_benchmarks
 
 # Data functions

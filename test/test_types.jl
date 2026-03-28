@@ -7,12 +7,13 @@ using Dates
 using UUIDs
 
 # Include source files directly for testing (in dependency order)
-include(joinpath(@__DIR__, "..", "src", "types", "abstract.jl"))
-include(joinpath(@__DIR__, "..", "src", "types", "service_lines.jl"))
-include(joinpath(@__DIR__, "..", "src", "types", "staffing.jl"))
-include(joinpath(@__DIR__, "..", "src", "types", "payer_mix.jl"))
-include(joinpath(@__DIR__, "..", "src", "types", "financial.jl"))
-include(joinpath(@__DIR__, "..", "src", "types", "hospital.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "department.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "staffing.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "payer.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "financial.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "capital.jl"))
+include(joinpath(@__DIR__, "..", "src", "models", "hospital.jl"))
 
 # ---------------------------------------------------------------------------
 # Helper: create a minimal GeoLocation for testing
