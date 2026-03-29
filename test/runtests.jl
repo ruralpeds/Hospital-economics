@@ -55,4 +55,15 @@ using Test
 
     # V3.1 Optimization module tests
     include("test_capital_scoring.jl")
+
+    # Phase 4 — coverage gap tests
+    include("test_reimbursement_functions.jl")
+    include("test_monte_carlo_analytics.jl")
+    include("test_data_import_export.jl")
+    include("test_optimization_portfolio.jl")
+    include("test_risk_assessment_extended.jl")
+
+    # Integration & smoke tests
+    include("test_integration.jl")
+    include("test_view_integration.jl")
 end
