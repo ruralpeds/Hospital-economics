@@ -6,7 +6,50 @@ All API endpoints are served from the application root. In development: `http://
 
 ## Authentication
 
-API endpoints currently do not require authentication. Production deployments should configure GenieAuthentication.jl with session-based or token-based auth.
+API endpoints do not currently enforce authentication. Production deployments should configure GenieAuthentication.jl with session-based or token-based auth before exposing the application to untrusted networks.
+
+## Security
+
+### Error Responses
+
+API errors return a generic message without internal details:
+
+```json
+{
+  "status": "error",
+  "message": "Deterministic simulation failed. Check server logs for details."
+}
+```
+
+Full exception details are logged server-side only.
+
+### File Import Restrictions
+
+File import endpoints (`/api/import/*`) restrict access to server-side directories:
+- `data/uploads/` — user-uploaded files
+- `data/reference/` — CMS reference data
+- `data/sample/` — sample hospital profiles
+
+Paths outside these directories are rejected. File export filenames are sanitized to prevent directory traversal.
+
+### Rate Limiting (via Nginx)
+
+| Endpoint | Limit | Burst |
+|----------|-------|-------|
+| `/api/*` | 30 req/s per IP | 50 |
+| `/api/simulate/*` | 5 req/min per IP | 3 |
+
+### CORS
+
+Controlled by the `ALLOWED_ORIGIN` environment variable. Defaults to `*` in development; must be set to the specific domain in production.
+
+### Required Environment Variables (Production)
+
+| Variable | Description |
+|----------|-------------|
+| `SECRET_TOKEN` | Session signing key (64+ chars). Application will not start without this. |
+| `ALLOWED_ORIGIN` | CORS allowed origin domain |
+| `POSTGRES_PASSWORD` | Database password |
 
 ---
 
