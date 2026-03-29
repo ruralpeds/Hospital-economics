@@ -10,6 +10,24 @@ module OptimizationController
 using JSON3, Dates, UUIDs
 using ...RuralHospitalSim
 
+"""Parse a numeric value from payload with bounds checking."""
+function _validated_float(payload::Dict, key::String, default::Float64;
+                          min_val::Float64=-Inf, max_val::Float64=Inf)
+    val = Float64(get(payload, key, default))
+    (isnan(val) || isinf(val)) && error("Parameter '$key' must be a finite number")
+    val < min_val && error("Parameter '$key' must be >= $min_val")
+    val > max_val && error("Parameter '$key' must be <= $max_val")
+    return val
+end
+
+function _validated_int(payload::Dict, key::String, default::Int;
+                        min_val::Int=typemin(Int), max_val::Int=typemax(Int))
+    val = Int(get(payload, key, default))
+    val < min_val && error("Parameter '$key' must be >= $min_val")
+    val > max_val && error("Parameter '$key' must be <= $max_val")
+    return val
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Staffing Optimization
 # ═══════════════════════════════════════════════════════════════════════════
@@ -76,10 +94,10 @@ function handle_staffing_optimization(payload::Dict)
         demand               = demand,
         regulatory_minimums  = regulatory_minimums,
         permanent_salary     = permanent_salary,
-        travel_salary_premium = Float64(get(payload, "travel_salary_premium", 1.8)),
-        overtime_rate        = Float64(get(payload, "overtime_rate", 1.5)),
-        max_overtime_fraction = Float64(get(payload, "max_overtime_fraction", 0.2)),
-        budget               = Float64(get(payload, "budget", 10_000_000.0)),
+        travel_salary_premium = _validated_float(payload, "travel_salary_premium", 1.8; min_val=1.0, max_val=5.0),
+        overtime_rate        = _validated_float(payload, "overtime_rate", 1.5; min_val=1.0, max_val=3.0),
+        max_overtime_fraction = _validated_float(payload, "max_overtime_fraction", 0.2; min_val=0.0, max_val=1.0),
+        budget               = _validated_float(payload, "budget", 10_000_000.0; min_val=0.0),
     )
 
     Dict(
@@ -146,11 +164,11 @@ function handle_portfolio_optimization(payload::Dict)
         cost_per_unit         = cost_per_unit,
         volume_potential      = volume_potential,
         capacity_requirement  = capacity_requirement,
-        total_capacity        = Float64(get(payload, "total_capacity", 50.0)),
+        total_capacity        = _validated_float(payload, "total_capacity", 50.0; min_val=1.0),
         fixed_costs           = fixed_costs,
         required_services     = required,
-        max_services          = Int(get(payload, "max_services", length(services))),
-        community_need_weight = Float64(get(payload, "community_need_weight", 0.2)),
+        max_services          = _validated_int(payload, "max_services", length(services); min_val=1, max_val=length(services)),
+        community_need_weight = _validated_float(payload, "community_need_weight", 0.2; min_val=0.0, max_val=1.0),
         community_need_scores = community_need,
     )
 

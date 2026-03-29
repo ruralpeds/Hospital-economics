@@ -213,8 +213,12 @@ function _compute_summary(params::MonteCarloParams, results::Vector{IterationRes
     closure_years = [Float64(r.closure_risk_year) for r in results if !isnothing(r.closure_risk_year)]
     mean_cy = isempty(closure_years) ? nothing : mean(closure_years)
 
-    # Conversion probability (iterations where closure_risk_year is nothing but margin recovered)
-    conversion_prob = 0.0  # placeholder — no conversion tracking in IterationResult
+    # Conversion probability: fraction of iterations where margin is negative enough
+    # that REH conversion would be financially beneficial (margin < -0.05 but no closure)
+    conversion_candidates = count(r ->
+        r.terminal_operating_margin < -0.05 && isnothing(r.closure_risk_year),
+        results)
+    conversion_prob = conversion_candidates / n
 
     mean_income = mean(incomes)
     prob_neg = count(x -> x < 0.0, incomes) / n

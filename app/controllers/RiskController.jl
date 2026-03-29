@@ -10,6 +10,24 @@ module RiskController
 using JSON3, Dates, UUIDs
 using ...RuralHospitalSim
 
+"""Parse a numeric value from payload with bounds checking."""
+function _validated_float(payload::Dict, key::String, default::Float64;
+                          min_val::Float64=-Inf, max_val::Float64=Inf)
+    val = Float64(get(payload, key, default))
+    (isnan(val) || isinf(val)) && error("Parameter '$key' must be a finite number")
+    val < min_val && error("Parameter '$key' must be >= $min_val")
+    val > max_val && error("Parameter '$key' must be <= $max_val")
+    return val
+end
+
+function _validated_int(payload::Dict, key::String, default::Int;
+                        min_val::Int=typemin(Int), max_val::Int=typemax(Int))
+    val = Int(get(payload, key, default))
+    val < min_val && error("Parameter '$key' must be >= $min_val")
+    val > max_val && error("Parameter '$key' must be <= $max_val")
+    return val
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Closure Risk Assessment
 # ═══════════════════════════════════════════════════════════════════════════
@@ -152,10 +170,10 @@ function handle_reh_conversion(payload::Dict)
     params = ConversionParams(;
         severance_cost            = Float64(get(cp, "severance_cost", 500_000.0)),
         facility_modification_cost = Float64(get(cp, "facility_modification_cost", 1_000_000.0)),
-        ip_volume_loss_pct        = Float64(get(cp, "ip_volume_loss_pct", 1.0)),
-        op_volume_retention_pct   = Float64(get(cp, "op_volume_retention_pct", 0.85)),
-        ed_volume_change_pct      = Float64(get(cp, "ed_volume_change_pct", 0.05)),
-        transition_months         = Int(get(cp, "transition_months", 12)),
+        ip_volume_loss_pct        = _validated_float(cp, "ip_volume_loss_pct", 1.0; min_val=0.0, max_val=1.0),
+        op_volume_retention_pct   = _validated_float(cp, "op_volume_retention_pct", 0.85; min_val=0.0, max_val=1.0),
+        ed_volume_change_pct      = _validated_float(cp, "ed_volume_change_pct", 0.05; min_val=-0.50, max_val=1.0),
+        transition_months         = _validated_int(cp, "transition_months", 12; min_val=1, max_val=60),
     )
 
     location = GeoLocation(;

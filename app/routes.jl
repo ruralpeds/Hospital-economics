@@ -372,14 +372,25 @@ end
 # API Routes — Health check
 # ═══════════════════════════════════════════════════════════════════════════
 
+const APP_VERSION = let
+    toml_path = joinpath(@__DIR__, "..", "Project.toml")
+    m = match(r"version\s*=\s*\"([^\"]+)\"", read(toml_path, String))
+    isnothing(m) ? "0.0.0" : m.captures[1]
+end
+
+const SIMULATION_ENGINES = ["deterministic", "monte_carlo", "abm", "system_dynamics", "des"]
+const OPTIMIZER_ENGINES  = ["staffing", "portfolio"]
+const RISK_MODELS        = ["closure_risk", "reh_conversion"]
+const TOOL_COUNT         = 38
+
 route("/api/health") do
     json(Dict(
-        "status" => "ok",
-        "version" => "0.3.0",
-        "timestamp" => string(Dates.now()),
-        "engines" => ["deterministic", "monte_carlo", "abm", "system_dynamics", "des"],
-        "optimizers" => ["staffing", "portfolio"],
-        "risk_models" => ["closure_risk", "reh_conversion"],
-        "tools" => 38,
+        "status"     => "ok",
+        "version"    => APP_VERSION,
+        "timestamp"  => string(Dates.now()),
+        "engines"    => SIMULATION_ENGINES,
+        "optimizers" => OPTIMIZER_ENGINES,
+        "risk_models" => RISK_MODELS,
+        "tools"      => TOOL_COUNT,
     ))
 end
