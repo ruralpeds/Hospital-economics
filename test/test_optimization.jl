@@ -7,7 +7,8 @@ using Test
 include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
 
 # ---------------------------------------------------------------------------
-# Stub optimization models (until JuMP/HiGHS integration is complete)
+# Standalone optimization types — validates portfolio logic independently of JuMP.
+# Real optimize_service_portfolio() tested via test_optimization_portfolio.jl.
 # ---------------------------------------------------------------------------
 
 """

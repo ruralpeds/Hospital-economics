@@ -51,15 +51,14 @@ function handle_closure_risk(payload::Dict)
     ops = get(payload, "operational_data", Dict())
     mkt = get(payload, "market_data", Dict())
 
-    # Build MarketData
+    # Build MarketData (fields match src/risk/closure.jl struct)
     market = MarketData(;
-        service_area_pop        = Int(get(mkt, "service_area_pop", 15000)),
-        pop_growth_rate         = Float64(get(mkt, "pop_growth_rate", -0.005)),
-        competing_hospitals     = Int(get(mkt, "competing_hospitals", 1)),
-        nearest_competitor_miles = Float64(get(mkt, "nearest_competitor_miles", 30.0)),
-        median_household_income = Float64(get(mkt, "median_household_income", 45000.0)),
-        uninsured_rate          = Float64(get(mkt, "uninsured_rate", 0.12)),
         medicaid_expansion      = Bool(get(mkt, "medicaid_expansion", true)),
+        ma_penetration          = Float64(get(mkt, "ma_penetration", 0.35)),
+        population_trend_5yr    = Float64(get(mkt, "population_trend_5yr", -0.005)),
+        nearest_competitor_miles = Float64(get(mkt, "nearest_competitor_miles", 30.0)),
+        poverty_rate            = Float64(get(mkt, "poverty_rate", 0.15)),
+        uninsured_rate          = Float64(get(mkt, "uninsured_rate", 0.12)),
     )
 
     # Build minimal CAH for assessment

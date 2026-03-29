@@ -11,7 +11,8 @@ include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
 include(joinpath(@__DIR__, "..", "src", "simulation", "deterministic.jl"))
 
 # ---------------------------------------------------------------------------
-# Stub Monte Carlo engine for testing (until full implementation exists)
+# Standalone Monte Carlo types — validates sampling and statistics independently.
+# Real run_monte_carlo() tested via test_monte_carlo_analytics.jl and test_integration.jl.
 # ---------------------------------------------------------------------------
 
 """
