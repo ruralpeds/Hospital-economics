@@ -4,7 +4,7 @@
 # ============================================================================
 
 # Stage 1: Build and precompile
-FROM julia:1.10-bookworm AS builder
+FROM julia:1.11-bookworm AS builder
 
 WORKDIR /app
 
@@ -24,14 +24,14 @@ COPY scripts/ scripts/
 # Precompile the full application
 RUN julia --project=. -e '
     push!(LOAD_PATH, "/app/src");
-    include("src/types/abstract.jl");
-    include("src/types/hospital.jl");
+    include("src/models/abstract.jl");
+    include("src/models/hospital.jl");
     include("src/utils/constants.jl");
-    include("src/engines/deterministic.jl");
+    include("src/simulation/deterministic.jl");
 '
 
 # Stage 2: Production runtime
-FROM julia:1.10-slim-bookworm AS runtime
+FROM julia:1.11-slim-bookworm AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
