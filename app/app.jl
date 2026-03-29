@@ -158,8 +158,9 @@ function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false
     Genie.config.run_as_server = true
     Genie.config.server_host = host
     Genie.config.server_port = port
-    Genie.config.cors_headers["Access-Control-Allow-Origin"] = "*"
-    Genie.config.cors_headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    allowed_origin = get(ENV, "ALLOWED_ORIGIN", "*")
+    Genie.config.cors_headers["Access-Control-Allow-Origin"] = allowed_origin
+    Genie.config.cors_headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     Genie.config.cors_headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
 
     up(port; async = async)

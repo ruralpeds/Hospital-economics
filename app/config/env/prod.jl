@@ -30,8 +30,12 @@ ENV["SIM_MAX_ITERATIONS"] = "50000"
 ENV["SIM_DEFAULT_ITERATIONS"] = "5000"
 ENV["SIM_TIMEOUT_SECONDS"] = "600"
 
-# Security
+# Security — SECRET_TOKEN is mandatory in production
 Genie.config.session_key_name = "__hospital_econ_session"
-Genie.config.secret_token = get(ENV, "SECRET_TOKEN", "change_me_in_production_$(rand(UInt64))")
+if !haskey(ENV, "SECRET_TOKEN") || isempty(ENV["SECRET_TOKEN"])
+    error("SECRET_TOKEN environment variable is required in production. " *
+          "Generate one with: julia -e 'using Random; println(randstring(64))'")
+end
+Genie.config.secret_token = ENV["SECRET_TOKEN"]
 
 @info "Production environment loaded"

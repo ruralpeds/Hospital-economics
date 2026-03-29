@@ -15,14 +15,14 @@ services:
       dockerfile: docker/Dockerfile
     container_name: rhsim-app
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
       - JULIA_PROJECT=/app
       - JULIA_NUM_THREADS=auto
       - GENIE_ENV=prod
       - PORT=8000
       - HOST=0.0.0.0
-      - DATABASE_URL=postgresql://rhsim:rhsim_secret@postgres:5432/rhsim_prod
-      - REDIS_URL=redis://redis:6379/0
     ports:
       - "8000:8000"
     volumes:
@@ -51,10 +51,9 @@ services:
     image: postgres:16-alpine
     container_name: rhsim-postgres
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
-      - POSTGRES_DB=rhsim_prod
-      - POSTGRES_USER=rhsim
-      - POSTGRES_PASSWORD=rhsim_secret
       - PGDATA=/var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
