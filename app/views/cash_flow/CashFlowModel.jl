@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Monthly Cash Flow Projection.
 Projects 12-month cash flow with nadir identification and days cash on hand.
+Delegates to RuralHospitalSim.project_monthly_cash_flow() for projection.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: project_monthly_cash_flow, find_cash_nadir,
+    line_of_credit_needed, MonthlyCashFlow
 
 
 @app begin
@@ -58,23 +63,29 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            balances = Float64[starting_cash]
+
+            # Call domain engine for 12-month cash flow projection
+            capex_schedule = Dict{Int,Float64}(capex_month => capex_amount)
+            cf_result = project_monthly_cash_flow(;
+                starting_cash=starting_cash,
+                monthly_revenue=monthly_revenue,
+                monthly_operating_expense=monthly_operating_expense,
+                monthly_debt_service=monthly_debt_service,
+                revenue_seasonality=revenue_seasonality,
+                collection_lag_days=collection_lag_days,
+                capex_schedule=capex_schedule,
+            )
+
+            # Extract balances from domain result
+            balances = [starting_cash; [cf.ending_balance for cf in cf_result]]
             daily_expense = (monthly_operating_expense * 12) / 365
 
-            for m in 1:12
-                # Seasonal revenue adjustment
-                season_factor = 1.0 + revenue_seasonality * sin(2 * pi * (m - 3) / 12)
-                rev = monthly_revenue * season_factor
-                exp = monthly_operating_expense + monthly_debt_service
-                capex = (m == capex_month) ? capex_amount : 0.0
-                net = rev - exp - capex
-                push!(balances, balances[end] + net)
-            end
-
             monthly_balances = round.(balances ./ 1000, digits=0)
-            nadir_idx = argmin(balances[2:end])
-            nadir_month = nadir_idx
-            nadir_balance = round(balances[nadir_idx + 1], digits=0)
+
+            # Use domain nadir finder
+            nadir = find_cash_nadir(cf_result)
+            nadir_month = nadir.month
+            nadir_balance = round(nadir.balance, digits=0)
             ending_cash = round(balances[end], digits=0)
             days_cash_on_hand = round(Int, balances[end] / max(daily_expense, 1.0))
             threshold = daily_expense * 30
@@ -89,7 +100,7 @@ using Stipple, StippleUI, StipplePlotly
                     plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER, name="30-Day Threshold",
                     mode="lines", line=PlotDataLine(dash="dash", color="orange")),
             ]
-            @info "Cash flow: nadir \$$(round(Int, nadir_balance/1000))K in month $(nadir_month), $(days_cash_on_hand) days cash"
+            @info "Cash flow (domain): nadir \$$(round(Int, nadir_balance/1000))K in month $(nadir_month), $(days_cash_on_hand) days cash"
         end
     end
 end

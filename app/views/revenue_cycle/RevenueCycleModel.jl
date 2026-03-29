@@ -1,8 +1,12 @@
 """
 Stipple reactive model for Revenue Cycle Optimization.
 Tracks current vs target metrics and dollar impact per initiative.
+References RuralHospitalSim financial ratio functions.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: compute_all_ratios
 
 
 @app begin

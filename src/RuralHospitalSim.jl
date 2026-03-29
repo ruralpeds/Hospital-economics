@@ -166,13 +166,15 @@ export Department, ServiceLine
 export PolicyScenario, ConversionParams, StaffingConstraints, PortfolioParams
 
 # Result types
-export MonteCarloResult, MonteCarloSummary
+export MonteCarloResult, MonteCarloSummary, IterationResult
+export YearlyProjection
 export SystemDynamicsResult, StaffingOptimizationResult, PortfolioOptimizationResult
+export ServicePortfolioResult, StaffingResult
 export ClosureRiskAssessment, REHConversionAnalysis
 
 # Finance functions
 export step_down_allocation, calculate_medicare_cost_share
-export calculate_medicare_reimbursement
+export calculate_medicare_reimbursement, MedicaidFeeSchedule
 export calculate_medicaid_reimbursement
 export calculate_commercial_reimbursement
 export calculate_uncompensated_care

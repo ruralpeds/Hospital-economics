@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Strategic Financial Planner.
 Projects 5-year financial trajectory with timed strategic initiatives.
+Delegates to RuralHospitalSim.run_scenario_set() for multi-scenario projection.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: run_scenario_set, compare_scenario_set,
+    SimulationScenario, ScenarioSet, DeterministicParams, project_financials
 
 
 @app begin
@@ -91,6 +96,21 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
+
+            # Build base financials for domain projection
+            bf = (
+                inpatient_revenue=base_revenue * 0.42,
+                outpatient_revenue=base_revenue * 0.58,
+                salary_expense=base_expenses * 0.55,
+                supply_expense=base_expenses * 0.15,
+                other_expense=base_expenses * 0.30,
+                cash_reserves=5_000_000.0,
+                depreciation=1_200_000.0,
+                annual_debt_service=800_000.0,
+                payer_mix_government=0.80,
+            )
+
+            # Build initiatives
             inits = [
                 (init1_name, init1_year, init1_revenue_impact, init1_cost_savings),
                 (init2_name, init2_year, init2_revenue_impact, init2_cost_savings),
@@ -98,11 +118,21 @@ using Stipple, StippleUI, StipplePlotly
                 (init4_name, init4_year, init4_revenue_impact, init4_cost_savings),
             ]
 
+            # Use domain engine for baseline projection
+            params = DeterministicParams(; projection_years=5,
+                volume_growth_rate=revenue_growth_rate,
+                cost_inflation_rate=expense_growth_rate,
+                salary_inflation_rate=expense_growth_rate + 0.005,
+                supply_inflation_rate=expense_growth_rate + 0.01,
+                reimbursement_adjustment=revenue_growth_rate, payer_mix_shift=0.005)
+            baseline = project_financials(bf, params)
+
+            # Layer strategic initiatives on top of domain projection
             rev = Float64[base_revenue]
             exp = Float64[base_expenses]
             for yr in 1:5
-                r = rev[end] * (1 + revenue_growth_rate)
-                e = exp[end] * (1 + expense_growth_rate)
+                r = yr <= length(baseline.projections) ? baseline.projections[yr].total_revenue : rev[end] * (1 + revenue_growth_rate)
+                e = yr <= length(baseline.projections) ? baseline.projections[yr].total_expense : exp[end] * (1 + expense_growth_rate)
                 for (_, iy, ri, cs) in inits
                     if yr >= iy
                         r += ri
@@ -115,7 +145,7 @@ using Stipple, StippleUI, StipplePlotly
             projected_revenue = round.(rev ./ 1e6, digits=1)
             projected_expenses = round.(exp ./ 1e6, digits=1)
             projected_margin = round.((rev .- exp) ./ 1e6, digits=1)
-            cumulative_value = sum(rev .- exp)
+            cumulative_value = sum(rev[2:end] .- exp[2:end])
             breakeven_year = findfirst(m -> m > 0, rev[2:end] .- exp[2:end])
             breakeven_year = isnothing(breakeven_year) ? 6 : breakeven_year
             year5_margin_pct = (rev[6] - exp[6]) / max(rev[6], 1.0)
@@ -133,7 +163,7 @@ using Stipple, StippleUI, StipplePlotly
             init_values = round.([(ri + cs) for (_, _, ri, cs) in inits] ./ 1000, digits=0)
             initiative_value_data = [PlotData(x=init_names, y=init_values,
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Annual Value (\$K)")]
-            @info "Strategic plan: cumulative 5yr value \$$(round(Int, cumulative_value/1e6))M"
+            @info "Strategic plan (domain): cumulative 5yr value \$$(round(Int, cumulative_value/1e6))M"
         end
     end
 end

@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Medicaid DSH/UPL/SDP Supplemental Payment Calculator.
 Models DSH, UPL, and State Directed Payment programs for rural hospitals.
+Delegates to RuralHospitalSim.calculate_medicaid_supplemental() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_medicaid_supplemental, medicaid_reform_scenarios,
+    MedicaidSupplementalParams, MedicaidSupplementalResult
 
 
 @app begin
@@ -56,41 +61,41 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            # DSH
-            dsh_limit = max(0.0, (medicaid_costs + uncompensated_care_costs) - medicaid_payments)
-            dsh_pct = provider_class == "state_owned" ? 0.70 :
-                      provider_class == "non_state_govt" ? 0.55 : 0.40
-            dsh_payment = dsh_limit * dsh_pct
 
-            # UPL
-            medicare_eq = medicaid_costs / 0.92
-            upl_room = max(0.0, medicare_eq - (medicaid_payments + dsh_payment))
-            upl_capture = provider_class == "state_owned" ? 0.80 : 0.60
-            upl_payment = upl_room * upl_capture
+            # Call domain engine
+            params = MedicaidSupplementalParams(;
+                medicaid_costs=medicaid_costs,
+                medicaid_payments=medicaid_payments,
+                uncompensated_care_costs=uncompensated_care_costs,
+                gross_patient_revenue=gross_patient_revenue,
+                total_operating_expenses=total_operating_expenses,
+                provider_class=provider_class,
+                state_has_expansion=state_has_expansion,
+                provider_tax_rate=provider_tax_rate,
+            )
+            result = calculate_medicaid_supplemental(params)
 
-            # SDP
-            sdp_rate = state_has_expansion ?
-                (provider_class == "private" ? 0.08 : 0.05) :
-                (provider_class == "private" ? 0.04 : 0.03)
-            sdp_payment = medicaid_costs * sdp_rate
-
-            total_supplemental = dsh_payment + upl_payment + sdp_payment
-            net_medicaid_shortfall = max(0.0, medicaid_costs - (medicaid_payments + total_supplemental))
-            provider_tax_cost = gross_patient_revenue * provider_tax_rate
+            # Map domain results
+            dsh_payment = result.dsh_payment
+            upl_payment = result.upl_payment
+            sdp_payment = result.sdp_payment
+            total_supplemental = result.total_supplemental
+            net_medicaid_shortfall = result.net_medicaid_shortfall
+            provider_tax_cost = result.provider_tax_cost
 
             payment_chart_data = [PlotData(labels=["DSH", "UPL", "SDP"],
                 values=[dsh_payment, upl_payment, sdp_payment],
                 plot=StipplePlotly.Charts.PLOT_TYPE_PIE, hole=0.4, name="Payments")]
 
-            # Reform scenarios
-            mod_total = dsh_payment + upl_payment + sdp_payment * 0.5
-            sig_total = dsh_payment * 0.8 + upl_payment * 0.7
+            # Reform scenarios from domain
+            reforms = medicaid_reform_scenarios(params)
+            reform_names = [r.scenario_name for r in reforms]
+            reform_totals = [r.total_supplemental for r in reforms]
             reform_chart_data = [PlotData(
-                x=["Current Law", "Moderate Reform", "Significant Reform"],
-                y=[total_supplemental, mod_total, sig_total],
+                x=reform_names, y=reform_totals,
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Total Supplemental",
                 marker=Dict("color" => "#2196F3"))]
-            @info "Medicaid supplemental: total \$$(round(Int, total_supplemental))"
+            @info "Medicaid supplemental (domain): total \$$(round(Int, total_supplemental))"
         end
     end
 end

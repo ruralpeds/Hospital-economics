@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Community Economic Impact analysis.
 Estimates total economic footprint and closure devastation metrics.
+Delegates to RuralHospitalSim.calculate_community_impact() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_community_impact, closure_impact_projection,
+    CommunityImpactParams, CommunityImpactResult
 
 
 @app begin
@@ -69,16 +74,39 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            direct_impact = annual_payroll + local_purchasing
-            indirect_impact = round(direct_impact * (economic_multiplier - 1.0), digits=0)
-            total_economic_impact = direct_impact + indirect_impact
-            jobs_supported = round(Int, employee_count * economic_multiplier)
-            impact_per_capita = round(total_economic_impact / max(county_population, 1), digits=0)
-            pct_county_employment = round(employee_count / (county_population * 0.45), digits=3)
 
-            closure_job_loss = jobs_supported
-            closure_income_loss = total_economic_impact
-            closure_population_decline_pct = round(employee_count / max(county_population, 1) * 0.8, digits=3)
+            # Call domain engine
+            params = CommunityImpactParams(;
+                annual_payroll=annual_payroll,
+                employee_count=employee_count,
+                local_purchasing=local_purchasing,
+                economic_multiplier=economic_multiplier,
+                county_population=county_population,
+                median_household_income=median_household_income,
+            )
+            result = calculate_community_impact(params)
+
+            # Map domain results
+            direct_impact = result.direct_impact
+            indirect_impact = result.indirect_impact
+            total_economic_impact = result.total_economic_impact
+            jobs_supported = result.jobs_supported
+            impact_per_capita = result.impact_per_capita
+            pct_county_employment = result.pct_county_employment
+
+            # Closure impact from domain
+            closure_proj = closure_impact_projection(params)
+            closure_job_loss = closure_proj.job_loss
+            closure_income_loss = closure_proj.income_loss
+            closure_population_decline_pct = closure_proj.population_decline_pct
+            closure_property_value_decline = closure_proj.property_value_decline
+
+            # Devastation index
+            dev_score = round(Int, clamp(
+                40 * pct_county_employment / 0.10 +
+                30 * min(1.0, total_economic_impact / (county_population * median_household_income * 0.5)) +
+                30 * min(1.0, closure_nearest_er_miles / 45.0),
+                0, 100))
 
             impact_breakdown_data = [PlotData(
                 values = round.([annual_payroll, local_purchasing, indirect_impact] ./ 1000, digits=0),
@@ -87,7 +115,16 @@ using Stipple, StippleUI, StipplePlotly
                 hole = 0.4,
                 name = "Economic Impact (\$K)",
             )]
-            @info "Community impact: \$$(round(Int, total_economic_impact/1e6))M total, $(jobs_supported) jobs"
+            closure_gauge_data = [PlotData(
+                values=[dev_score, 100-dev_score], labels=["Devastation Score", ""],
+                plot=StipplePlotly.Charts.PLOT_TYPE_PIE, hole=0.7,
+                marker=Dict("colors" => ["#F44336", "#E0E0E0"]),
+                name="Closure Devastation", textinfo="none", direction="clockwise", rotation=270)]
+            closure_gauge_layout = PlotLayout(
+                title=PlotLayoutTitle(text="Community Closure Devastation Index"),
+                annotations=[Dict("text" => "$(dev_score)/100", "x" => 0.5, "y" => 0.5,
+                    "font" => Dict("size" => 28), "showarrow" => false)])
+            @info "Community impact (domain): \$$(round(Int, total_economic_impact/1e6))M total, $(jobs_supported) jobs"
         end
     end
 end

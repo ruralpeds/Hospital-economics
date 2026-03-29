@@ -1,0 +1,203 @@
+"""
+RiskController — API handlers for risk assessment endpoints.
+
+Routes:
+  POST /api/risk/closure
+  POST /api/conversion
+"""
+module RiskController
+
+using JSON3, Dates, UUIDs
+using ...RuralHospitalSim
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Closure Risk Assessment
+# ═══════════════════════════════════════════════════════════════════════════
+
+"""
+    handle_closure_risk(payload::Dict) -> Dict
+
+Assess closure risk for a hospital from JSON payload.
+
+Expected payload:
+  - hospital_type: "cah" | "reh" | "pps"
+  - financial_data: dict of financial indicators
+  - operational_data: dict of operational indicators
+  - market_data: dict of market/demographic data
+"""
+function handle_closure_risk(payload::Dict)
+    hospital_type = Symbol(get(payload, "hospital_type", "cah"))
+
+    # Build a minimal hospital for the assessment
+    fin = get(payload, "financial_data", Dict())
+    ops = get(payload, "operational_data", Dict())
+    mkt = get(payload, "market_data", Dict())
+
+    # Build MarketData
+    market = MarketData(;
+        service_area_pop        = Int(get(mkt, "service_area_pop", 15000)),
+        pop_growth_rate         = Float64(get(mkt, "pop_growth_rate", -0.005)),
+        competing_hospitals     = Int(get(mkt, "competing_hospitals", 1)),
+        nearest_competitor_miles = Float64(get(mkt, "nearest_competitor_miles", 30.0)),
+        median_household_income = Float64(get(mkt, "median_household_income", 45000.0)),
+        uninsured_rate          = Float64(get(mkt, "uninsured_rate", 0.12)),
+        medicaid_expansion      = Bool(get(mkt, "medicaid_expansion", true)),
+    )
+
+    # Build minimal CAH for assessment
+    location = GeoLocation(;
+        latitude     = Float64(get(mkt, "latitude", 35.0)),
+        longitude    = Float64(get(mkt, "longitude", -90.0)),
+        fips_code    = get(mkt, "fips_code", "00000"),
+        state        = get(mkt, "state", "XX"),
+        county       = get(mkt, "county", "Unknown"),
+        zip_code     = get(mkt, "zip_code", "00000"),
+    )
+
+    service_area = ServiceArea(;
+        primary_service_area_pop = Int(get(mkt, "service_area_pop", 15000)),
+        total_service_area_pop   = Int(get(mkt, "total_service_area_pop", 25000)),
+    )
+
+    # Build AnnualFinancials for the hospital
+    financials = AnnualFinancials(;
+        fiscal_year              = Int(get(fin, "fiscal_year", 2025)),
+        total_operating_revenue  = Float64(get(fin, "total_revenue", 20_000_000.0)),
+        inpatient_revenue        = Float64(get(fin, "inpatient_revenue", 8_000_000.0)),
+        outpatient_revenue       = Float64(get(fin, "outpatient_revenue", 12_000_000.0)),
+        total_operating_expenses = Float64(get(fin, "total_expenses", 21_000_000.0)),
+        salaries_wages           = Float64(get(fin, "salary_expense", 10_000_000.0)),
+        employee_benefits        = Float64(get(fin, "benefits_expense", 2_500_000.0)),
+        supplies                 = Float64(get(fin, "supply_expense", 2_000_000.0)),
+        pharmaceuticals          = Float64(get(fin, "pharma_expense", 1_000_000.0)),
+        depreciation             = Float64(get(fin, "depreciation", 1_200_000.0)),
+        interest_expense         = Float64(get(fin, "interest_expense", 400_000.0)),
+        cash_and_equivalents     = Float64(get(fin, "cash", 3_000_000.0)),
+        current_assets           = Float64(get(fin, "current_assets", 5_000_000.0)),
+        current_liabilities      = Float64(get(fin, "current_liabilities", 3_000_000.0)),
+        total_assets             = Float64(get(fin, "total_assets", 25_000_000.0)),
+        long_term_debt           = Float64(get(fin, "long_term_debt", 8_000_000.0)),
+        net_plant_property       = Float64(get(fin, "net_plant", 15_000_000.0)),
+        accumulated_depreciation = Float64(get(fin, "accumulated_depreciation", 12_000_000.0)),
+        medicare_days_pct        = Float64(get(fin, "medicare_pct", 0.55)),
+        medicaid_days_pct        = Float64(get(fin, "medicaid_pct", 0.18)),
+    )
+
+    hospital = CriticalAccessHospital(;
+        name                    = get(payload, "hospital_name", "Assessment Hospital"),
+        cms_provider_number     = get(payload, "cms_id", "000000"),
+        npi                     = get(payload, "npi", "0000000000"),
+        cah_certification_date  = Date(2010, 1, 1),
+        licensed_beds           = Int(get(ops, "licensed_beds", 25)),
+        average_daily_census    = Float64(get(ops, "average_daily_census", 5.0)),
+        average_length_of_stay  = Float64(get(ops, "average_length_of_stay", 3.2)),
+        location                = location,
+        service_area            = service_area,
+        nearest_hospital_miles  = Float64(get(mkt, "nearest_competitor_miles", 30.0)),
+        historical_financials   = [financials],
+    )
+
+    financial_data = Dict{String,Float64}()
+    for (k, v) in fin
+        if v isa Number
+            financial_data[string(k)] = Float64(v)
+        end
+    end
+
+    operational_data = Dict{String,Float64}()
+    for (k, v) in ops
+        if v isa Number
+            operational_data[string(k)] = Float64(v)
+        end
+    end
+
+    assessment = assess_closure_risk(hospital, market;
+        financial_data=financial_data, operational_data=operational_data)
+
+    Dict(
+        "status"               => "success",
+        "type"                 => "closure_risk",
+        "run_id"               => string(uuid4()),
+        "timestamp"            => string(now()),
+        "risk_score"           => round(assessment.risk_score, digits=1),
+        "risk_tier"            => string(assessment.risk_tier),
+        "financial_risk"       => round(assessment.financial_risk_score, digits=1),
+        "operational_risk"     => round(assessment.operational_risk_score, digits=1),
+        "market_risk"          => round(assessment.market_risk_score, digits=1),
+        "workforce_risk"       => round(assessment.workforce_risk_score, digits=1),
+        "policy_risk"          => round(assessment.policy_risk_score, digits=1),
+        "top_risk_drivers"     => assessment.top_risk_drivers,
+        "mitigation_factors"   => assessment.mitigation_factors,
+        "years_to_distress"    => assessment.estimated_years_to_distress,
+    )
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REH Conversion Analysis
+# ═══════════════════════════════════════════════════════════════════════════
+
+"""
+    handle_reh_conversion(payload::Dict) -> Dict
+
+Analyze CAH-to-REH conversion from JSON payload.
+
+Expected payload:
+  - base_revenue, base_costs: current hospital financials
+  - conversion_params: severance, facility_mods, volume_assumptions
+  - nearest_inpatient_miles: distance to nearest inpatient facility
+"""
+function handle_reh_conversion(payload::Dict)
+    cp = get(payload, "conversion_params", Dict())
+
+    params = ConversionParams(;
+        severance_cost            = Float64(get(cp, "severance_cost", 500_000.0)),
+        facility_modification_cost = Float64(get(cp, "facility_modification_cost", 1_000_000.0)),
+        ip_volume_loss_pct        = Float64(get(cp, "ip_volume_loss_pct", 1.0)),
+        op_volume_retention_pct   = Float64(get(cp, "op_volume_retention_pct", 0.85)),
+        ed_volume_change_pct      = Float64(get(cp, "ed_volume_change_pct", 0.05)),
+        transition_months         = Int(get(cp, "transition_months", 12)),
+    )
+
+    location = GeoLocation(;
+        latitude=35.0, longitude=-90.0, fips_code="00000",
+        state="XX", county="Unknown", zip_code="00000",
+    )
+    service_area = ServiceArea(;
+        primary_service_area_pop=15000, total_service_area_pop=25000,
+    )
+
+    hospital = CriticalAccessHospital(;
+        name                   = get(payload, "hospital_name", "Conversion Hospital"),
+        cms_provider_number    = "000000",
+        npi                    = "0000000000",
+        cah_certification_date = Date(2010, 1, 1),
+        licensed_beds          = Int(get(payload, "licensed_beds", 25)),
+        location               = location,
+        service_area           = service_area,
+        nearest_hospital_miles = Float64(get(payload, "nearest_inpatient_miles", 30.0)),
+    )
+
+    analysis = analyze_reh_conversion(hospital, params;
+        base_revenue           = Float64(get(payload, "base_revenue", 20_000_000.0)),
+        base_costs             = Float64(get(payload, "base_costs", 21_000_000.0)),
+        nearest_inpatient_miles = Float64(get(payload, "nearest_inpatient_miles", 30.0)),
+    )
+
+    Dict(
+        "status"                     => "success",
+        "type"                       => "reh_conversion",
+        "run_id"                     => string(uuid4()),
+        "timestamp"                  => string(now()),
+        "pre_conversion_margin"      => round(analysis.pre_conversion_margin, digits=4),
+        "post_conversion_margin"     => round(analysis.post_conversion_margin, digits=4),
+        "margin_improvement"         => round(analysis.margin_improvement, digits=4),
+        "annual_facility_payment"    => round(analysis.annual_facility_payment, digits=2),
+        "net_revenue_change"         => round(analysis.net_revenue_change, digits=2),
+        "net_cost_change"            => round(analysis.net_cost_change, digits=2),
+        "one_time_conversion_cost"   => round(analysis.one_time_conversion_cost, digits=2),
+        "payback_months"             => analysis.payback_months,
+        "recommendation"             => analysis.recommendation,
+    )
+end
+
+end # module RiskController

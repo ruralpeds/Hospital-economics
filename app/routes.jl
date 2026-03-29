@@ -217,16 +217,16 @@ route("/capital-scoring") do
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
-# API Routes — Simulation
+# API Routes — Simulation (delegated to SimulationController)
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/api/simulate/deterministic", method=POST) do
     try
         payload = jsonpayload()
-        # TODO: Parse hospital data and params from payload
-        result = Dict("status" => "success", "engine" => "deterministic", "message" => "Simulation complete")
+        result = SimulationController.handle_deterministic(payload)
         json(result)
     catch e
+        @error "Deterministic simulation failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
@@ -234,9 +234,10 @@ end
 route("/api/simulate/monte-carlo", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "engine" => "monte_carlo", "message" => "Simulation complete")
+        result = SimulationController.handle_monte_carlo(payload)
         json(result)
     catch e
+        @error "Monte Carlo simulation failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
@@ -244,9 +245,10 @@ end
 route("/api/simulate/abm", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "engine" => "abm", "message" => "Simulation complete")
+        result = SimulationController.handle_abm(payload)
         json(result)
     catch e
+        @error "ABM simulation failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
@@ -254,9 +256,10 @@ end
 route("/api/simulate/system-dynamics", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "engine" => "system_dynamics", "message" => "Simulation complete")
+        result = SimulationController.handle_system_dynamics(payload)
         json(result)
     catch e
+        @error "System dynamics simulation failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
@@ -264,23 +267,25 @@ end
 route("/api/simulate/des", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "engine" => "des", "message" => "Simulation complete")
+        result = SimulationController.handle_des(payload)
         json(result)
     catch e
+        @error "DES simulation failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
-# API Routes — Optimization
+# API Routes — Optimization (delegated to OptimizationController)
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/api/optimize/staffing", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "type" => "staffing", "message" => "Optimization complete")
+        result = OptimizationController.handle_staffing_optimization(payload)
         json(result)
     catch e
+        @error "Staffing optimization failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
@@ -288,23 +293,25 @@ end
 route("/api/optimize/portfolio", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "type" => "portfolio", "message" => "Optimization complete")
+        result = OptimizationController.handle_portfolio_optimization(payload)
         json(result)
     catch e
+        @error "Portfolio optimization failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
-# API Routes — Risk Assessment
+# API Routes — Risk Assessment (delegated to RiskController)
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/api/risk/closure", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "type" => "closure_risk", "message" => "Assessment complete")
+        result = RiskController.handle_closure_risk(payload)
         json(result)
     catch e
+        @error "Closure risk assessment failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
@@ -312,49 +319,58 @@ end
 route("/api/conversion", method=POST) do
     try
         payload = jsonpayload()
-        result = Dict("status" => "success", "type" => "reh_conversion", "message" => "Analysis complete")
+        result = RiskController.handle_reh_conversion(payload)
         json(result)
     catch e
+        @error "REH conversion analysis failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
-# API Routes — Data Import/Export
+# API Routes — Data Import/Export (delegated to DataController)
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/api/import/hcris", method=POST) do
     try
-        result = Dict("status" => "success", "type" => "hcris", "message" => "Import not yet implemented")
+        payload = jsonpayload()
+        result = DataController.handle_hcris_import(payload)
         json(result)
     catch e
+        @error "HCRIS import failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
 
 route("/api/import/csv", method=POST) do
     try
-        result = Dict("status" => "success", "type" => "csv", "message" => "Import not yet implemented")
+        payload = jsonpayload()
+        result = DataController.handle_csv_import(payload)
         json(result)
     catch e
+        @error "CSV import failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
 
 route("/api/export/csv", method=POST) do
     try
-        result = Dict("status" => "success", "type" => "csv", "message" => "Export not yet implemented")
+        payload = jsonpayload()
+        result = DataController.handle_csv_export(payload)
         json(result)
     catch e
+        @error "CSV export failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
 
 route("/api/export/json", method=POST) do
     try
-        result = Dict("status" => "success", "type" => "json", "message" => "Export not yet implemented")
+        payload = jsonpayload()
+        result = DataController.handle_json_export(payload)
         json(result)
     catch e
+        @error "JSON export failed" exception=(e, catch_backtrace())
         json(Dict("status" => "error", "message" => string(e)), status=400)
     end
 end
@@ -366,9 +382,11 @@ end
 route("/api/health") do
     json(Dict(
         "status" => "ok",
-        "version" => "0.2.0",
+        "version" => "0.3.0",
         "timestamp" => string(Dates.now()),
-        "engines" => ["deterministic", "monte_carlo", "abm", "system_dynamics", "des", "optimization"],
+        "engines" => ["deterministic", "monte_carlo", "abm", "system_dynamics", "des"],
+        "optimizers" => ["staffing", "portfolio"],
+        "risk_models" => ["closure_risk", "reh_conversion"],
         "tools" => 38,
     ))
 end

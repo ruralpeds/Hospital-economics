@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Rural Health Clinic Optimization.
 AIR revenue optimization with behavioral health, telehealth, and CCM expansion.
+Delegates to RuralHospitalSim.optimize_rhc_revenue() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: optimize_rhc_revenue, rhc_vs_hopd_comparison,
+    RHCParams, RHCOptimizationResult
 
 
 @app begin
@@ -52,27 +57,31 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            current_air = min(current_cost_per_visit, payment_cap_per_visit)
-            current_revenue = current_air * annual_visits
 
-            opt_cost = max(current_cost_per_visit, payment_cap_per_visit)
-            optimized_air = min(opt_cost, payment_cap_per_visit)
+            # Call domain engine
+            params = RHCParams(;
+                annual_visits=annual_visits,
+                current_cost_per_visit=current_cost_per_visit,
+                payment_cap_per_visit=payment_cap_per_visit,
+                behavioral_health_visits=behavioral_health_visits,
+                telehealth_visits=telehealth_visits,
+                ccm_eligible_patients=ccm_eligible_patients,
+                ccm_monthly_revenue=ccm_monthly_revenue,
+            )
+            result = optimize_rhc_revenue(params)
 
-            cost_gap_rev = max(0.0, (optimized_air - current_air) * annual_visits)
-            bh_rev = optimized_air * behavioral_health_visits
-            th_rev = optimized_air * telehealth_visits
-            ccm_rev = ccm_eligible_patients * ccm_monthly_revenue * 12.0
+            # Map domain results
+            current_air = result.current_air
+            optimized_air = result.optimized_air
+            current_revenue = result.current_revenue
+            optimized_revenue = result.optimized_revenue
+            revenue_increase = result.revenue_increase
+            recommendations = result.recommendations
 
-            total_visits = annual_visits + behavioral_health_visits + telehealth_visits
-            optimized_revenue = optimized_air * total_visits + ccm_rev
-            revenue_increase = optimized_revenue - current_revenue
-
-            recs = String[]
-            cost_gap_rev > 0 && push!(recs, "Capture \$$(round(Int, cost_gap_rev)) by optimizing cost report to payment cap")
-            bh_rev > 0 && push!(recs, "Behavioral health adds \$$(round(Int, bh_rev))/year")
-            th_rev > 0 && push!(recs, "Telehealth expansion adds \$$(round(Int, th_rev))/year")
-            ccm_rev > 0 && push!(recs, "CCM program adds \$$(round(Int, ccm_rev))/year outside AIR")
-            recommendations = recs
+            cost_gap_rev = result.cost_optimization_revenue
+            bh_rev = result.behavioral_health_revenue
+            th_rev = result.telehealth_revenue
+            ccm_rev = result.ccm_revenue
 
             revenue_chart_data = [PlotData(
                 x=["Current", "Cost Optimization", "Behavioral Health", "Telehealth", "CCM"],
@@ -80,12 +89,12 @@ using Stipple, StippleUI, StipplePlotly
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Revenue Components",
                 marker=Dict("color" => ["#2196F3", "#4CAF50", "#FF9800", "#9C27B0", "#00BCD4"]))]
 
-            rhc_total = optimized_air * total_visits
-            opps_total = opps_rate * total_visits
+            # RHC vs HOPD comparison from domain
+            comp = rhc_vs_hopd_comparison(params; opps_rate=opps_rate)
             comparison_data = [PlotData(x=["RHC AIR", "OPPS Equivalent"],
-                y=[rhc_total, opps_total], plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
+                y=[comp.rhc_revenue, comp.opps_revenue], plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
                 marker=Dict("color" => ["#4CAF50", "#FF9800"]))]
-            @info "RHC optimization: +\$$(round(Int, revenue_increase))"
+            @info "RHC optimization (domain): +\$$(round(Int, revenue_increase))"
         end
     end
 end

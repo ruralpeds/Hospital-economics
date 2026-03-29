@@ -1,8 +1,11 @@
 """
 Stipple reactive model for Break-Even Analysis.
-Calculates break-even volume with fixed/variable cost structure.
+Delegates to RuralHospitalSim.calculate_break_even() for core computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_break_even, BreakEvenResult
 
 
 @app begin
@@ -59,13 +62,22 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            contribution_margin_per_unit = revenue_per_encounter - variable_cost_per_encounter
-            break_even_volume = contribution_margin_per_unit > 0 ?
-                round(Int, fixed_costs / contribution_margin_per_unit) : 999_999
-            current_net_income = current_volume * contribution_margin_per_unit - fixed_costs
+
+            # Call domain engine
+            result = calculate_break_even(
+                fixed_costs,
+                variable_cost_per_encounter,
+                revenue_per_encounter;
+                current_volume=Float64(current_volume),
+            )
+
+            # Map domain results to reactive outputs
+            break_even_volume = round(Int, result.break_even_volume)
+            contribution_margin_per_unit = result.contribution_margin_per_unit
+            cushion_pct = round(result.cushion_pct, digits=3)
             cushion_encounters = max(0, current_volume - break_even_volume)
-            cushion_pct = round(cushion_encounters / max(current_volume, 1), digits=3)
             margin_of_safety = cushion_pct
+            current_net_income = current_volume * contribution_margin_per_unit - fixed_costs
 
             # Build chart points
             max_vol = round(Int, break_even_volume * 1.5)

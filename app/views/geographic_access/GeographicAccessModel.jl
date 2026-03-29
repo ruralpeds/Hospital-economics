@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Geographic Access Modeling.
 2SFCA catchment analysis and closure impact assessment for rural facilities.
+Delegates to RuralHospitalSim.calculate_catchment() for 2SFCA computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_catchment, haversine_distance, estimate_drive_time,
+    closure_access_impact, FacilityLocation, PopulationCenter, AccessResult
 
 
 @app begin
@@ -67,42 +72,30 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            R = 6371.0
-            pops = [(pop1_name, pop1_lat, pop1_lon, pop1_population, pop1_pct_over_65),
-                    (pop2_name, pop2_lat, pop2_lon, pop2_population, pop2_pct_over_65),
-                    (pop3_name, pop3_lat, pop3_lon, pop3_population, pop3_pct_over_65)]
 
-            names = String[]
-            populations = Int[]
-            times = Float64[]
-            total_pop = 0
-            weighted_demand = 0.0
-            wt_sum = 0.0
+            # Build domain types
+            facility = FacilityLocation(facility_name, facility_lat, facility_lon, facility_capacity)
+            pop_centers = [
+                PopulationCenter(pop1_name, pop1_lat, pop1_lon, pop1_population, pop1_pct_over_65),
+                PopulationCenter(pop2_name, pop2_lat, pop2_lon, pop2_population, pop2_pct_over_65),
+                PopulationCenter(pop3_name, pop3_lat, pop3_lon, pop3_population, pop3_pct_over_65),
+            ]
 
-            for (nm, lat, lon, pop, o65) in pops
-                dlat = deg2rad(lat - facility_lat)
-                dlon = deg2rad(lon - facility_lon)
-                a = sin(dlat/2)^2 + cos(deg2rad(facility_lat))*cos(deg2rad(lat))*sin(dlon/2)^2
-                dist = 2R * asin(sqrt(clamp(a, 0.0, 1.0)))
-                mins = (dist * 1.3 / 80.0) * 60.0
+            # Call domain engine for 2SFCA catchment analysis
+            result = calculate_catchment(facility, pop_centers; max_drive_minutes=max_drive_minutes)
 
-                if mins <= max_drive_minutes
-                    decay = exp(-0.05 * mins)
-                    demand = pop * decay * (1.0 + o65)
-                    total_pop += pop
-                    weighted_demand += demand
-                    wt_sum += mins * pop
-                end
-                push!(names, nm)
-                push!(populations, pop)
-                push!(times, round(mins, digits=1))
-            end
+            # Map domain results
+            catchment_population = result.catchment_population
+            avg_drive_time = result.avg_drive_time
+            access_score = result.access_score
+            market_share = result.market_share
+            volume_estimate = result.volume_estimate
 
-            catchment_population = total_pop
-            avg_drive_time = total_pop > 0 ? round(wt_sum / total_pop, digits=1) : 0.0
-            access_score = weighted_demand > 0 ? round(facility_capacity / weighted_demand, digits=6) : 0.0
-            market_share = clamp(round(access_score * 1000.0, digits=4), 0.0, 1.0)
-            volume_estimate = round(total_pop * 0.10 * market_share, digits=0)
+            names = [p.name for p in pop_centers]
+            populations = [p.population for p in pop_centers]
+            times = [round(estimate_drive_time(
+                haversine_distance(facility_lat, facility_lon, p.latitude, p.longitude)), digits=1)
+                for p in pop_centers]
 
             access_chart_data = [PlotData(x=names, y=populations,
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Population",
@@ -110,7 +103,7 @@ using Stipple, StippleUI, StipplePlotly
             drive_time_data = [PlotData(x=names, y=times,
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Drive Time (min)",
                 marker=Dict("color" => "#FF9800"))]
-            @info "Geographic access: catchment $(catchment_population), volume $(volume_estimate)"
+            @info "Geographic access (domain): catchment $(catchment_population), volume $(volume_estimate)"
         end
     end
 end
