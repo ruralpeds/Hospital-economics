@@ -2,7 +2,7 @@
 Rural Hospital Economics Simulator - Main Application Entry Point
 A Genie.jl + Stipple.jl web application for modeling rural hospital financial viability.
 
-V3.0 — 27 interactive tools, 6 simulation engines, education center
+V3.2 — 38 interactive tools, 6 simulation engines, full API, education center
 """
 module HospitalEconomicsApp
 
@@ -136,6 +136,14 @@ include(joinpath(APP_ROOT, "views", "disaster_resilience", "disaster_resilience.
 include(joinpath(APP_ROOT, "views", "capital_scoring", "capital_scoring.jl"))
 
 # ---------------------------------------------------------------------------
+# Include API controllers
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
+include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
+include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
+include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
+
+# ---------------------------------------------------------------------------
 # Include routes
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "routes.jl"))
@@ -145,8 +153,8 @@ include(joinpath(APP_ROOT, "routes.jl"))
 # ---------------------------------------------------------------------------
 function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false)
     load_config()
-    @info "Starting Rural Hospital Economics Simulator v0.2.0 on $host:$port"
-    @info "38 interactive tools | 6 simulation engines | Education center"
+    @info "Starting Rural Hospital Economics Simulator v0.3.0 on $host:$port"
+    @info "38 interactive tools | 6 simulation engines | Full API | Education center"
     Genie.config.run_as_server = true
     Genie.config.server_host = host
     Genie.config.server_port = port

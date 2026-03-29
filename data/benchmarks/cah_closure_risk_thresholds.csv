@@ -1,0 +1,11 @@
+indicator,low_risk_max,medium_risk_max,high_risk_max,critical_threshold,weight,source,description
+consecutive_loss_years,0,2,4,5,0.15,Chartis/Holmes,Number of consecutive years with negative operating margin
+operating_margin,-0.02,0.00,-0.05,-0.10,0.20,Holmes Financial Distress,Operating income / total revenue
+net_revenue_trend,0.02,0.00,-0.03,-0.05,0.10,Chartis,3-year compound annual growth rate of net patient revenue
+days_cash_on_hand,60,30,15,7,0.15,Holmes Financial Distress,Cash and investments / daily operating expenses
+occupancy_rate,0.30,0.20,0.12,0.08,0.05,Chartis,Average daily census / licensed beds
+case_mix_index,0.90,0.80,0.70,0.60,0.03,CMS,Average DRG weight (lower = less complex cases being retained)
+age_of_plant,12,16,20,25,0.07,Flex Monitoring,Accumulated depreciation / annual depreciation
+traditional_medicare_pct,0.50,0.60,0.70,0.75,0.05,Chartis,Traditional (FFS) Medicare as % of total patient days
+medicaid_expansion,1,1,0,0,0.05,Chartis,Whether state has expanded Medicaid (1=yes 0=no)
+debt_service_coverage,2.5,1.5,1.0,0.8,0.15,Holmes Financial Distress,EBITDA / annual debt service payments

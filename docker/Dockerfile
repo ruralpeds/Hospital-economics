@@ -75,4 +75,4 @@ EXPOSE 8000
 
 # Start the Genie web application
 CMD ["julia", "--project=/app", "--threads=auto", "-e", \
-     "using Pkg; include(\"app/main.jl\")"]
+     "include(\"app/app.jl\"); using .HospitalEconomicsApp; start()"]
