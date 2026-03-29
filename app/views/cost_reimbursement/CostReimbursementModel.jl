@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Cost-Based Reimbursement Simulator.
 Models step-down cost allocation and cost-to-charge ratios for 101% reimbursement.
+Delegates to RuralHospitalSim.step_down_allocation() for cost allocation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: step_down_allocation, calculate_medicare_cost_share,
+    default_cah_cost_centers, CostCenter, CAH_COST_REIMBURSEMENT_RATE
 
 
 @app begin
@@ -83,28 +88,75 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
+
+            # Build cost centers for domain engine
+            support_costs = Dict{String,Float64}(
+                "Administration" => cost_admin,
+                "Plant Operations" => cost_plant,
+                "Dietary" => cost_dietary,
+            )
+            revenue_costs = Dict{String,Float64}(
+                "Nursing" => cost_nursing,
+                "ED" => cost_ed,
+                "Lab" => cost_lab,
+                "Imaging" => cost_imaging,
+                "Pharmacy" => cost_pharmacy,
+                "Ancillary" => cost_ancillary,
+            )
+
+            # Call domain engine for step-down allocation
+            all_costs = merge(support_costs, revenue_costs)
+            allocation_order = ["Administration", "Plant Operations", "Dietary"]
+            rev_centers = ["Nursing", "ED", "Lab", "Imaging", "Pharmacy", "Ancillary"]
+            allocated = step_down_allocation(all_costs, allocation_order, rev_centers)
+
             total_costs = cost_admin + cost_nursing + cost_ancillary + cost_pharmacy +
                           cost_lab + cost_imaging + cost_ed + cost_dietary + cost_plant
             total_charges = charges_inpatient + charges_outpatient + charges_ed +
                            charges_lab + charges_imaging + charges_pharmacy
             overall_ccr = round(total_costs / max(total_charges, 1), digits=3)
-            reimbursement_101pct = round(total_costs * 1.01, digits=0)
+            reimbursement_101pct = round(total_costs * CAH_COST_REIMBURSEMENT_RATE, digits=0)
             reimbursement_gap = reimbursement_101pct - total_costs
 
+            # Build step-down table from domain results
+            step_down_table = Dict{String,Any}[]
+            methods = Dict("Administration"=>"sq ft", "Plant Operations"=>"sq ft", "Dietary"=>"meals",
+                "Nursing"=>"patient days", "ED"=>"visits", "Lab"=>"tests",
+                "Imaging"=>"procedures", "Pharmacy"=>"orders", "Ancillary"=>"direct")
+            for dept in vcat(allocation_order, rev_centers)
+                direct = round(get(all_costs, dept, 0.0) / 1000, digits=0)
+                alloc_amt = round((get(allocated, dept, get(all_costs, dept, 0.0)) - get(all_costs, dept, 0.0)) / 1000, digits=0)
+                total_dept = round(get(allocated, dept, get(all_costs, dept, 0.0)) / 1000, digits=0)
+                push!(step_down_table, Dict{String,Any}("dept"=>dept, "direct_cost"=>direct,
+                    "allocated"=>alloc_amt, "total"=>total_dept, "method"=>get(methods, dept, "direct")))
+            end
+
+            # CCR by revenue department
             dept_names = ["Inpatient", "Outpatient", "ED", "Lab", "Imaging", "Pharmacy"]
             dept_charges = [charges_inpatient, charges_outpatient, charges_ed,
                            charges_lab, charges_imaging, charges_pharmacy]
-            dept_costs = [c * overall_ccr for c in dept_charges]
-            dept_ccrs = [round(dc / max(ch, 1) * 100, digits=1) for (dc, ch) in zip(dept_costs, dept_charges)]
+            # Map allocated costs to charge departments
+            nursing_total = get(allocated, "Nursing", cost_nursing)
+            ed_total = get(allocated, "ED", cost_ed)
+            lab_total = get(allocated, "Lab", cost_lab)
+            imaging_total = get(allocated, "Imaging", cost_imaging)
+            pharmacy_total = get(allocated, "Pharmacy", cost_pharmacy)
+            ancillary_total = get(allocated, "Ancillary", cost_ancillary)
+            dept_alloc_costs = [nursing_total, ancillary_total, ed_total, lab_total, imaging_total, pharmacy_total]
+            dept_ccrs_vals = [round(dc / max(ch, 1) * 100, digits=1) for (dc, ch) in zip(dept_alloc_costs, dept_charges)]
+
+            ccr_by_dept = [Dict{String,Any}("dept"=>n, "cost"=>round(Int, c), "charges"=>round(Int, ch),
+                "ccr"=>round(c/max(ch,1), digits=3))
+                for (n, c, ch) in zip(dept_names, dept_alloc_costs, dept_charges)]
 
             ccr_chart_data = [
-                PlotData(x=dept_names, y=dept_ccrs,
+                PlotData(x=dept_names, y=dept_ccrs_vals,
                     plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="CCR (%)"),
                 PlotData(x=dept_names, y=fill(round(overall_ccr * 100, digits=1), 6),
                     plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER, name="Overall CCR",
                     mode="lines", line=PlotDataLine(dash="dash", color="red")),
             ]
-            @info "Cost reimbursement: CCR $(round(overall_ccr*100, digits=1))%, 101% = \$$(round(Int, reimbursement_101pct/1e6))M"
+            @info "Cost reimbursement (domain): CCR $(round(overall_ccr*100, digits=1))%, 101% = \$$(round(Int, reimbursement_101pct/1e6))M"
         end
     end
 end

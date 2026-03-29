@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Telehealth ROI Analysis.
 Models financial return on telehealth investments including direct revenue and avoided transfers.
+Delegates to RuralHospitalSim.calculate_telehealth_roi() for ROI computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_telehealth_roi, telehealth_service_comparison,
+    TelehealthService, TelehealthInvestment, TelehealthROI
 
 
 @app begin
@@ -55,42 +60,42 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            rev = svc1_volume * svc1_revenue + svc2_volume * svc2_revenue
-            costs = svc1_volume * svc1_cost + svc2_volume * svc2_cost
-            transfers = svc1_transfers_avoided * svc1_transfer_cost + svc2_transfers_avoided * svc2_transfer_cost
 
-            direct_revenue = rev
-            direct_costs = costs
-            avoided_transfer_savings = transfers
+            # Build domain types
+            services = [
+                TelehealthService(svc1_name, svc1_volume, svc1_revenue, svc1_cost,
+                    svc1_transfers_avoided, svc1_transfer_cost),
+                TelehealthService(svc2_name, svc2_volume, svc2_revenue, svc2_cost,
+                    svc2_transfers_avoided, svc2_transfer_cost),
+            ]
+            investment = TelehealthInvestment(;
+                infrastructure_cost=infrastructure_cost,
+                annual_licensing=annual_licensing,
+                annual_staffing=annual_staffing,
+                broadband_upgrade=broadband_upgrade,
+                training_cost=training_cost,
+                projection_years=projection_years,
+            )
 
-            one_time = infrastructure_cost + broadband_upgrade + training_cost
-            annual_fixed = annual_licensing + annual_staffing
-            total_investment = one_time + annual_fixed
-            annual_net = rev - costs + transfers
+            # Call domain engine
+            result = calculate_telehealth_roi(services, investment)
 
-            net_benefit_year1 = annual_net - total_investment
+            # Map domain results
+            direct_revenue = result.direct_revenue
+            direct_costs = result.direct_costs
+            avoided_transfer_savings = result.avoided_transfer_savings
+            total_investment = result.total_investment
+            net_benefit_year1 = result.net_benefit_year1
+            roi_pct = result.roi_pct
+            breakeven_months = result.breakeven_months
 
-            cumulative = 0.0
-            years_labels = String[]
-            cumulative_vals = Float64[]
-            for yr in 1:projection_years
-                growth = 1.0 + 0.10 * (yr - 1)
-                yr_net = (rev * growth) - (costs * growth) + (transfers * growth)
-                yr_cost = yr == 1 ? total_investment : annual_fixed
-                cumulative += yr_net - yr_cost
-                push!(years_labels, "Year $yr")
-                push!(cumulative_vals, round(cumulative, digits=0))
-            end
+            years_labels = ["Year $yr" for yr in 1:projection_years]
+            cumulative_vals = result.cumulative_benefits
 
-            total_invested = one_time + annual_fixed * projection_years
-            roi_pct = total_invested > 0 ? round(cumulative / total_invested * 100, digits=1) : 0.0
-            monthly = annual_net / 12.0
-            breakeven_months = monthly > 0 ? ceil(Int, total_investment / monthly) : 0
-
-            roi_chart_data = [PlotData(x=years_labels, y=cumulative_vals,
+            roi_chart_data = [PlotData(x=years_labels, y=round.(cumulative_vals, digits=0),
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Cumulative Net Benefit",
                 marker=Dict("color" => "#4CAF50"))]
-            @info "Telehealth ROI: $(roi_pct)%, breakeven $(breakeven_months)mo"
+            @info "Telehealth ROI (domain): $(roi_pct)%, breakeven $(breakeven_months)mo"
         end
     end
 end

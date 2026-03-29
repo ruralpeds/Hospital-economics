@@ -1,8 +1,13 @@
 """
 Stipple reactive model for MCDA Capital Replacement Scoring.
 Weighted multi-criteria scoring, budget-constrained selection, and priority reporting.
+Delegates to RuralHospitalSim.score_capital_projects() for MCDA computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: score_capital_projects, select_within_budget,
+    CapitalRequest, CapitalScoreResult
 
 
 @app begin
@@ -74,51 +79,43 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            names = [p1_name, p2_name, p3_name, p4_name]
-            costs = [p1_cost, p2_cost, p3_cost, p4_cost]
-            safeties = [p1_safety, p2_safety, p3_safety, p4_safety]
-            revenues = [p1_revenue, p2_revenue, p3_revenue, p4_revenue]
-            failures = [p1_failure, p2_failure, p3_failure, p4_failure]
-            strategics = [p1_strategic, p2_strategic, p3_strategic, p4_strategic]
-            efficiencies = [p1_efficiency, p2_efficiency, p3_efficiency, p4_efficiency]
-            max_rev = maximum(revenues)
-            max_eff = maximum(efficiencies)
-            scores = Float64[]
-            for i in 1:4
-                rev_norm = max_rev > 0 ? revenues[i] / max_rev : 0.0
-                eff_norm = max_eff > 0 ? efficiencies[i] / max_eff : 0.0
-                s = w_safety * safeties[i] + w_revenue * rev_norm +
-                    w_condition * failures[i] + w_strategic * strategics[i] +
-                    w_efficiency * eff_norm
-                push!(scores, round(s, digits=3))
-            end
-            ranks = sortperm(scores, rev=true)
+
+            # Build domain types
+            requests = [
+                CapitalRequest(p1_name, p1_cost, p1_safety, p1_revenue, p1_failure, p1_strategic, p1_efficiency),
+                CapitalRequest(p2_name, p2_cost, p2_safety, p2_revenue, p2_failure, p2_strategic, p2_efficiency),
+                CapitalRequest(p3_name, p3_cost, p3_safety, p3_revenue, p3_failure, p3_strategic, p3_efficiency),
+                CapitalRequest(p4_name, p4_cost, p4_safety, p4_revenue, p4_failure, p4_strategic, p4_efficiency),
+            ]
+            weights = Dict("safety"=>w_safety, "revenue"=>w_revenue, "condition"=>w_condition,
+                "strategic"=>w_strategic, "efficiency"=>w_efficiency)
+
+            # Call domain engine
+            scored = score_capital_projects(requests, weights)
+            selection = select_within_budget(scored, annual_capex_budget)
+
+            # Map domain results
+            names = [s.name for s in scored]
+            scores = [s.score for s in scored]
             project_names = names
             project_scores = scores
-            project_ranks = invperm(ranks)
-            sel = String[]
-            total_cost = 0.0
-            total_benefit = 0.0
-            for idx in ranks
-                if total_cost + costs[idx] <= annual_capex_budget
-                    push!(sel, names[idx])
-                    total_cost += costs[idx]
-                    total_benefit += revenues[idx] + efficiencies[idx]
-                end
-            end
+            project_ranks = [s.rank for s in scored]
+
+            sel = [s.name for s in selection.selected]
             selected_projects = sel
-            total_cost_selected = total_cost
-            budget_utilization = annual_capex_budget > 0 ? round(total_cost / annual_capex_budget, digits=3) : 0.0
-            total_annual_benefit = total_benefit
+            total_cost_selected = selection.total_cost
+            budget_utilization = selection.budget_utilization
+            total_annual_benefit = selection.total_annual_benefit
+
             score_data = [PlotData(x=names, y=scores,
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Weighted Score",
                 marker=Dict("color" => [n in sel ? "#4CAF50" : "#9E9E9E" for n in names]))]
-            remaining = max(annual_capex_budget - total_cost, 0.0)
+            remaining = max(annual_capex_budget - total_cost_selected, 0.0)
             budget_data = [PlotData(labels=["Selected", "Remaining"],
-                values=[total_cost, remaining],
+                values=[total_cost_selected, remaining],
                 plot=StipplePlotly.Charts.PLOT_TYPE_PIE,
                 marker=Dict("colors" => ["#4CAF50", "#E0E0E0"]))]
-            @info "Capital scoring: $(length(sel)) projects selected, \$$(round(Int, total_cost)) of \$$(round(Int, annual_capex_budget)) budget"
+            @info "Capital scoring (domain): $(length(sel)) projects selected, \$$(round(Int, total_cost_selected)) of \$$(round(Int, annual_capex_budget)) budget"
         end
     end
 end

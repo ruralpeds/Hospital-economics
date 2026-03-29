@@ -1,8 +1,12 @@
 """
 Stipple reactive model for Workforce RVU Analysis.
 Compares provider wRVU production against benchmarks and compensation.
+References RuralHospitalSim staffing benchmarks.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: total_compensation, total_fte
 
 
 @app begin

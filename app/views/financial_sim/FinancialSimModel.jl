@@ -1,8 +1,11 @@
 """
 Stipple reactive model for 7-Slider Financial Simulator.
-Projects 5-year financials based on 7 key operational sliders.
+Delegates to RuralHospitalSim.project_financials() for multi-year projection.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: DeterministicParams, project_financials, project_single_year
 
 
 @app begin
@@ -71,32 +74,58 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            # Revenue model: volume-driven with payer-mix weighting
-            base_rev = ed_visits * 1850 * 0.42 + ip_discharges * 9350 * 0.48 +
-                       (ed_visits * 3.0) * 680 * 0.52  # outpatient proxy
-            travel_premium = 1.0 + travel_nurse_pct * 2.5  # travel nurses cost 2.5x
-            labor_base = base_rev * 0.527 * travel_premium
-            non_labor = base_rev * 0.30
-            base_exp = labor_base + non_labor + 1_200_000  # fixed overhead
 
-            rev_list = Float64[]
-            exp_list = Float64[]
-            for yr in 1:5
-                r = base_rev * (1 + 0.02)^yr
-                e = base_exp * (1 + inflation_rate)^yr
-                push!(rev_list, r)
-                push!(exp_list, e)
-            end
+            # Derive base financials from slider inputs
+            ip_revenue = ip_discharges * 9350.0 * (1 + avg_length_of_stay / 20.0)
+            op_revenue = ed_visits * 1850.0 + ed_visits * 3.0 * 680.0
+            base_rev = ip_revenue + op_revenue
+
+            travel_premium = 1.0 + travel_nurse_pct * 2.5
+            salary_expense = base_rev * 0.527 * travel_premium
+            supply_expense = base_rev * 0.15
+            other_expense = base_rev * 0.15 + 1_200_000.0
+
+            # Build base financials NamedTuple for domain engine
+            bf = (
+                inpatient_revenue  = ip_revenue,
+                outpatient_revenue = op_revenue,
+                salary_expense     = salary_expense,
+                supply_expense     = supply_expense,
+                other_expense      = other_expense,
+                cash_reserves      = 5_000_000.0,
+                depreciation       = 1_200_000.0,
+                annual_debt_service = 800_000.0,
+                payer_mix_government = Float64(medicare_pct) + 0.18,
+            )
+
+            # Build params using domain type
+            params = DeterministicParams(;
+                projection_years        = 5,
+                volume_growth_rate      = -0.01,
+                cost_inflation_rate     = inflation_rate,
+                salary_inflation_rate   = inflation_rate + 0.005,
+                supply_inflation_rate   = inflation_rate + 0.01,
+                reimbursement_adjustment = 0.015,
+                payer_mix_shift         = 0.005,
+            )
+
+            # Call domain engine
+            result = project_financials(bf, params)
+
+            # Map results to outputs
+            rev_list = [p.total_revenue for p in result.projections]
+            exp_list = [p.total_expense for p in result.projections]
+            margin_list = [p.operating_margin * 100 for p in result.projections]
 
             projected_revenue = round.(rev_list ./ 1e6, digits=1)
             projected_expenses = round.(exp_list ./ 1e6, digits=1)
-            projected_margin_pct = round.((rev_list .- exp_list) ./ rev_list .* 100, digits=1)
+            projected_margin_pct = round.(margin_list, digits=1)
             year1_revenue = rev_list[1]
             year5_revenue = rev_list[5]
-            year5_margin = (rev_list[5] - exp_list[5]) / rev_list[5]
-            total_5yr_gap = sum(rev_list .- exp_list)
+            year5_margin = result.terminal_operating_margin
+            total_5yr_gap = result.cumulative_operating_income
 
-            medicaid_pct = max(0, 1.0 - medicare_pct - commercial_pct - 0.08)
+            medicaid_pct = max(0.0, 1.0 - medicare_pct - commercial_pct - 0.08)
             payer_breakdown = round.([medicare_pct, medicaid_pct, commercial_pct, 0.08] .* 100, digits=0)
 
             margin_trajectory_data = [
@@ -110,7 +139,8 @@ using Stipple, StippleUI, StipplePlotly
             payer_doughnut_data = [PlotData(
                 values=payer_breakdown, labels=payer_labels,
                 plot=StipplePlotly.Charts.PLOT_TYPE_PIE, hole=0.5, name="Payer Mix")]
-            @info "Financial sim: Y5 margin $(round(year5_margin*100, digits=1))%"
+
+            @info "Financial sim (domain): Y5 margin $(round(year5_margin*100, digits=1))%, cumulative OI \$$(round(Int, total_5yr_gap/1000))K"
         end
     end
 end

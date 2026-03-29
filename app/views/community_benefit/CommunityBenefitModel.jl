@@ -1,8 +1,13 @@
 """
 Stipple reactive model for IRS Schedule H Community Benefit Valuation.
 Calculates community benefit vs. tax exemption value with AHA benchmarking.
+Delegates to RuralHospitalSim.calculate_community_benefit() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_community_benefit, community_benefit_comparison,
+    CommunityBenefitData, CommunityBenefitResult
 
 
 @app begin
@@ -56,28 +61,38 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
+
+            # Build domain data and call engine
+            data = CommunityBenefitData(;
+                charity_care_costs=charity_care_costs,
+                medicaid_shortfall=medicaid_shortfall,
+                community_health_services=community_health_services,
+                health_professions_education=health_professions_education,
+                subsidized_services_cost=subsidized_services_cost,
+                research=research,
+                cash_contributions=cash_contributions,
+                community_building=community_building,
+                total_expenses=total_expenses,
+                assessed_value=assessed_value,
+                tax_rate=tax_rate,
+                property_tax_rate=property_tax_rate,
+            )
+            result = calculate_community_benefit(data)
+
+            # Map domain results
+            total_community_benefit = result.total_community_benefit
+            benefit_as_pct = result.benefit_as_pct
+            estimated_tax_exemption = result.estimated_tax_exemption
+            net_community_investment = result.net_community_investment
+            meets_aha_standard = result.meets_aha_standard
+            percentile_estimate = result.percentile_estimate
+            rating = result.rating
+
+            cat_names = ["Charity Care", "Medicaid Shortfall", "Community Health",
+                         "Education", "Subsidized Svcs", "Research", "Contributions", "Community Building"]
             cats = [charity_care_costs, medicaid_shortfall, community_health_services,
                     health_professions_education, subsidized_services_cost,
                     research, cash_contributions, community_building]
-            cat_names = ["Charity Care", "Medicaid Shortfall", "Community Health",
-                         "Education", "Subsidized Svcs", "Research", "Contributions", "Community Building"]
-
-            total_community_benefit = sum(cats)
-            benefit_as_pct = total_expenses > 0 ? total_community_benefit / total_expenses : 0.0
-
-            corp_tax = total_expenses * 0.03 * tax_rate
-            prop_tax = assessed_value * property_tax_rate
-            sales_tax = total_expenses * 0.01
-            estimated_tax_exemption = corp_tax + prop_tax + sales_tax
-
-            net_community_investment = total_community_benefit - estimated_tax_exemption
-            meets_aha_standard = total_community_benefit >= estimated_tax_exemption
-
-            z = (benefit_as_pct - 0.076) / 0.04
-            percentile_estimate = clamp(round(Int, 50.0 + 50.0 * tanh(z * 0.8)), 1, 99)
-            rating = benefit_as_pct >= 0.076 * 1.5 ? "exemplary" :
-                     benefit_as_pct >= 0.076 ? "above_average" :
-                     benefit_as_pct >= 0.076 * 0.5 ? "below_average" : "needs_improvement"
 
             category_data = [PlotData(labels=cat_names, values=cats,
                 plot=StipplePlotly.Charts.PLOT_TYPE_PIE, hole=0.4, name="Categories")]
@@ -85,7 +100,7 @@ using Stipple, StippleUI, StipplePlotly
                 y=[total_community_benefit, estimated_tax_exemption],
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
                 marker=Dict("color" => ["#4CAF50", "#FF9800"]))]
-            @info "Community benefit: $(round(benefit_as_pct*100, digits=1))%, AHA=$(meets_aha_standard)"
+            @info "Community benefit (domain): $(round(benefit_as_pct*100, digits=1))%, AHA=$(meets_aha_standard)"
         end
     end
 end

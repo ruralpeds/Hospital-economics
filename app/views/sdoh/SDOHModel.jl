@@ -1,8 +1,13 @@
 """
 Stipple reactive model for SDOH Integration Analysis.
 Models how social determinants of health affect hospital financial performance.
+Delegates to RuralHospitalSim.calculate_sdoh_adjustments() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_sdoh_adjustments, sdoh_financial_impact,
+    sdoh_risk_tier, SDOHProfile, SDOHAdjustment
 
 
 @app begin
@@ -59,30 +64,39 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
+
+            # Build domain profile and call engine
+            profile = SDOHProfile(;
+                svi_score=svi_score,
+                adi_national_rank=adi_national_rank,
+                food_desert_pct=food_desert_pct,
+                broadband_pct=broadband_pct,
+                transportation_desert=transportation_desert,
+                health_literacy_score=health_literacy_score,
+                uninsured_rate=uninsured_rate,
+                poverty_rate=poverty_rate,
+                median_household_income=median_household_income,
+            )
+            adjustments = calculate_sdoh_adjustments(profile)
+
+            # Map domain results
+            volume_adjustment = adjustments.volume_adjustment
+            cost_per_case_adjustment = adjustments.cost_per_case_adjustment
+            ed_utilization_multiplier = adjustments.ed_utilization_multiplier
+            readmission_risk_multiplier = adjustments.readmission_risk_multiplier
+            telehealth_viability = adjustments.telehealth_viability
+            composite_risk_score = adjustments.composite_risk_score
+
+            # Risk tier from domain
+            risk_tier = sdoh_risk_tier(composite_risk_score)
+
+            # Financial impact from domain
+            fin_impact = sdoh_financial_impact(profile, base_revenue, base_expenses)
+            revenue_impact = fin_impact.revenue_impact
+            expense_impact = fin_impact.expense_impact
+            net_margin_impact = fin_impact.net_margin_impact
+
             adi_norm = clamp(adi_national_rank / 100.0, 0.0, 1.0)
-            volume_adjustment = 1.0 - 0.05 * svi_score + 0.03 * uninsured_rate
-            cost_per_case_adjustment = 1.0 + 0.15 * adi_norm + 0.10 * food_desert_pct + 0.08 * (1.0 - health_literacy_score)
-            ed_mult = 1.0 + 0.20 * svi_score + 0.15 * uninsured_rate + 0.10 * food_desert_pct
-            ed_utilization_multiplier = transportation_desert ? ed_mult + 0.15 : ed_mult
-            readmission_risk_multiplier = 1.0 + 0.18 * poverty_rate + 0.12 * food_desert_pct + 0.10 * (1.0 - health_literacy_score)
-            telehealth_viability = clamp(broadband_pct * 0.7 + health_literacy_score * 0.3, 0.0, 1.0)
-
-            composite_risk_score = clamp(0.30*svi_score + 0.20*adi_norm +
-                0.15*clamp(uninsured_rate/0.30,0,1) + 0.15*clamp(poverty_rate/0.40,0,1) +
-                0.10*food_desert_pct + 0.10*(transportation_desert ? 1.0 : 0.0), 0.0, 1.0)
-            risk_tier = composite_risk_score < 0.25 ? "low" :
-                        composite_risk_score < 0.50 ? "moderate" :
-                        composite_risk_score < 0.75 ? "high" : "critical"
-
-            uc_drag = base_revenue * uninsured_rate * 0.40
-            adj_rev = base_revenue * volume_adjustment - uc_drag
-            ed_premium = base_expenses * 0.10 * (ed_utilization_multiplier - 1.0)
-            readmit_cost = base_expenses * 0.03 * (readmission_risk_multiplier - 1.0)
-            adj_exp = base_expenses * cost_per_case_adjustment + ed_premium + readmit_cost
-            revenue_impact = round(adj_rev - base_revenue, digits=0)
-            expense_impact = round(adj_exp - base_expenses, digits=0)
-            net_margin_impact = round((adj_rev - adj_exp) - (base_revenue - base_expenses), digits=0)
-
             no_bb = round(1.0 - broadband_pct, digits=2)
             low_lit = round(1.0 - health_literacy_score, digits=2)
             radar_data = [PlotData(
@@ -96,7 +110,7 @@ using Stipple, StippleUI, StipplePlotly
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
                 marker=Dict("color" => [revenue_impact>=0 ? "#4CAF50" : "#FF9800",
                     "#F44336", net_margin_impact>=0 ? "#4CAF50" : "#F44336"]))]
-            @info "SDOH: composite risk $(round(composite_risk_score, digits=2)), tier $risk_tier"
+            @info "SDOH (domain): composite risk $(round(composite_risk_score, digits=2)), tier $risk_tier"
         end
     end
 end

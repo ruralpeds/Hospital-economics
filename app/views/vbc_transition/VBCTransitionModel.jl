@@ -1,8 +1,13 @@
 """
 Stipple reactive model for Value-Based Care Transition.
 Models shared savings/loss calculations for Medicare ACO programs.
+Delegates to RuralHospitalSim.calculate_vbc_outcome() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_vbc_outcome, vbc_transition_timeline,
+    VBCParams, VBCResult
 
 
 @app begin
@@ -55,42 +60,40 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            gross_savings = benchmark - total_cost_of_care
-            savings_rate = benchmark > 0 ? gross_savings / benchmark : 0.0
-            per_beneficiary_savings = patient_panel_size > 0 ? gross_savings / patient_panel_size : 0.0
-            meets_minimum_savings = savings_rate >= min_savings_rate
 
-            ss = 0.0
-            if gross_savings > 0 && meets_minimum_savings
-                ss = gross_savings * shared_savings_rate * clamp(quality_score, 0.0, 1.0)
-            end
-            shared_savings_payment = ss
+            # Call domain engine
+            params = VBCParams(;
+                model_type=model_type,
+                total_cost_of_care=total_cost_of_care,
+                benchmark=benchmark,
+                patient_panel_size=patient_panel_size,
+                quality_score=quality_score,
+                risk_track=risk_track,
+                shared_savings_rate=shared_savings_rate,
+                shared_loss_rate=shared_loss_rate,
+                min_savings_rate=min_savings_rate,
+                care_management_investment=care_management_investment,
+            )
+            result = calculate_vbc_outcome(params)
 
-            sl = 0.0
-            if risk_track == "two_sided" && gross_savings < 0
-                cap = model_type in ("mssp_enhanced", "aco_lead") ? 0.15 : 0.08
-                sl = min(abs(gross_savings) * shared_loss_rate, benchmark * cap)
-            end
-            shared_loss_payment = sl
+            # Map domain results
+            gross_savings = result.gross_savings
+            savings_rate = result.savings_rate
+            per_beneficiary_savings = result.per_beneficiary_savings
+            meets_minimum_savings = result.meets_minimum_savings
+            shared_savings_payment = result.shared_savings_payment
+            shared_loss_payment = result.shared_loss_payment
+            net_financial_impact = result.net_financial_impact
 
-            net_financial_impact = ss - sl - care_management_investment
+            # 5-year timeline from domain
+            timeline = vbc_transition_timeline(params)
+            years = ["Year $yr" for yr in 1:5]
+            impacts = [round(t.net_impact, digits=0) for t in timeline]
 
-            # 5-year projection
-            maturity = [0.30, 0.60, 0.90, 0.95, 1.0]
-            years = String[]
-            impacts = Float64[]
-            for yr in 1:5
-                mat = maturity[yr]
-                pot = benchmark - total_cost_of_care
-                yr_savings = pot > 0 ? pot * mat * shared_savings_rate * min(1.0, quality_score + 0.05*(yr-1)) : 0.0
-                yr_cm = care_management_investment * (yr <= 2 ? [0.6, 0.85][yr] : 1.0)
-                push!(years, "Year $yr")
-                push!(impacts, round(yr_savings - yr_cm, digits=0))
-            end
             timeline_data = [PlotData(x=years, y=impacts,
                 plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER, name="Net Financial Impact",
                 mode="lines+markers", line=PlotDataLine(color="#4CAF50"))]
-            @info "VBC: savings rate $(round(savings_rate*100, digits=1))%, net \$$(round(Int, net_financial_impact))"
+            @info "VBC (domain): savings rate $(round(savings_rate*100, digits=1))%, net \$$(round(Int, net_financial_impact))"
         end
     end
 end

@@ -1,8 +1,12 @@
 """
 Stipple reactive model for Staffing Optimizer.
 Analyzes staffing levels, benchmarks, and labor cost optimization.
+Delegates to RuralHospitalSim.optimize_staffing() for optimization.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: optimize_staffing, StaffingConstraints, StaffingOptimizationResult
 
 
 @app begin
@@ -139,26 +143,44 @@ using Stipple, StippleUI, StipplePlotly
     @onchange run_optimization begin
         if run_optimization
             run_optimization = false
-            @info "Running staffing optimization (target: $optimization_target) for hospital $selected_hospital_id"
+            @info "Running staffing optimization (domain, target: $optimization_target) for hospital $selected_hospital_id"
 
-            if optimization_target == "cost"
-                fte_reduction = 15.0
-                annual_savings = 1_027_500.0
-                quality_impact = "moderate"
-            elseif optimization_target == "quality"
-                fte_reduction = 6.0
-                annual_savings = 411_000.0
-                quality_impact = "positive"
-            else
-                fte_reduction = 11.5
-                annual_savings = 787_750.0
-                quality_impact = "minimal"
-            end
+            # Build department data for domain engine
+            dept_data = [(d["name"], d["current_fte"], d["benchmark_fte"], Float64(d["cost"]),
+                d["vacancy"], d["turnover"], d["contract_pct"]) for d in departments]
+
+            constraints = StaffingConstraints(;
+                optimization_target=optimization_target,
+                total_fte=total_fte,
+                total_labor_cost=total_labor_cost,
+                department_data=dept_data,
+            )
+
+            # Call domain engine
+            result = optimize_staffing(constraints)
+
+            # Map domain results
+            fte_reduction = result.fte_reduction
+            annual_savings = result.annual_savings
+            quality_impact = result.quality_impact
             optimized_total_fte = total_fte - fte_reduction
             savings_pct_labor = annual_savings / total_labor_cost
             new_labor_cost_pct = (total_labor_cost - annual_savings) / (total_labor_cost / labor_cost_pct_revenue)
             payback_months = max(1, round(Int, implementation_cost / (annual_savings / 12)))
+            optimization_actions = result.actions
             optimization_status = "Optimization complete — $(fte_reduction) FTE reduction, \$$(round(Int, annual_savings/1000))K annual savings"
+
+            # Update comparison chart with optimized FTEs
+            dept_names = [d["name"] for d in departments]
+            current_ftes = [d["current_fte"] for d in departments]
+            benchmark_ftes = [d["benchmark_fte"] for d in departments]
+            optimized_ftes = [get(result.optimized_by_dept, d["name"], d["current_fte"]) for d in departments]
+
+            staffing_comparison_data = [
+                PlotData(x=dept_names, y=current_ftes, plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Current FTE"),
+                PlotData(x=dept_names, y=benchmark_ftes, plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Benchmark FTE"),
+                PlotData(x=dept_names, y=optimized_ftes, plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Optimized FTE"),
+            ]
         end
     end
 

@@ -1,8 +1,12 @@
 """
 Stipple reactive model for TEAM Bundled Payment Simulation.
 Computes CMS TEAM reconciliation amounts with quality adjustments and stop-gain/loss caps.
+Delegates to RuralHospitalSim.calculate_team_reconciliation() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
+
+# Import domain layer
+using ...RuralHospitalSim: calculate_team_reconciliation, TEAMParams, TEAMResult
 
 
 @app begin
@@ -46,24 +50,27 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            df = discount_factor
-            n = episode_count
-            total_target_price = n * avg_target_price * (1.0 - df)
-            total_actual_cost = n * avg_actual_cost
-            raw_reconciliation = total_target_price - total_actual_cost
 
-            avg_q = quality_score
-            q_mult = avg_q >= 0.5 ?
-                1.0 + quality_adjustment_pct * ((avg_q - 0.5) / 0.5) :
-                1.0 - quality_adjustment_pct * ((0.5 - avg_q) / 0.5)
-            quality_adj_reconciliation = raw_reconciliation * q_mult
+            # Call domain engine
+            params = TEAMParams(;
+                episode_count=episode_count,
+                avg_target_price=avg_target_price,
+                avg_actual_cost=avg_actual_cost,
+                quality_score=quality_score,
+                risk_track=risk_track,
+                discount_factor=discount_factor,
+                quality_adjustment_pct=quality_adjustment_pct,
+                low_volume_threshold=low_volume_threshold,
+            )
+            result = calculate_team_reconciliation(params)
 
-            cap_pct = risk_track == "track1" ? 0.10 : 0.05
-            cap = total_target_price * cap_pct
-            capped = clamp(quality_adj_reconciliation, -cap, cap)
-
-            is_low_volume_exempt = n < low_volume_threshold
-            net_payment_adjustment = is_low_volume_exempt ? 0.0 : capped
+            # Map domain results
+            total_target_price = result.total_target_price
+            total_actual_cost = result.total_actual_cost
+            raw_reconciliation = result.raw_reconciliation
+            quality_adj_reconciliation = result.quality_adj_reconciliation
+            net_payment_adjustment = result.net_payment_adjustment
+            is_low_volume_exempt = result.is_low_volume_exempt
 
             bar_color = net_payment_adjustment >= 0 ? "#4CAF50" : "#F44336"
             episode_chart_data = [PlotData(
@@ -71,7 +78,7 @@ using Stipple, StippleUI, StipplePlotly
                 y=[total_target_price, total_actual_cost, net_payment_adjustment],
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
                 marker=Dict("color" => ["#2196F3", "#FF9800", bar_color]))]
-            @info "TEAM reconciliation: net adjustment \$$(round(Int, net_payment_adjustment))"
+            @info "TEAM reconciliation (domain): net adjustment \$$(round(Int, net_payment_adjustment))"
         end
     end
 end
