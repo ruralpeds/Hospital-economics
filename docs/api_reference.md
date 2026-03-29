@@ -308,11 +308,12 @@ Compute a multi-factor closure risk assessment.
     "average_length_of_stay": 3.2
   },
   "market_data": {
-    "service_area_pop": 15000,
-    "pop_growth_rate": -0.005,
-    "competing_hospitals": 1,
+    "medicaid_expansion": true,
+    "ma_penetration": 0.35,
+    "population_trend_5yr": -0.005,
     "nearest_competitor_miles": 30.0,
-    "medicaid_expansion": true
+    "poverty_rate": 0.15,
+    "uninsured_rate": 0.12
   }
 }
 ```
