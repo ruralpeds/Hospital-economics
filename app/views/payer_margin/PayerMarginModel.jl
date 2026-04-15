@@ -1,12 +1,16 @@
 """
 Stipple reactive model for Payer-Specific Margin Analysis.
 Breaks down margin by payer class and produces waterfall visualization.
+Delegates to RuralHospitalSim.decompose_margin() for payer-level analysis.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname PayerMarginApp
+# Import domain layer
+using ...RuralHospitalSim: decompose_margin, margin_waterfall, MarginDecomposition
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Revenue by Payer Inputs ─────────────────────────────────────────
     @in revenue_medicare::Float64 = 11_470_000.0
     @in revenue_medicaid::Float64 = 3_330_000.0
@@ -74,22 +78,30 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            revenues = [revenue_medicare, revenue_medicaid, revenue_commercial, revenue_self_pay]
-            ratios = [cost_ratio_medicare, cost_ratio_medicaid, cost_ratio_commercial, cost_ratio_self_pay]
-            payers = ["Medicare", "Medicaid", "Commercial", "Self-Pay"]
 
-            costs = revenues .* ratios
+            # Build payer data for domain engine
+            payer_data = Dict{String,Dict{String,Float64}}(
+                "Medicare" => Dict("revenue" => revenue_medicare, "cost_ratio" => cost_ratio_medicare),
+                "Medicaid" => Dict("revenue" => revenue_medicaid, "cost_ratio" => cost_ratio_medicaid),
+                "Commercial" => Dict("revenue" => revenue_commercial, "cost_ratio" => cost_ratio_commercial),
+                "Self-Pay" => Dict("revenue" => revenue_self_pay, "cost_ratio" => cost_ratio_self_pay),
+            )
+
+            # Call domain engine
+            decomposition = decompose_margin(payer_data)
+
+            payers = ["Medicare", "Medicaid", "Commercial", "Self-Pay"]
+            revenues = [revenue_medicare, revenue_medicaid, revenue_commercial, revenue_self_pay]
+            costs = revenues .* [cost_ratio_medicare, cost_ratio_medicaid, cost_ratio_commercial, cost_ratio_self_pay]
             margins = revenues .- costs
             margin_pcts = round.((revenues .- costs) ./ max.(revenues, 1) .* 100, digits=1)
 
-            total_revenue = sum(revenues)
-            total_cost = sum(costs)
-            blended_margin_pct = round((total_revenue - total_cost) / max(total_revenue, 1), digits=3)
+            total_revenue = decomposition.total_revenue
+            total_cost = decomposition.total_cost
+            blended_margin_pct = round(decomposition.blended_margin, digits=3)
 
-            best_idx = argmax(margin_pcts)
-            worst_idx = argmin(margin_pcts)
-            best_payer = payers[best_idx]
-            worst_payer = payers[worst_idx]
+            best_payer = decomposition.best_payer
+            worst_payer = decomposition.worst_payer
 
             margin_by_payer = [
                 Dict("payer"=>p, "revenue"=>round(Int, r), "cost"=>round(Int, c),
@@ -111,7 +123,7 @@ using Stipple, StippleUI, StipplePlotly
                 y=round.(vcat(margins, [total_margin]) ./ 1000, digits=0),
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Margin (\$K)",
                 marker=Dict("color"=>colors))]
-            @info "Payer margin: blended $(round(blended_margin_pct*100, digits=1))%, best=$(best_payer)"
+            @info "Payer margin (domain): blended $(round(blended_margin_pct*100, digits=1))%, best=$(best_payer)"
         end
     end
 end

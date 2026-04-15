@@ -190,18 +190,29 @@ function run_system_dynamics(u0::Vector{Float64}, params::SystemDynamicsParams)
 
     # Extract time series from ODE solution
     t_pts = sol.t
-    volume_ts   = [sol[i][1] for i in eachindex(sol)]
-    cash_ts     = [sol[i][6] for i in eachindex(sol)]
-    staff_ts    = [sol[i][3] for i in eachindex(sol)]
-    quality_ts  = [sol[i][4] for i in eachindex(sol)]
-    pop_ts      = [sol[i][5] for i in eachindex(sol)]
+    n_pts = length(t_pts)
+    volume_ts       = [sol[i][STATE_VOLUME] for i in eachindex(sol)]
+    revenue_ts      = [sol[i][STATE_REVENUE] for i in eachindex(sol)]
+    staff_ts        = [sol[i][STATE_STAFF] for i in eachindex(sol)]
+    quality_ts      = [sol[i][STATE_QUALITY] for i in eachindex(sol)]
+    pop_ts          = [sol[i][STATE_POPULATION] for i in eachindex(sol)]
+    cash_ts         = [sol[i][STATE_CASH] for i in eachindex(sol)]
+    satisfaction_ts = [sol[i][STATE_SATISFACTION] for i in eachindex(sol)]
+    health_ts       = [sol[i][STATE_HEALTH] for i in eachindex(sol)]
+
+    # Derive expense and margin time series from state variables
+    expense_ts = [staff_ts[i] * _SD_BASE_COST_PER_STAFF + _SD_CASH_BURN_RATE for i in 1:n_pts]
+    margin_ts  = [(revenue_ts[i] == 0.0 ? 0.0 : (revenue_ts[i] - expense_ts[i]) / revenue_ts[i]) for i in 1:n_pts]
 
     return SystemDynamicsResult(
         time_points = t_pts,
+        population = pop_ts,
+        nurse_supply = staff_ts,
         inpatient_volume = volume_ts,
         cash_reserves = cash_ts,
-        nurse_supply = staff_ts,
-        population = pop_ts,
+        net_revenue = revenue_ts,
+        total_expenses = expense_ts,
+        operating_margin = margin_ts,
         is_sustainable = !closure_triggered,
         tipping_point_year = closure_time,
     )

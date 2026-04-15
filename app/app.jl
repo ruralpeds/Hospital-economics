@@ -2,7 +2,7 @@
 Rural Hospital Economics Simulator - Main Application Entry Point
 A Genie.jl + Stipple.jl web application for modeling rural hospital financial viability.
 
-V3.0 — 27 interactive tools, 6 simulation engines, education center
+V3.2 — 38 interactive tools, 6 simulation engines, full API, education center
 """
 module HospitalEconomicsApp
 
@@ -68,6 +68,21 @@ include(joinpath(APP_ROOT, "views", "strategic_planner", "StrategicPlannerModel.
 include(joinpath(APP_ROOT, "views", "policy_impact", "PolicyImpactModel.jl"))
 
 # ---------------------------------------------------------------------------
+# Include reactive models — V3.1 modules
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "team_bundled", "TEAMBundledModel.jl"))
+include(joinpath(APP_ROOT, "views", "telehealth", "TelehealthModel.jl"))
+include(joinpath(APP_ROOT, "views", "vbc_transition", "VBCTransitionModel.jl"))
+include(joinpath(APP_ROOT, "views", "medicaid_supplemental", "MedicaidSupplementalModel.jl"))
+include(joinpath(APP_ROOT, "views", "rhc_optimization", "RHCOptimizationModel.jl"))
+include(joinpath(APP_ROOT, "views", "sdoh", "SDOHModel.jl"))
+include(joinpath(APP_ROOT, "views", "geographic_access", "GeographicAccessModel.jl"))
+include(joinpath(APP_ROOT, "views", "community_benefit", "CommunityBenefitModel.jl"))
+include(joinpath(APP_ROOT, "views", "network_economics", "NetworkEconomicsModel.jl"))
+include(joinpath(APP_ROOT, "views", "disaster_resilience", "DisasterResilienceModel.jl"))
+include(joinpath(APP_ROOT, "views", "capital_scoring", "CapitalScoringModel.jl"))
+
+# ---------------------------------------------------------------------------
 # Include view functions — Core views
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "dashboard", "dashboard.jl"))
@@ -106,6 +121,29 @@ include(joinpath(APP_ROOT, "views", "strategic_planner", "strategic_planner.jl")
 include(joinpath(APP_ROOT, "views", "policy_impact", "policy_impact.jl"))
 
 # ---------------------------------------------------------------------------
+# Include view functions — V3.1 modules
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "team_bundled", "team_bundled.jl"))
+include(joinpath(APP_ROOT, "views", "telehealth", "telehealth.jl"))
+include(joinpath(APP_ROOT, "views", "vbc_transition", "vbc_transition.jl"))
+include(joinpath(APP_ROOT, "views", "medicaid_supplemental", "medicaid_supplemental.jl"))
+include(joinpath(APP_ROOT, "views", "rhc_optimization", "rhc_optimization.jl"))
+include(joinpath(APP_ROOT, "views", "sdoh", "sdoh.jl"))
+include(joinpath(APP_ROOT, "views", "geographic_access", "geographic_access.jl"))
+include(joinpath(APP_ROOT, "views", "community_benefit", "community_benefit.jl"))
+include(joinpath(APP_ROOT, "views", "network_economics", "network_economics.jl"))
+include(joinpath(APP_ROOT, "views", "disaster_resilience", "disaster_resilience.jl"))
+include(joinpath(APP_ROOT, "views", "capital_scoring", "capital_scoring.jl"))
+
+# ---------------------------------------------------------------------------
+# Include API controllers
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
+include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
+include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
+include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
+
+# ---------------------------------------------------------------------------
 # Include routes
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "routes.jl"))
@@ -115,8 +153,8 @@ include(joinpath(APP_ROOT, "routes.jl"))
 # ---------------------------------------------------------------------------
 function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false)
     load_config()
-    @info "Starting Rural Hospital Economics Simulator v0.2.0 on $host:$port"
-    @info "27 interactive tools | 6 simulation engines | Education center"
+    @info "Starting Rural Hospital Economics Simulator v0.3.0 on $host:$port"
+    @info "38 interactive tools | 6 simulation engines | Full API | Education center"
     Genie.config.run_as_server = true
     Genie.config.server_host = host
     Genie.config.server_port = port

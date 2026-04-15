@@ -1,12 +1,16 @@
 """
 Stipple reactive model for the Financial Dashboard.
 Tracks KPIs, chart data, alerts, and user filter selections.
+References RuralHospitalSim for financial ratio computation.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname DashboardApp
+# Import domain layer
+using ...RuralHospitalSim: compute_all_ratios, default_cah_benchmarks, compare_to_benchmarks
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Reactive Inputs ──────────────────────────────────────────────────
     @in selected_hospital_id::Int = 1
     @in projection_months::Int = 12

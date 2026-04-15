@@ -4,9 +4,9 @@ Manages scenario creation, assumption editing, and scenario library.
 """
 using Stipple, StippleUI
 
-@appname ScenarioApp
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Scenario Library ─────────────────────────────────────────────────
     @in selected_scenario_id::Int = 0
     @out scenarios::Vector{Dict{String,Any}} = [

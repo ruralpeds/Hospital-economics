@@ -3,6 +3,7 @@
 # ============================================================================
 
 using Test
+using Dates
 
 # Include constants
 include(joinpath(@__DIR__, "..", "src", "utils", "constants.jl"))

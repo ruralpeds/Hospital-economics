@@ -1,12 +1,16 @@
 """
 Stipple reactive model for Service Line P&L Analysis.
 Tracks revenue, cost, and contribution margin for each hospital service line.
+Delegates to RuralHospitalSim.optimize_service_portfolio() for portfolio analysis.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname ServiceLineApp
+# Import domain layer
+using ...RuralHospitalSim: optimize_service_portfolio, PortfolioParams, PortfolioOptimizationResult
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Service Line Revenue Inputs ─────────────────────────────────────
     @in sl_ed_revenue::Float64 = 4_200_000.0
     @in sl_inpatient_revenue::Float64 = 5_800_000.0
@@ -88,11 +92,28 @@ using Stipple, StippleUI, StipplePlotly
                         sl_imaging_revenue, sl_lab_revenue, sl_pharmacy_revenue, sl_rehab_revenue]
             costs = [sl_ed_cost, sl_inpatient_cost, sl_outpatient_cost, sl_surgical_cost,
                      sl_imaging_cost, sl_lab_cost, sl_pharmacy_cost, sl_rehab_cost]
-            sl_margins = revenues .- costs
-            sl_margin_pcts = [r > 0 ? round((r - c) / r * 100, digits=1) : 0.0 for (r, c) in zip(revenues, costs)]
-            total_contribution = sum(sl_margins)
-            profitable_lines = count(m -> m > 0, sl_margins)
-            unprofitable_lines = count(m -> m <= 0, sl_margins)
+
+            # Build portfolio params for domain engine
+            service_data = [(sl_names[i], revenues[i], costs[i]) for i in 1:8]
+            params = PortfolioParams(; service_lines=service_data)
+            result = optimize_service_portfolio(params)
+
+            # Map domain results
+            sl_margins = result.margins
+            sl_margin_pcts = result.margin_pcts
+            total_contribution = result.total_contribution
+            profitable_lines = result.profitable_count
+            unprofitable_lines = result.unprofitable_count
+            recommendations = result.recommendations
+
+            # Update portfolio scatter from domain
+            portfolio_chart_data = [PlotData(
+                x=round.(revenues ./ 1e6, digits=1),
+                y=sl_margin_pcts,
+                text=sl_names,
+                mode="markers+text",
+                marker=Dict("size"=>round.(revenues ./ maximum(revenues) .* 50, digits=0), "sizemode"=>"area", "sizeref"=>0.1),
+                plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER, name="Service Lines", textposition="top center")]
 
             margin_bar_data = [PlotData(
                 x = sl_names,
@@ -101,7 +122,7 @@ using Stipple, StippleUI, StipplePlotly
                 name = "Contribution Margin (\$K)",
                 marker = Dict("color" => [m > 0 ? "green" : "red" for m in sl_margins]),
             )]
-            @info "Service line P&L recalculated. Total contribution: \$$(round(Int, total_contribution/1000))K"
+            @info "Service line P&L (domain): Total contribution: \$$(round(Int, total_contribution/1000))K"
         end
     end
 end

@@ -1,12 +1,16 @@
 """
 Stipple reactive model for Workforce RVU Analysis.
 Compares provider wRVU production against benchmarks and compensation.
+References RuralHospitalSim staffing benchmarks.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname WorkforceRVUApp
+# Import domain layer
+using ...RuralHospitalSim: total_compensation, total_fte
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Provider Inputs (5 providers) ───────────────────────────────────
     @in prov1_name::String = "Dr. Smith (FM)"
     @in prov1_wrvus::Float64 = 4200.0

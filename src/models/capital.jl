@@ -38,6 +38,7 @@ Compute the annual straight-line depreciation expense for a capital asset.
 Falls back to straight-line for unsupported methods.
 """
 function annual_depreciation(asset::CapitalAsset)
+    asset.useful_life_years > 0 || error("useful_life_years must be positive; got $(asset.useful_life_years)")
     if asset.depreciation_method == :straight_line
         return (asset.acquisition_cost - asset.salvage_value) / asset.useful_life_years
     elseif asset.depreciation_method == :declining_balance

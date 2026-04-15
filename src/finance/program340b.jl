@@ -66,8 +66,8 @@ The model computes:
 5. **At-risk amount** based on the specified policy risk percentage
 """
 function calculate_340b_impact(params::Program340BParams)::Program340BResult
-    # Gross savings from 340B discounted purchasing
-    gross_savings = params.total_drug_spend * params.discount_rate
+    # Gross savings from 340B discounted purchasing (non-contract-pharmacy portion)
+    gross_savings = params.total_drug_spend * (1.0 - params.contract_pharmacy_pct) * params.discount_rate
 
     # Contract pharmacy component
     # Revenue from spread on contract pharmacy prescriptions

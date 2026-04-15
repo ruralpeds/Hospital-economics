@@ -32,6 +32,7 @@ using JuMP
 using HiGHS
 using DifferentialEquations
 using StatsBase
+using Agents
 
 # ═══════════════════════════════════════════════════════════════
 # DOMAIN MODEL (must be loaded first, in dependency order)
@@ -67,6 +68,13 @@ include("finance/depreciation.jl")
 include("finance/breakeven.jl")
 include("finance/cashflow.jl")
 include("finance/program340b.jl")
+include("finance/team_bundled.jl")
+include("finance/telehealth.jl")
+include("finance/vbc_transition.jl")
+include("finance/medicaid_supplemental.jl")
+include("finance/debt_capacity.jl")
+include("finance/margin_decomposition.jl")
+include("finance/rhc_optimization.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # SIMULATION ENGINES
@@ -77,7 +85,6 @@ include("simulation/montecarlo.jl")
 include("simulation/abm.jl")
 include("simulation/systemdynamics.jl")
 include("simulation/des.jl")
-include("simulation/scenarios.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # OPTIMIZATION (JuMP.jl)
@@ -85,6 +92,7 @@ include("simulation/scenarios.jl")
 
 include("optimization/staffing.jl")
 include("optimization/portfolio.jl")
+include("optimization/capital_scoring.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # RISK ASSESSMENT
@@ -92,6 +100,8 @@ include("optimization/portfolio.jl")
 
 include("risk/closure.jl")
 include("risk/conversion.jl")
+include("risk/closure_ml.jl")
+include("risk/disaster_resilience.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # ANALYSIS
@@ -101,6 +111,16 @@ include("finance/sensitivity.jl")
 include("analysis/comparison.jl")
 include("analysis/community.jl")
 include("analysis/payer_negotiation.jl")
+include("analysis/sdoh.jl")
+include("analysis/geographic_access.jl")
+include("analysis/community_benefit.jl")
+include("analysis/network_economics.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# SCENARIO FRAMEWORK (depends on simulation engines + analysis)
+# ═══════════════════════════════════════════════════════════════
+
+include("simulation/scenarios.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # DATA IMPORT/EXPORT
@@ -146,13 +166,15 @@ export Department, ServiceLine
 export PolicyScenario, ConversionParams, StaffingConstraints, PortfolioParams
 
 # Result types
-export MonteCarloResult, MonteCarloSummary
+export MonteCarloResult, MonteCarloSummary, IterationResult
+export YearlyProjection
 export SystemDynamicsResult, StaffingOptimizationResult, PortfolioOptimizationResult
+export ServicePortfolioResult, StaffingResult
 export ClosureRiskAssessment, REHConversionAnalysis
 
 # Finance functions
 export step_down_allocation, calculate_medicare_cost_share
-export calculate_medicare_reimbursement
+export calculate_medicare_reimbursement, MedicaidFeeSchedule
 export calculate_medicaid_reimbursement
 export calculate_commercial_reimbursement
 export calculate_uncompensated_care
@@ -160,11 +182,11 @@ export apply_wage_index, apply_sequestration, apply_bad_debt_adjustment
 export default_cah_cost_centers, default_step_down_order
 
 # Financial ratios
-export compute_operating_margin, compute_total_margin, compute_days_cash_on_hand
-export compute_current_ratio, compute_debt_to_capitalization
-export compute_average_age_of_plant, compute_fte_per_adjusted_occupied_bed
-export compute_salary_to_revenue, compute_outpatient_revenue_share
-export compute_medicare_cost_to_charge_ratio, compute_all_ratios
+export operating_margin, total_margin, days_cash_on_hand
+export current_ratio, debt_to_capitalization
+export average_age_of_plant, fte_per_adjusted_occupied_bed
+export salary_to_revenue, outpatient_revenue_share
+export medicare_cost_to_charge_ratio, compute_all_ratios
 
 # Depreciation
 export straight_line_depreciation, declining_balance_depreciation
@@ -180,7 +202,7 @@ export MonthlyCashFlow, project_monthly_cash_flow, find_cash_nadir, line_of_cred
 export Program340BParams, Program340BResult, calculate_340b_impact, policy_risk_scenarios
 
 # Simulation engine functions
-export DeterministicParams, DeterministicResult, project_financials, project_single_year
+export DeterministicParams, DeterministicResult, project_financials, project_single_year, base_financials
 export MonteCarloParams, DistributionalParameter, run_monte_carlo
 export probability_of_loss, value_at_risk
 export ABMParams, ABMResult, initialize_abm, run_abm
@@ -203,6 +225,63 @@ export calculate_community_impact, closure_impact_projection
 export NegotiationCategory, NegotiationResult
 export simulate_negotiation, optimal_rate_target
 export BenchmarkData, default_cah_benchmarks, compare_to_benchmarks
+
+# V3.1 — TEAM Bundled Payment
+export TEAMEpisode, TEAMParams, TEAMResult
+export calculate_team_reconciliation, team_episode_summary
+
+# V3.1 — Telehealth Economics
+export TelehealthService, TelehealthInvestment, TelehealthROI
+export calculate_telehealth_roi, telehealth_service_comparison
+
+# V3.1 — Value-Based Care Transition
+export VBCParams, VBCResult
+export calculate_vbc_outcome, vbc_transition_timeline
+
+# V3.1 — Medicaid Supplemental Payments
+export MedicaidSupplementalParams, MedicaidSupplementalResult
+export calculate_medicaid_supplemental, medicaid_reform_scenarios
+
+# V3.1 — Stochastic Debt Capacity
+export DebtCapacityParams, DebtCapacityResult
+export calculate_debt_capacity, debt_capacity_sensitivity
+
+# V3.1 — Payer Margin Decomposition
+export PayerMarginComponent, MarginDecomposition
+export decompose_margin, dupont_analysis, margin_waterfall
+
+# V3.1 — RHC Optimization
+export RHCParams, RHCOptimizationResult
+export optimize_rhc_revenue, rhc_vs_hopd_comparison
+
+# V3.1 — SDOH Integration
+export SDOHProfile, SDOHAdjustment
+export calculate_sdoh_adjustments, sdoh_financial_impact, sdoh_risk_tier
+
+# V3.1 — Geographic Access
+export FacilityLocation, PopulationCenter, AccessResult
+export haversine_distance, estimate_drive_time
+export calculate_catchment, closure_access_impact
+
+# V3.1 — Community Benefit (IRS Schedule H)
+export CommunityBenefitData, CommunityBenefitResult
+export calculate_community_benefit, community_benefit_comparison
+
+# V3.1 — Network Economics
+export NetworkMember, SharedService, NetworkResult
+export evaluate_network, network_aco_formation, joint_purchasing_savings
+
+# V3.1 — ML Closure Prediction
+export ClosureMLFeatures, ClosureMLResult
+export predict_closure_logistic, chartis_vulnerability_score, closure_risk_trend
+
+# V3.1 — Disaster Resilience
+export DisasterProfile, DisasterImpactResult
+export assess_disaster_resilience, disaster_stress_test
+
+# V3.1 — Capital Replacement Scoring (MCDA)
+export CapitalRequest, CapitalScoreResult
+export score_capital_projects, select_within_budget, replacement_priority_report
 
 # Data functions
 export parse_hcris_cost_report

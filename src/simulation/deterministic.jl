@@ -247,8 +247,8 @@ function project_single_year(base_financials::NamedTuple, year::Int,
     oi = total_rev - total_exp
     margin = compute_operating_margin(total_rev, total_exp)
 
-    # Approximate cash reserves: base cash + cumulative operating income (simplified)
-    approx_cash = base_financials.cash_reserves + oi * year
+    # Approximate cash reserves: base cash + operating income for this year (simplified)
+    approx_cash = base_financials.cash_reserves + oi
     daily_exp = total_exp / 365.0
     dcoh = compute_days_cash_on_hand(max(approx_cash, 0.0), daily_exp)
     dscr = compute_debt_service_coverage(oi, base_financials.depreciation,
@@ -297,18 +297,44 @@ function project_financials(hospital, params::DeterministicParams)::Deterministi
 end
 
 """
+    base_financials(hospital::AbstractHospital) -> NamedTuple
+
+Extract base-year financials from a hospital object by reading the most recent
+`AnnualFinancials` record. Returns a NamedTuple with the fields required by
+`project_single_year`.
+"""
+function base_financials(hospital::AbstractHospital)
+    fin_list = getproperty(hospital, :historical_financials)
+    isempty(fin_list) && error("Hospital has no historical financials")
+    f = last(fin_list)  # most recent year
+    supply_expense = f.supplies + f.pharmaceuticals
+    other_expense = f.total_operating_expenses - (f.salaries_wages + f.employee_benefits) - supply_expense
+    return (
+        inpatient_revenue = f.inpatient_revenue,
+        outpatient_revenue = f.outpatient_revenue,
+        salary_expense = f.salaries_wages + f.employee_benefits,
+        supply_expense = supply_expense,
+        other_expense = max(other_expense, 0.0),
+        cash_reserves = f.cash_and_equivalents,
+        depreciation = f.depreciation,
+        annual_debt_service = f.interest_expense,
+        payer_mix_government = f.medicare_days_pct + f.medicaid_days_pct,
+    )
+end
+
+"""
     _extract_base_financials(hospital) -> NamedTuple
 
 Extract base-year financials from a hospital object. Falls back to treating
 the argument as a NamedTuple if no `base_financials` method is defined.
 """
 function _extract_base_financials(hospital)
-    if applicable(base_financials, hospital)
-        return base_financials(hospital)
-    elseif hospital isa NamedTuple
+    if hospital isa NamedTuple
         return hospital
+    elseif hospital isa AbstractHospital
+        return base_financials(hospital)
     else
         error("Cannot extract base financials from $(typeof(hospital)). " *
-              "Define `base_financials(h)` or pass a NamedTuple.")
+              "Pass an AbstractHospital or a NamedTuple.")
     end
 end

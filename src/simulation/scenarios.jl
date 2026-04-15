@@ -113,6 +113,12 @@ function _run_single_scenario(scenario::SimulationScenario;
     actual_engine = if engine == :auto
         if p isa DESParams
             :des
+        elseif p isa MonteCarloParams
+            :montecarlo
+        elseif p isa ABMParams
+            :abm
+        elseif p isa SystemDynamicsParams
+            :systemdynamics
         else
             :deterministic
         end
@@ -123,6 +129,17 @@ function _run_single_scenario(scenario::SimulationScenario;
     if actual_engine == :des
         p isa DESParams || error("DES engine requires DESParams, got $(typeof(p))")
         return run_des(p)
+    elseif actual_engine == :montecarlo
+        p isa MonteCarloParams || error("Monte Carlo engine requires MonteCarloParams, got $(typeof(p))")
+        h = scenario.hospital
+        return run_monte_carlo(h, p)
+    elseif actual_engine == :abm
+        p isa ABMParams || error("ABM engine requires ABMParams, got $(typeof(p))")
+        h = scenario.hospital
+        return run_abm(p, h)
+    elseif actual_engine == :systemdynamics
+        p isa SystemDynamicsParams || error("System dynamics engine requires SystemDynamicsParams, got $(typeof(p))")
+        return run_system_dynamics(p)
     elseif actual_engine == :deterministic
         # Deterministic engine needs a hospital and params
         h = scenario.hospital
@@ -132,7 +149,7 @@ function _run_single_scenario(scenario::SimulationScenario;
             error("Deterministic engine requires an AbstractHospital, got $(typeof(h))")
         end
     else
-        error("Unknown engine: :$(actual_engine). Supported: :deterministic, :des, :auto")
+        error("Unknown engine: :$(actual_engine). Supported: :deterministic, :des, :montecarlo, :abm, :systemdynamics, :auto")
     end
 end
 

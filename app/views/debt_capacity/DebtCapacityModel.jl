@@ -1,12 +1,17 @@
 """
 Stipple reactive model for Debt Capacity Calculator.
 Computes maximum borrowing capacity, DSCR curves, and capital structure.
+Delegates to RuralHospitalSim.calculate_debt_capacity() for computation.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname DebtCapacityApp
+# Import domain layer
+using ...RuralHospitalSim: calculate_debt_capacity, debt_capacity_sensitivity,
+    DebtCapacityParams, DebtCapacityResult
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in ebitda::Float64 = 1_200_000.0
     @in current_debt::Float64 = 3_500_000.0
@@ -68,18 +73,40 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            current_dscr = ebitda / max(annual_debt_service, 1.0)
-            max_annual_debt_service = ebitda / target_dscr
 
-            # PMT approximation: PV = PMT * (1 - (1+r)^-n) / r
-            r = interest_rate
-            n = loan_term_years
-            pv_factor = (1.0 - (1.0 + r)^(-n)) / r
-            max_new_borrowing = round(max_annual_debt_service * pv_factor, digits=0)
-            incremental_capacity = max(0, max_new_borrowing - current_debt)
+            # Call domain engine
+            params = DebtCapacityParams(;
+                ebitda=ebitda,
+                current_debt=current_debt,
+                annual_debt_service=annual_debt_service,
+                interest_rate=interest_rate,
+                loan_term_years=loan_term_years,
+                target_dscr=target_dscr,
+                total_assets=total_assets,
+                total_equity=total_equity,
+            )
+            result = calculate_debt_capacity(params)
 
-            debt_to_cap_current = current_debt / (current_debt + total_equity)
-            debt_to_cap_max = max_new_borrowing / (max_new_borrowing + total_equity)
+            # Map domain results
+            current_dscr = result.current_dscr
+            max_annual_debt_service = result.max_annual_debt_service
+            max_new_borrowing = result.max_new_borrowing
+            incremental_capacity = result.incremental_capacity
+            debt_to_cap_current = result.debt_to_cap_current
+            debt_to_cap_max = result.debt_to_cap_max
+
+            # DSCR curve from domain sensitivity
+            sensitivity = debt_capacity_sensitivity(params)
+            dscr_debt_levels = [s.debt_level for s in sensitivity]
+            dscr_values = [s.dscr for s in sensitivity]
+            dscr_curve_data = [
+                PlotData(x=round.(dscr_debt_levels ./ 1e6, digits=1), y=round.(dscr_values, digits=2),
+                    plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER, name="DSCR at Debt Level",
+                    mode="lines+markers"),
+                PlotData(x=[0, round(maximum(dscr_debt_levels)/1e6, digits=1)], y=[target_dscr, target_dscr],
+                    plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER, name="Target DSCR ($(target_dscr)x)",
+                    mode="lines", line=PlotDataLine(dash="dash", color="red")),
+            ]
 
             capital_structure_data = [PlotData(
                 values = round.([current_debt, total_equity, incremental_capacity] ./ 1000, digits=0),
@@ -88,7 +115,7 @@ using Stipple, StippleUI, StipplePlotly
                 hole = 0.5,
                 name = "Capital Structure (\$K)",
             )]
-            @info "Debt capacity: max borrowing \$$(round(Int, max_new_borrowing/1e6))M, DSCR $(round(current_dscr, digits=2))x"
+            @info "Debt capacity (domain): max borrowing \$$(round(Int, max_new_borrowing/1e6))M, DSCR $(round(current_dscr, digits=2))x"
         end
     end
 end

@@ -1,12 +1,16 @@
 """
 Stipple reactive model for Policy Impact Simulator.
 Toggle federal/state policy scenarios and see stacked 5-year revenue impact.
+References RuralHospitalSim constants for policy parameters.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname PolicyImpactApp
+# Import domain layer constants
+using ...RuralHospitalSim: SEQUESTRATION_RATE, PolicyScenario
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Policy Toggle Inputs ────────────────────────────────────────────
     @in sequestration::Bool = true
     @in bad_debt_reduction::Bool = false

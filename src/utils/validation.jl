@@ -14,12 +14,12 @@ function validate_hospital(hospital::AbstractHospital)
     errors = String[]
 
     # Check bed count
-    if hasproperty(hospital, :beds)
-        beds = getproperty(hospital, :beds)
+    if hasproperty(hospital, :licensed_beds)
+        beds = getproperty(hospital, :licensed_beds)
         if beds <= 0
             push!(errors, "Bed count must be positive; got $beds")
         end
-        if hospital isa AbstractRuralHospital && beds > 25
+        if hospital isa CriticalAccessHospital && beds > 25
             push!(errors, "Critical Access Hospitals are limited to 25 beds; got $beds")
         end
     end
@@ -91,6 +91,43 @@ function validate_payer_mix(payer_mix::Dict{String,Float64})
 end
 
 """
+    validate_payer_mix(pm::PayerMix) -> (valid::Bool, errors::Vector{String})
+
+Validate a PayerMix struct: checks that overall_volume_pct sums to ~1.0,
+each contract has a valid payer_type and non-negative rates.
+"""
+function validate_payer_mix(pm::PayerMix)
+    errors = String[]
+
+    valid_types = (:medicare, :medicaid, :commercial, :self_pay, :tricare, :va, :other)
+
+    for c in pm.contracts
+        if !(c.payer_type in valid_types)
+            push!(errors, "Invalid payer_type :$(c.payer_type) for '$(c.payer_name)'")
+        end
+        if c.overall_volume_pct < 0.0
+            push!(errors, "Negative overall_volume_pct for '$(c.payer_name)': $(c.overall_volume_pct)")
+        end
+        if c.overall_volume_pct > 1.0
+            push!(errors, "overall_volume_pct > 1.0 for '$(c.payer_name)': $(c.overall_volume_pct)")
+        end
+        if c.denial_rate < 0.0 || c.denial_rate > 1.0
+            push!(errors, "denial_rate out of [0,1] for '$(c.payer_name)': $(c.denial_rate)")
+        end
+        if c.bad_debt_rate < 0.0 || c.bad_debt_rate > 1.0
+            push!(errors, "bad_debt_rate out of [0,1] for '$(c.payer_name)': $(c.bad_debt_rate)")
+        end
+    end
+
+    total_vol = sum(c.overall_volume_pct for c in pm.contracts; init=0.0)
+    if abs(total_vol - 1.0) > 0.01
+        push!(errors, "PayerMix overall_volume_pct sums to $(round(total_vol, digits=4)); expected ≈1.0")
+    end
+
+    return (isempty(errors), errors)
+end
+
+"""
     validate_cost_report(report::Dict) -> (valid::Bool, errors::Vector{String})
 
 Validate cost report data for completeness and internal consistency.
@@ -133,6 +170,44 @@ function validate_cost_report(report::Dict)
         end
         if report["total_charges"] > 0 && report["total_costs"] > report["total_charges"]
             push!(errors, "Total costs exceed total charges — verify cost-to-charge ratio")
+        end
+    end
+
+    return (isempty(errors), errors)
+end
+
+"""
+    validate_cost_report(report::CostReport) -> (valid::Bool, errors::Vector{String})
+
+Validate a CostReport struct for completeness and internal consistency.
+"""
+function validate_cost_report(report::CostReport)
+    errors = String[]
+
+    if report.total_costs < 0.0
+        push!(errors, "Total costs cannot be negative: $(report.total_costs)")
+    end
+    if report.total_charges < 0.0
+        push!(errors, "Total charges cannot be negative: $(report.total_charges)")
+    end
+    if report.total_charges > 0.0 && report.total_costs > report.total_charges
+        push!(errors, "Total costs exceed total charges — verify cost-to-charge ratio")
+    end
+    if report.overall_cost_to_charge_ratio < 0.0 || report.overall_cost_to_charge_ratio > 1.5
+        push!(errors, "overall_cost_to_charge_ratio out of expected range [0, 1.5]: $(report.overall_cost_to_charge_ratio)")
+    end
+    if report.fiscal_year_end <= report.fiscal_year_begin
+        push!(errors, "fiscal_year_end ($(report.fiscal_year_end)) must be after fiscal_year_begin ($(report.fiscal_year_begin))")
+    end
+    if report.medicare_allowable_costs < 0.0
+        push!(errors, "Medicare allowable costs cannot be negative: $(report.medicare_allowable_costs)")
+    end
+    for cc in report.cost_centers
+        if cc.direct_costs < 0.0
+            push!(errors, "Negative direct costs in cost center '$(cc.name)': $(cc.direct_costs)")
+        end
+        if cc.charges < 0.0
+            push!(errors, "Negative charges in cost center '$(cc.name)': $(cc.charges)")
         end
     end
 

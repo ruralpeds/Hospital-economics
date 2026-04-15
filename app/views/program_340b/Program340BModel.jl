@@ -1,12 +1,17 @@
 """
 Stipple reactive model for 340B Drug Pricing Impact analysis.
 Models drug savings, contract pharmacy economics, and policy risk scenarios.
+Delegates to RuralHospitalSim.calculate_340b_impact() for savings computation.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname Program340BApp
+# Import domain layer
+using ...RuralHospitalSim: calculate_340b_impact, policy_risk_scenarios,
+    Program340BParams, Program340BResult
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in drug_spend::Float64 = 2_800_000.0
     @in discount_rate::Float64 = 0.35
@@ -69,17 +74,37 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            eligible_spend = drug_spend * eligible_patient_pct
-            gross_savings = round(eligible_spend * discount_rate, digits=0)
-            contract_pharmacy_savings = round(gross_savings * contract_pharmacy_pct, digits=0)
-            in_house_savings = gross_savings - contract_pharmacy_savings
-            net_benefit = gross_savings - admin_cost
-            margin_impact_pct = round(net_benefit / 18_500_000 * 100, digits=1)
 
-            if manufacturer_restrictions
-                contract_pharmacy_savings = round(contract_pharmacy_savings * 0.5, digits=0)
-                net_benefit = in_house_savings + contract_pharmacy_savings - admin_cost
-            end
+            # Build domain params and call engine
+            params = Program340BParams(;
+                total_drug_spend=drug_spend,
+                discount_rate=discount_rate,
+                eligible_patient_pct=eligible_patient_pct,
+                contract_pharmacy_pct=contract_pharmacy_pct,
+                admin_cost=admin_cost,
+                manufacturer_restrictions=manufacturer_restrictions,
+            )
+            result = calculate_340b_impact(params)
+
+            # Map domain results to reactive outputs
+            gross_savings = result.gross_savings
+            net_benefit = result.net_benefit
+            contract_pharmacy_savings = result.contract_pharmacy_savings
+            in_house_savings = result.in_house_savings
+            margin_impact_pct = round(net_benefit / 18_500_000 * 100, digits=1)
+            savings_per_prescription = result.savings_per_prescription
+
+            # Policy risk scenarios from domain
+            scenarios = policy_risk_scenarios(params)
+            policy_risk_scenarios_out = [Dict{String,Any}(
+                "scenario" => s.scenario_name,
+                "net_benefit" => round(Int, s.net_benefit),
+                "probability" => "$(round(Int, s.probability * 100))%",
+                "description" => s.description,
+            ) for s in scenarios]
+
+            scenario_names = [s.scenario_name for s in scenarios]
+            scenario_benefits = [round(s.net_benefit / 1000, digits=0) for s in scenarios]
 
             impact_chart_data = [PlotData(
                 x = ["Gross Savings", "Admin Cost", "Net Benefit"],
@@ -88,7 +113,11 @@ using Stipple, StippleUI, StipplePlotly
                 name = "340B Impact (\$K)",
                 marker = Dict("color" => ["green", "red", "blue"]),
             )]
-            @info "340B recalculated: net benefit \$$(round(Int, net_benefit/1000))K"
+            scenario_chart_data = [PlotData(
+                x=scenario_names, y=scenario_benefits,
+                plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
+                name="Net Benefit by Scenario (\$K)")]
+            @info "340B (domain): net benefit \$$(round(Int, net_benefit/1000))K"
         end
     end
 end

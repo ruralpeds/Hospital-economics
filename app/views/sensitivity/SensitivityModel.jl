@@ -1,12 +1,15 @@
 """
 Stipple reactive model for Sensitivity / Tornado Analysis.
-Ranks variable impacts on net income through perturbation analysis.
+Delegates to RuralHospitalSim.run_sensitivity_analysis() for perturbation analysis.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname SensitivityApp
+# Import domain layer
+using ...RuralHospitalSim: run_sensitivity_analysis, build_tornado_data, SensitivityResult
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Base Inputs ─────────────────────────────────────────────────────
     @in base_revenue::Float64 = 18_500_000.0
     @in base_expenses::Float64 = 19_200_000.0
@@ -40,35 +43,10 @@ using Stipple, StippleUI, StipplePlotly
     @out most_sensitive_variable::String = "Patient Volume"
     @out max_swing::Float64 = 3_700_000.0
 
-    @out ranked_impacts::Vector{Dict{String,Any}} = [
-        Dict("variable" => "Patient Volume", "upside" => 1_150_000, "downside" => -2_550_000, "swing" => 3_700_000),
-        Dict("variable" => "Labor Cost", "upside" => 836_000, "downside" => -2_236_000, "swing" => 3_072_000),
-        Dict("variable" => "Outpatient Volume", "upside" => 1_150_000, "downside" => -2_550_000, "swing" => 3_700_000),
-        Dict("variable" => "Contract Labor", "upside" => 480_000, "downside" => -1_880_000, "swing" => 2_360_000),
-        Dict("variable" => "Bad Debt Rate", "upside" => 975_000, "downside" => -2_375_000, "swing" => 3_350_000),
-    ]
+    @out ranked_impacts::Vector{Dict{String,Any}} = Dict{String,Any}[]
 
     # ── Tornado Chart Data ──────────────────────────────────────────────
-    @out tornado_data::Vector{PlotData} = [
-        PlotData(
-            y = ["Drug Costs", "Contract Labor", "Bad Debt", "Payer Mix", "LOS",
-                 "Medicare Rate", "Supply Cost", "Outpatient Vol", "Labor Cost", "Patient Volume"],
-            x = [185, 480, 975, 555, 648, 462, 1152, 1150, 836, 1150],
-            plot = StipplePlotly.Charts.PLOT_TYPE_BAR,
-            name = "Upside (\$K)",
-            orientation = "h",
-            marker = Dict("color" => "#4CAF50"),
-        ),
-        PlotData(
-            y = ["Drug Costs", "Contract Labor", "Bad Debt", "Payer Mix", "LOS",
-                 "Medicare Rate", "Supply Cost", "Outpatient Vol", "Labor Cost", "Patient Volume"],
-            x = [-185, -480, -975, -555, -648, -462, -1152, -1150, -836, -1150],
-            plot = StipplePlotly.Charts.PLOT_TYPE_BAR,
-            name = "Downside (\$K)",
-            orientation = "h",
-            marker = Dict("color" => "#F44336"),
-        ),
-    ]
+    @out tornado_data::Vector{PlotData} = PlotData[]
     @out tornado_layout::PlotLayout = PlotLayout(
         title = PlotLayoutTitle(text = "Sensitivity Tornado Diagram (\$K Impact)"),
         barmode = "overlay",
@@ -82,35 +60,50 @@ using Stipple, StippleUI, StipplePlotly
             recalculate = false
             base_net_income = base_revenue - base_expenses
 
+            # Build parameter dict for domain engine
             names_list = [var1_name, var2_name, var3_name, var4_name, var5_name,
                           var6_name, var7_name, var8_name, var9_name, var10_name]
             pcts = [var1_pct, var2_pct, var3_pct, var4_pct, var5_pct,
                     var6_pct, var7_pct, var8_pct, var9_pct, var10_pct]
 
-            # Simple sensitivity: revenue variables get revenue swing, cost vars get expense swing
+            # Revenue-affecting vs cost-affecting variables
             rev_vars = Set([1, 2, 5, 7, 8])
-            upsides = Float64[]
-            downsides = Float64[]
+
+            # Build base params for the sensitivity engine
+            base_params = Dict{String,Float64}()
             for i in 1:10
-                if i in rev_vars
-                    up = base_revenue * pcts[i]
-                    push!(upsides, round(up, digits=0))
-                    push!(downsides, round(-up, digits=0))
-                else
-                    up = base_expenses * pcts[i]
-                    push!(upsides, round(up, digits=0))
-                    push!(downsides, round(-up, digits=0))
-                end
+                base_params[names_list[i]] = i in rev_vars ? base_revenue * pcts[i] : base_expenses * pcts[i]
             end
 
-            swings = upsides .- downsides
-            order = sortperm(swings)
-            sorted_names = names_list[order]
-            sorted_up = round.(upsides[order] ./ 1000, digits=0)
-            sorted_down = round.(downsides[order] ./ 1000, digits=0)
+            # Define the model function: net income given parameter perturbations
+            model_fn(params::Dict{String,Float64}) = begin
+                rev_delta = sum(get(params, names_list[i], 0.0) for i in 1:10 if i in rev_vars)
+                exp_delta = sum(get(params, names_list[i], 0.0) for i in 1:10 if !(i in rev_vars))
+                base_revenue + rev_delta - (base_expenses + exp_delta)
+            end
 
-            most_sensitive_variable = sorted_names[end]
-            max_swing = swings[order[end]]
+            # Call domain engine
+            results = run_sensitivity_analysis(model_fn, base_params;
+                perturbation=0.10, outcome_name="net_income")
+
+            # Build tornado data from domain results
+            tornado = build_tornado_data(results; top_n=10)
+
+            # Sort by swing for display
+            sorted = sort(results, by=r -> r.swing)
+            sorted_names = [r.parameter_name for r in sorted]
+            sorted_up = [round(max(r.high_outcome - r.base_outcome, r.base_outcome - r.low_outcome) / 1000, digits=0) for r in sorted]
+            sorted_down = [-round(max(r.base_outcome - r.low_outcome, r.high_outcome - r.base_outcome) / 1000, digits=0) for r in sorted]
+
+            most_sensitive_variable = sorted[end].parameter_name
+            max_swing = sorted[end].swing
+
+            ranked_impacts = [Dict{String,Any}(
+                "variable" => r.parameter_name,
+                "upside" => round(r.high_outcome - r.base_outcome, digits=0),
+                "downside" => round(r.low_outcome - r.base_outcome, digits=0),
+                "swing" => round(r.swing, digits=0),
+            ) for r in reverse(sorted)]
 
             tornado_data = [
                 PlotData(y=sorted_names, x=sorted_up, plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
@@ -118,7 +111,7 @@ using Stipple, StippleUI, StipplePlotly
                 PlotData(y=sorted_names, x=sorted_down, plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
                     name="Downside (\$K)", orientation="h", marker=Dict("color"=>"#F44336")),
             ]
-            @info "Sensitivity analysis: most sensitive to $(most_sensitive_variable)"
+            @info "Sensitivity analysis: most sensitive to $(most_sensitive_variable), swing=\$$(round(Int, max_swing))"
         end
     end
 end

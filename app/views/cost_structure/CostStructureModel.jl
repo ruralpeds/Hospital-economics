@@ -1,12 +1,16 @@
 """
 Stipple reactive model for Cost Structure Model.
 Analyzes fixed vs variable cost breakdown and operating leverage.
+References RuralHospitalSim staffing and cost functions.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname CostStructureApp
+# Import domain layer
+using ...RuralHospitalSim: salary_to_revenue, fte_per_adjusted_occupied_bed
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Inputs ──────────────────────────────────────────────────────────
     @in beds::Int = 25
     @in avg_daily_census::Float64 = 8.3

@@ -1,12 +1,17 @@
 """
 Stipple reactive model for Payer Negotiation Simulator.
 Models rate changes across service categories and projects revenue impact.
+Delegates to RuralHospitalSim.simulate_negotiation() for rate modeling.
 """
 using Stipple, StippleUI, StipplePlotly
 
-@appname PayerNegotiationApp
+# Import domain layer
+using ...RuralHospitalSim: simulate_negotiation, optimal_rate_target,
+    NegotiationCategory, NegotiationResult
+
 
 @app begin
+    @in left_drawer_open::Bool = true
     # ── Category Inputs (5 categories x volume, charges, current rate, proposed rate) ──
     @in cat1_name::String = "Inpatient"
     @in cat1_volume::Int = 620
@@ -93,20 +98,34 @@ using Stipple, StippleUI, StipplePlotly
     @onchange recalculate begin
         if recalculate
             recalculate = false
-            volumes = [cat1_volume, cat2_volume, cat3_volume, cat4_volume, cat5_volume]
-            charges = [cat1_charges, cat2_charges, cat3_charges, cat4_charges, cat5_charges]
-            cur_rates = [cat1_current_rate, cat2_current_rate, cat3_current_rate, cat4_current_rate, cat5_current_rate]
-            prop_rates = [cat1_proposed_rate, cat2_proposed_rate, cat3_proposed_rate, cat4_proposed_rate, cat5_proposed_rate]
+
+            # Build negotiation categories for domain engine
+            categories = [
+                NegotiationCategory(cat1_name, cat1_volume, cat1_charges, cat1_current_rate, cat1_proposed_rate),
+                NegotiationCategory(cat2_name, cat2_volume, cat2_charges, cat2_current_rate, cat2_proposed_rate),
+                NegotiationCategory(cat3_name, cat3_volume, cat3_charges, cat3_current_rate, cat3_proposed_rate),
+                NegotiationCategory(cat4_name, cat4_volume, cat4_charges, cat4_current_rate, cat4_proposed_rate),
+                NegotiationCategory(cat5_name, cat5_volume, cat5_charges, cat5_current_rate, cat5_proposed_rate),
+            ]
+
+            # Call domain engine
+            result = simulate_negotiation(categories)
+
+            # Map domain results
+            total_current_revenue = result.total_current_revenue
+            total_proposed_revenue = result.total_proposed_revenue
+            total_revenue_increase = result.total_revenue_increase
+            overall_rate_improvement = result.overall_rate_improvement
+
             names = [cat1_name, cat2_name, cat3_name, cat4_name, cat5_name]
+            cur_revs = [c.current_revenue for c in result.categories]
+            prop_revs = [c.proposed_revenue for c in result.categories]
+            increases = [c.revenue_increase for c in result.categories]
 
-            cur_revs = [v * c * r for (v, c, r) in zip(volumes, charges, cur_rates)]
-            prop_revs = [v * c * r for (v, c, r) in zip(volumes, charges, prop_rates)]
-            increases = prop_revs .- cur_revs
-
-            total_current_revenue = sum(cur_revs)
-            total_proposed_revenue = sum(prop_revs)
-            total_revenue_increase = sum(increases)
-            overall_rate_improvement = round(total_revenue_increase / max(total_current_revenue, 1.0), digits=3)
+            category_detail = [Dict{String,Any}(
+                "name"=>c.name, "current_rev"=>round(Int, c.current_revenue),
+                "proposed_rev"=>round(Int, c.proposed_revenue), "increase"=>round(Int, c.revenue_increase))
+                for c in result.categories]
 
             revenue_comparison_data = [
                 PlotData(x=names, y=round.(cur_revs ./ 1000, digits=0),
@@ -117,7 +136,7 @@ using Stipple, StippleUI, StipplePlotly
             increase_data = [PlotData(x=names, y=round.(increases ./ 1000, digits=0),
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Revenue Increase (\$K)",
                 marker=Dict("color"=>"#4CAF50"))]
-            @info "Payer negotiation: +\$$(round(Int, total_revenue_increase/1000))K revenue"
+            @info "Payer negotiation (domain): +\$$(round(Int, total_revenue_increase/1000))K revenue"
         end
     end
 end

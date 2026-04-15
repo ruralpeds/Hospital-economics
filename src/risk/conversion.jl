@@ -338,7 +338,7 @@ function analyze_reh_conversion(hospital::AbstractRuralHospital,
     recommendation = if npv_diff > 0 && breakeven !== nothing && breakeven <= 3
         "Strongly consider REH conversion — positive NPV with breakeven in $breakeven years"
     elseif npv_diff > 0
-        "REH conversion financially favorable but breakeven is $(something(breakeven, ">$(_REH_DEFAULT_PROJECTION_YEARS)")) years — weigh against community impact"
+        "REH conversion financially favorable but breakeven is $(breakeven !== nothing ? breakeven : ">$(_REH_DEFAULT_PROJECTION_YEARS)") years — weigh against community impact"
     elseif npv_diff > -500_000
         "Marginal case — REH conversion roughly neutral; decision should emphasize community need"
     else
@@ -388,7 +388,7 @@ function _estimate_irr(timeline::Vector{ConversionTransition},
     # Include initial transition cost as negative year-0 flow
     pushfirst!(cashflows, -params.one_time_conversion_cost)
 
-    lo, hi = -0.50, 2.0
+    lo, hi = -0.99, 2.0
     for _ in 1:max_iter
         mid = (lo + hi) / 2.0
         npv = sum(cf / (1.0 + mid)^(i-1) for (i, cf) in enumerate(cashflows))
