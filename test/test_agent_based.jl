@@ -8,7 +8,8 @@ using Random
 include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
 
 # ---------------------------------------------------------------------------
-# Stub ABM types and functions (until Agents.jl integration is complete)
+# Standalone ABM types — validates agent logic independently of Agents.jl runtime.
+# Real source integration tested via test_view_integration.jl and test_integration.jl.
 # ---------------------------------------------------------------------------
 
 mutable struct PatientAgent <: AbstractPatientAgent

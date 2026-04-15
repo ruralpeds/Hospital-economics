@@ -55,7 +55,7 @@ Environmental and market data for closure risk assessment.
 - `poverty_rate::Float64`: county poverty rate (0–1)
 - `uninsured_rate::Float64`: county uninsured rate (0–1)
 """
-struct MarketData
+@kwdef struct MarketData
     medicaid_expansion::Bool
     ma_penetration::Float64
     population_trend_5yr::Float64
