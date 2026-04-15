@@ -128,17 +128,41 @@ function ui_education(model)
                             ]),
 
                             step(val=4, title="Run and Review Results", icon="assessment", [
-                                p("Click 'Run Simulation' and wait for completion. Then explore the Results page to see projected margins, probability distributions, and sensitivity analysis. Compare multiple scenarios side by side."),
+                                p("Click 'Run Simulation' and wait for completion. Then explore the Results page to see projected margins, probability distributions, and sensitivity analysis."),
                                 step_navigation([
                                     btn("Back", flat=true, @click("tutorial_step = 3")),
                                     btn("Next", color="primary", @click("tutorial_step = 5")),
                                 ]),
                             ]),
 
-                            step(val=5, title="Explore Advanced Features", icon="explore", [
-                                p("Try the REH Conversion Wizard to evaluate converting to a Rural Emergency Hospital. Use the Closure Risk Assessment to identify vulnerabilities. Explore the Staffing Optimizer to find labor cost savings."),
+                            step(val=5, title="Compare Scenarios", icon="compare_arrows", [
+                                p("Create a second scenario with different assumptions (e.g., Medicaid expansion, volume decline, or REH conversion). Run both and use the Scenario Comparison tool to see side-by-side results — margin trajectories, cash flow differences, and closure risk timelines."),
                                 step_navigation([
                                     btn("Back", flat=true, @click("tutorial_step = 4")),
+                                    btn("Next", color="primary", @click("tutorial_step = 6")),
+                                ]),
+                            ]),
+
+                            step(val=6, title="Analyze Financial Health", icon="analytics", [
+                                p("Use the Dashboard to review your hospital's key financial ratios against national CAH benchmarks. Explore the Cost Structure, Payer Margin, and Break-Even tools to understand where margins are strongest and weakest. Check the Sensitivity Analysis to see which variables have the greatest impact."),
+                                step_navigation([
+                                    btn("Back", flat=true, @click("tutorial_step = 5")),
+                                    btn("Next", color="primary", @click("tutorial_step = 7")),
+                                ]),
+                            ]),
+
+                            step(val=7, title="Assess Risk & Strategic Options", icon="shield", [
+                                p("Run the Closure Risk Assessment to get a composite vulnerability score. If risk is elevated, explore strategic options: the REH Conversion Wizard, Payer Negotiation Simulator, 340B Program Analyzer, and Staffing Optimizer. Each tool provides actionable recommendations with projected financial impact."),
+                                step_navigation([
+                                    btn("Back", flat=true, @click("tutorial_step = 6")),
+                                    btn("Next", color="primary", @click("tutorial_step = 8")),
+                                ]),
+                            ]),
+
+                            step(val=8, title="Export & Present Results", icon="file_download", [
+                                p("Export your analysis results to CSV or JSON for use in board presentations, grant applications, or regulatory filings. Use the API endpoints to integrate simulation results into external reporting systems. Each tool's charts can be downloaded directly from the Plotly toolbar."),
+                                step_navigation([
+                                    btn("Back", flat=true, @click("tutorial_step = 7")),
                                     btn("Start Over", color="primary", @click("tutorial_step = 1")),
                                 ]),
                             ]),

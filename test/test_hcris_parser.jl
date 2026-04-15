@@ -5,7 +5,8 @@
 using Test
 
 # ---------------------------------------------------------------------------
-# Stub HCRIS parser (until CSV/DataFrames integration is complete)
+# Standalone HCRIS parser — validates parsing logic independently of CSV.jl.
+# Real parse_hcris_cost_report() tested via test_data_import_export.jl.
 # ---------------------------------------------------------------------------
 
 struct HCRISRecord

@@ -1,4 +1,5 @@
 Manifest.toml
+.env
 data/uploads/
 data/exports/
 *.log
