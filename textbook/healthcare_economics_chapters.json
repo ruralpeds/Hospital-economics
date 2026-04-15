@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ch01",
+    "chapter": 1,
+    "textbook_title": "Healthcare Economics Research: Methodology and Computational Methods in Julia",
+    "title": "Foundations of Healthcare Economics",
+    "prompt": "Write a comprehensive introductory chapter for graduate-level health economics researchers and health services researchers. Cover: (1) the unique economic properties of healthcare as a commodity — Arrow's 1963 seminal paper and its enduring implications, uncertainty, asymmetric information, agency relationships, moral hazard, adverse selection; (2) the healthcare production function — Grossman's 1972 human capital model of health demand, health as both a consumption good and an investment good, depreciation of health stock; (3) market failures in healthcare — externalities (vaccination, antibiotic resistance), public goods characteristics of medical knowledge, non-competitive market structures, information asymmetry between providers and patients; (4) the three fundamental questions of health economics: what to produce, how to produce it, and for whom; (5) welfare economics foundations — Pareto efficiency, Kaldor-Hicks compensation, the two fundamental theorems of welfare economics applied to healthcare; (6) the economic case for government intervention — regulatory approaches, public provision, financing mechanisms; (7) a taxonomy of health economics research: positive vs. normative, micro vs. macro, demand-side vs. supply-side analysis. Engage with foundational literature: Arrow (1963), Grossman (1972), Pauly (1968), Akerlof (1970), Rothschild-Stiglitz (1976). This chapter must set the intellectual framework that all subsequent chapters build upon.",
+    "word_count_target": 12000,
+    "output_file": "chapter_01_foundations.docx",
+    "style_guide": "academic",
+    "status": "in_progress"
+  }
+]
