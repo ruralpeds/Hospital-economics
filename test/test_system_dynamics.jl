@@ -7,7 +7,8 @@ using Test
 include(joinpath(@__DIR__, "..", "src", "models", "abstract.jl"))
 
 # ---------------------------------------------------------------------------
-# Stub system dynamics ODE model (until DifferentialEquations integration)
+# Standalone system dynamics types — validates ODE logic independently of DifferentialEquations.jl.
+# Real run_system_dynamics() tested via test_view_integration.jl.
 # ---------------------------------------------------------------------------
 
 """

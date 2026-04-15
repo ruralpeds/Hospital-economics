@@ -9,7 +9,8 @@ include(joinpath(@__DIR__, "..", "src", "utils", "constants.jl"))
 using .Constants
 
 # ---------------------------------------------------------------------------
-# Stub REH conversion analysis
+# Standalone REH conversion types — validates financial impact logic independently.
+# Real analyze_reh_conversion() tested via test_view_integration.jl.
 # ---------------------------------------------------------------------------
 
 struct CAHFinancials

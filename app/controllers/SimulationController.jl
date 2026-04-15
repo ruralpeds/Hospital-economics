@@ -14,6 +14,28 @@ using JSON3, Dates, UUIDs
 using ...RuralHospitalSim
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Input validation
+# ═══════════════════════════════════════════════════════════════════════════
+
+"""Parse a numeric value from payload with bounds checking."""
+function _validated_float(payload::Dict, key::String, default::Float64;
+                          min_val::Float64=-Inf, max_val::Float64=Inf)
+    val = Float64(get(payload, key, default))
+    (isnan(val) || isinf(val)) && error("Parameter '$key' must be a finite number")
+    val < min_val && error("Parameter '$key' must be >= $min_val (got $val)")
+    val > max_val && error("Parameter '$key' must be <= $max_val (got $val)")
+    return val
+end
+
+function _validated_int(payload::Dict, key::String, default::Int;
+                        min_val::Int=typemin(Int), max_val::Int=typemax(Int))
+    val = Int(get(payload, key, default))
+    val < min_val && error("Parameter '$key' must be >= $min_val (got $val)")
+    val > max_val && error("Parameter '$key' must be <= $max_val (got $val)")
+    return val
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -70,13 +92,13 @@ function handle_deterministic(payload::Dict)
 
     p = get(payload, "params", Dict())
     params = DeterministicParams(;
-        projection_years        = Int(get(p, "projection_years", 10)),
-        volume_growth_rate      = Float64(get(p, "volume_growth_rate", -0.01)),
-        cost_inflation_rate     = Float64(get(p, "cost_inflation_rate", 0.03)),
-        salary_inflation_rate   = Float64(get(p, "salary_inflation_rate", 0.035)),
-        supply_inflation_rate   = Float64(get(p, "supply_inflation_rate", 0.04)),
-        reimbursement_adjustment = Float64(get(p, "reimbursement_adjustment", 0.015)),
-        payer_mix_shift         = Float64(get(p, "payer_mix_shift", 0.005)),
+        projection_years        = _validated_int(p, "projection_years", 10; min_val=1, max_val=50),
+        volume_growth_rate      = _validated_float(p, "volume_growth_rate", -0.01; min_val=-0.50, max_val=0.50),
+        cost_inflation_rate     = _validated_float(p, "cost_inflation_rate", 0.03; min_val=-0.20, max_val=0.50),
+        salary_inflation_rate   = _validated_float(p, "salary_inflation_rate", 0.035; min_val=-0.20, max_val=0.50),
+        supply_inflation_rate   = _validated_float(p, "supply_inflation_rate", 0.04; min_val=-0.20, max_val=0.50),
+        reimbursement_adjustment = _validated_float(p, "reimbursement_adjustment", 0.015; min_val=-0.50, max_val=0.50),
+        payer_mix_shift         = _validated_float(p, "payer_mix_shift", 0.005; min_val=-0.10, max_val=0.10),
     )
 
     result = project_financials(bf, params)
@@ -110,9 +132,10 @@ function handle_monte_carlo(payload::Dict)
     bf = _parse_base_financials(get(payload, "base_financials", Dict()))
 
     p = get(payload, "params", Dict())
-    n_iterations    = Int(get(p, "n_iterations", 1000))
-    projection_years = Int(get(p, "projection_years", 5))
-    random_seed     = Int(get(p, "random_seed", 42))
+    max_iter = parse(Int, get(ENV, "SIM_MAX_ITERATIONS", "50000"))
+    n_iterations    = _validated_int(p, "n_iterations", 1000; min_val=100, max_val=max_iter)
+    projection_years = _validated_int(p, "projection_years", 5; min_val=1, max_val=50)
+    random_seed     = _validated_int(p, "random_seed", 42; min_val=1)
 
     params = MonteCarloParams(;
         n_iterations     = n_iterations,
@@ -155,10 +178,10 @@ function handle_abm(payload::Dict)
     p = get(payload, "params", Dict())
 
     params = ABMParams(;
-        n_patients       = Int(get(p, "n_patients", 500)),
-        n_providers      = Int(get(p, "n_providers", 20)),
-        simulation_days  = Int(get(p, "simulation_days", 365)),
-        random_seed      = Int(get(p, "random_seed", 42)),
+        n_patients       = _validated_int(p, "n_patients", 500; min_val=10, max_val=50000),
+        n_providers      = _validated_int(p, "n_providers", 20; min_val=1, max_val=1000),
+        simulation_days  = _validated_int(p, "simulation_days", 365; min_val=1, max_val=3650),
+        random_seed      = _validated_int(p, "random_seed", 42; min_val=1),
     )
 
     hospitals = get(payload, "hospitals", [])
@@ -192,13 +215,13 @@ function handle_system_dynamics(payload::Dict)
     p = get(payload, "params", Dict())
 
     params = SystemDynamicsParams(;
-        time_horizon_years       = Float64(get(p, "time_horizon_years", 10.0)),
-        volume_growth_rate       = Float64(get(p, "volume_growth_rate", -0.02)),
-        revenue_per_patient      = Float64(get(p, "revenue_per_patient", 3500.0)),
-        cost_per_fte             = Float64(get(p, "cost_per_fte", 85000.0)),
-        staff_turnover_rate      = Float64(get(p, "staff_turnover_rate", 0.15)),
-        quality_volume_elasticity = Float64(get(p, "quality_volume_elasticity", 0.3)),
-        community_health_impact  = Float64(get(p, "community_health_impact", 0.1)),
+        time_horizon_years       = _validated_float(p, "time_horizon_years", 10.0; min_val=1.0, max_val=50.0),
+        volume_growth_rate       = _validated_float(p, "volume_growth_rate", -0.02; min_val=-0.50, max_val=0.50),
+        revenue_per_patient      = _validated_float(p, "revenue_per_patient", 3500.0; min_val=0.0),
+        cost_per_fte             = _validated_float(p, "cost_per_fte", 85000.0; min_val=0.0),
+        staff_turnover_rate      = _validated_float(p, "staff_turnover_rate", 0.15; min_val=0.0, max_val=1.0),
+        quality_volume_elasticity = _validated_float(p, "quality_volume_elasticity", 0.3; min_val=0.0, max_val=2.0),
+        community_health_impact  = _validated_float(p, "community_health_impact", 0.1; min_val=0.0, max_val=1.0),
     )
 
     result = run_system_dynamics(params)
@@ -232,14 +255,14 @@ function handle_des(payload::Dict)
     p = get(payload, "params", Dict())
 
     params = DESParams(;
-        simulation_hours    = Int(get(p, "simulation_hours", 720)),
-        mean_arrival_rate   = Float64(get(p, "mean_arrival_rate", 2.5)),
-        mean_triage_time    = Float64(get(p, "mean_triage_time", 0.25)),
-        mean_treatment_time = Float64(get(p, "mean_treatment_time", 2.0)),
-        mean_admission_time = Float64(get(p, "mean_admission_time", 4.0)),
-        ed_beds             = Int(get(p, "ed_beds", 8)),
-        admit_probability   = Float64(get(p, "admit_probability", 0.15)),
-        random_seed         = Int(get(p, "random_seed", 42)),
+        simulation_hours    = _validated_int(p, "simulation_hours", 720; min_val=1, max_val=87600),
+        mean_arrival_rate   = _validated_float(p, "mean_arrival_rate", 2.5; min_val=0.01, max_val=100.0),
+        mean_triage_time    = _validated_float(p, "mean_triage_time", 0.25; min_val=0.01, max_val=24.0),
+        mean_treatment_time = _validated_float(p, "mean_treatment_time", 2.0; min_val=0.01, max_val=72.0),
+        mean_admission_time = _validated_float(p, "mean_admission_time", 4.0; min_val=0.01, max_val=168.0),
+        ed_beds             = _validated_int(p, "ed_beds", 8; min_val=1, max_val=200),
+        admit_probability   = _validated_float(p, "admit_probability", 0.15; min_val=0.0, max_val=1.0),
+        random_seed         = _validated_int(p, "random_seed", 42; min_val=1),
     )
 
     result = run_des(params)

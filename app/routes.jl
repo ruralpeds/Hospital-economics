@@ -11,6 +11,12 @@ Routes organized into:
 using Genie.Router, Genie.Renderer.Html, Genie.Requests, Genie.Responses
 using JSON3
 
+"""Return a safe error message — log internals but don't expose them to clients."""
+function _safe_error(label::String, e::Exception)
+    @error "$label failed" exception=(e, catch_backtrace())
+    json(Dict("status" => "error", "message" => "$label failed. Check server logs for details."), status=400)
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Core Page Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -226,8 +232,7 @@ route("/api/simulate/deterministic", method=POST) do
         result = SimulationController.handle_deterministic(payload)
         json(result)
     catch e
-        @error "Deterministic simulation failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("Deterministic simulation", e)
     end
 end
 
@@ -237,8 +242,7 @@ route("/api/simulate/monte-carlo", method=POST) do
         result = SimulationController.handle_monte_carlo(payload)
         json(result)
     catch e
-        @error "Monte Carlo simulation failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("Monte Carlo simulation", e)
     end
 end
 
@@ -248,8 +252,7 @@ route("/api/simulate/abm", method=POST) do
         result = SimulationController.handle_abm(payload)
         json(result)
     catch e
-        @error "ABM simulation failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("ABM simulation", e)
     end
 end
 
@@ -259,8 +262,7 @@ route("/api/simulate/system-dynamics", method=POST) do
         result = SimulationController.handle_system_dynamics(payload)
         json(result)
     catch e
-        @error "System dynamics simulation failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("System dynamics simulation", e)
     end
 end
 
@@ -270,8 +272,7 @@ route("/api/simulate/des", method=POST) do
         result = SimulationController.handle_des(payload)
         json(result)
     catch e
-        @error "DES simulation failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("DES simulation", e)
     end
 end
 
@@ -285,8 +286,7 @@ route("/api/optimize/staffing", method=POST) do
         result = OptimizationController.handle_staffing_optimization(payload)
         json(result)
     catch e
-        @error "Staffing optimization failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("Staffing optimization", e)
     end
 end
 
@@ -296,8 +296,7 @@ route("/api/optimize/portfolio", method=POST) do
         result = OptimizationController.handle_portfolio_optimization(payload)
         json(result)
     catch e
-        @error "Portfolio optimization failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("Portfolio optimization", e)
     end
 end
 
@@ -311,8 +310,7 @@ route("/api/risk/closure", method=POST) do
         result = RiskController.handle_closure_risk(payload)
         json(result)
     catch e
-        @error "Closure risk assessment failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("Closure risk assessment", e)
     end
 end
 
@@ -322,8 +320,7 @@ route("/api/conversion", method=POST) do
         result = RiskController.handle_reh_conversion(payload)
         json(result)
     catch e
-        @error "REH conversion analysis failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("REH conversion analysis", e)
     end
 end
 
@@ -337,8 +334,7 @@ route("/api/import/hcris", method=POST) do
         result = DataController.handle_hcris_import(payload)
         json(result)
     catch e
-        @error "HCRIS import failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("HCRIS import", e)
     end
 end
 
@@ -348,8 +344,7 @@ route("/api/import/csv", method=POST) do
         result = DataController.handle_csv_import(payload)
         json(result)
     catch e
-        @error "CSV import failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("CSV import", e)
     end
 end
 
@@ -359,8 +354,7 @@ route("/api/export/csv", method=POST) do
         result = DataController.handle_csv_export(payload)
         json(result)
     catch e
-        @error "CSV export failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("CSV export", e)
     end
 end
 
@@ -370,8 +364,7 @@ route("/api/export/json", method=POST) do
         result = DataController.handle_json_export(payload)
         json(result)
     catch e
-        @error "JSON export failed" exception=(e, catch_backtrace())
-        json(Dict("status" => "error", "message" => string(e)), status=400)
+        _safe_error("JSON export", e)
     end
 end
 
@@ -379,14 +372,25 @@ end
 # API Routes — Health check
 # ═══════════════════════════════════════════════════════════════════════════
 
+const APP_VERSION = let
+    toml_path = joinpath(@__DIR__, "..", "Project.toml")
+    m = match(r"version\s*=\s*\"([^\"]+)\"", read(toml_path, String))
+    isnothing(m) ? "0.0.0" : m.captures[1]
+end
+
+const SIMULATION_ENGINES = ["deterministic", "monte_carlo", "abm", "system_dynamics", "des"]
+const OPTIMIZER_ENGINES  = ["staffing", "portfolio"]
+const RISK_MODELS        = ["closure_risk", "reh_conversion"]
+const TOOL_COUNT         = 38
+
 route("/api/health") do
     json(Dict(
-        "status" => "ok",
-        "version" => "0.3.0",
-        "timestamp" => string(Dates.now()),
-        "engines" => ["deterministic", "monte_carlo", "abm", "system_dynamics", "des"],
-        "optimizers" => ["staffing", "portfolio"],
-        "risk_models" => ["closure_risk", "reh_conversion"],
-        "tools" => 38,
+        "status"     => "ok",
+        "version"    => APP_VERSION,
+        "timestamp"  => string(Dates.now()),
+        "engines"    => SIMULATION_ENGINES,
+        "optimizers" => OPTIMIZER_ENGINES,
+        "risk_models" => RISK_MODELS,
+        "tools"      => TOOL_COUNT,
     ))
 end

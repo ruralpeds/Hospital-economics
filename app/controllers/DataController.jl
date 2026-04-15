@@ -13,6 +13,49 @@ using JSON3, Dates, UUIDs
 using ...RuralHospitalSim
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Path safety — prevent directory traversal attacks
+# ═══════════════════════════════════════════════════════════════════════════
+
+const ALLOWED_IMPORT_DIRS = [
+    joinpath(@__DIR__, "..", "..", "data", "uploads"),
+    joinpath(@__DIR__, "..", "..", "data", "reference"),
+    joinpath(@__DIR__, "..", "..", "data", "sample"),
+]
+
+const EXPORT_DIR = joinpath(@__DIR__, "..", "..", "data", "exports")
+
+"""
+    sanitize_import_path(filepath::String) -> String
+
+Resolve the filepath and verify it falls within an allowed import directory.
+Throws an error if the path escapes allowed directories.
+"""
+function sanitize_import_path(filepath::String)
+    resolved = realpath(filepath)
+    for dir in ALLOWED_IMPORT_DIRS
+        allowed = realpath(dir)
+        if startswith(resolved, allowed * "/") || resolved == allowed
+            return resolved
+        end
+    end
+    error("Access denied: file path is outside allowed data directories")
+end
+
+"""
+    sanitize_filename(filename::String) -> String
+
+Strip path separators and traversal sequences from a user-supplied filename.
+"""
+function sanitize_filename(filename::String)
+    # Remove any directory components — keep only the base filename
+    name = basename(filename)
+    # Reject hidden files and empty names
+    (isempty(name) || startswith(name, ".")) &&
+        error("Invalid filename: $filename")
+    return name
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # HCRIS Import
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -34,9 +77,10 @@ function handle_hcris_import(payload::Dict)
 
     !isfile(filepath) && return Dict(
         "status" => "error",
-        "message" => "File not found: $filepath",
+        "message" => "File not found",
     )
 
+    filepath = sanitize_import_path(filepath)
     provider_filter = get(payload, "provider_filter", "")
 
     result = parse_hcris_cost_report(filepath; provider_filter=provider_filter)
@@ -73,10 +117,17 @@ function handle_csv_import(payload::Dict)
 
     !isfile(filepath) && return Dict(
         "status" => "error",
-        "message" => "File not found: $filepath",
+        "message" => "File not found",
     )
 
-    hospital_type = Symbol(get(payload, "hospital_type", "cah"))
+    filepath = sanitize_import_path(filepath)
+
+    type_str = get(payload, "hospital_type", "cah")
+    type_str in ("cah", "reh", "pps") || return Dict(
+        "status" => "error",
+        "message" => "Invalid hospital_type: must be cah, reh, or pps",
+    )
+    hospital_type = Symbol(type_str)
 
     records = import_hospital_from_csv(filepath; hospital_type=hospital_type)
 
@@ -111,10 +162,10 @@ function handle_csv_export(payload::Dict)
         "message" => "No results data provided for export",
     )
 
-    filename = get(payload, "filename", "export_$(Dates.format(now(), "yyyymmdd_HHMMSS")).csv")
-    export_dir = joinpath(@__DIR__, "..", "..", "data", "exports")
-    mkpath(export_dir)
-    filepath = joinpath(export_dir, filename)
+    raw_filename = get(payload, "filename", "export_$(Dates.format(now(), "yyyymmdd_HHMMSS")).csv")
+    filename = sanitize_filename(raw_filename)
+    mkpath(EXPORT_DIR)
+    filepath = joinpath(EXPORT_DIR, filename)
 
     columns = String.(get(payload, "columns", String[]))
 
@@ -149,10 +200,10 @@ function handle_json_export(payload::Dict)
         "message" => "No results data provided for export",
     )
 
-    filename = get(payload, "filename", "export_$(Dates.format(now(), "yyyymmdd_HHMMSS")).json")
-    export_dir = joinpath(@__DIR__, "..", "..", "data", "exports")
-    mkpath(export_dir)
-    filepath = joinpath(export_dir, filename)
+    raw_filename = get(payload, "filename", "export_$(Dates.format(now(), "yyyymmdd_HHMMSS")).json")
+    filename = sanitize_filename(raw_filename)
+    mkpath(EXPORT_DIR)
+    filepath = joinpath(EXPORT_DIR, filename)
 
     output_path = export_results_to_json(results, filepath; pretty=true)
 

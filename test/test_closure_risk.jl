@@ -9,7 +9,8 @@ include(joinpath(@__DIR__, "..", "src", "utils", "constants.jl"))
 using .Constants
 
 # ---------------------------------------------------------------------------
-# Stub closure risk assessment model
+# Standalone closure risk types — validates scoring logic independently.
+# Real assess_closure_risk() tested via test_integration.jl and test_view_integration.jl.
 # ---------------------------------------------------------------------------
 
 struct ClosureRiskFactors
