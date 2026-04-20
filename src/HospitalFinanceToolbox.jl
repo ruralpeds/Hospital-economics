@@ -126,6 +126,12 @@ include("analytics/CostAnalysis.jl")
 include("analytics/AdvancedAnalytics.jl")
 
 # ═══════════════════════════════════════════════════════════════
+# REAL-TIME STREAMING (Phase 4C: Kafka Pipeline)
+# ═══════════════════════════════════════════════════════════════
+
+include("streaming/StreamingIngestion.jl")
+
+# ═══════════════════════════════════════════════════════════════
 # HEALTH ECONOMICS FRAMEWORKS (CORE IMPLEMENTATION)
 # ═══════════════════════════════════════════════════════════════
 
@@ -158,6 +164,15 @@ include("comparative_effectiveness/QualYCalculator.jl")
 include("comparative_effectiveness/SensitivityAnalysis.jl")
 include("comparative_effectiveness/ThresholdAnalysis.jl")
 include("comparative_effectiveness/ComparativeEffectiveness.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# SCENARIO ANALYSIS & OUTCOME OPTIMIZATION (Module 7)
+# ═══════════════════════════════════════════════════════════════
+
+include("scenario_analysis/ScenarioModels.jl")
+include("scenario_analysis/OutcomeProjection.jl")
+include("scenario_analysis/ContractOptimization.jl")
+include("scenario_analysis/RiskAnalysis.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # ADDITIONAL MODULES (Scaffolding for Future Implementation)
@@ -276,11 +291,34 @@ export ComparisonScenario, StrategyProfile
 export compare_strategies, build_strategy_profiles
 export format_comparison_summary, format_strategy_profiles
 
+# Scenario Analysis & Outcome Optimization (Module 7)
+export HealthcareScenario
+export validate_scenario, validate_scenario_set
+export SCENARIO_OPTIMISTIC, SCENARIO_BASE, SCENARIO_PESSIMISTIC
+export get_default_scenarios, get_scenario_by_id
+
+export project_contract_under_scenario, project_contract_across_scenarios
+export calculate_scenario_probability_distribution
+export summarize_scenario_projections
+
+export OptimizedContractPortfolio, ContractOptimizationConfig
+export optimize_contract_portfolio
+
+export RiskProfile, StressTestResult, ContingencyPlan
+export analyze_portfolio_risk, stress_test_portfolio, generate_contingency_plans
+
 # Advanced Analytics (Phase 4A)
 export ReadmissionRiskModel, AnomalyDetectionResult, RiskStratificationResult
 export build_readmission_model, predict_readmission_risk
 export build_anomaly_detector, detect_cost_anomalies
 export stratify_patient_risk, generate_risk_report
+
+# Real-Time Streaming (Phase 4C)
+export StreamingConfig, StreamingResult, EncounterRecord, StreamingMetrics
+export default_config, create_result, create_metrics
+export initialize_streaming, submit_encounter, process_batch
+export validate_encounter_data, detect_anomalies
+export get_status, shutdown_streaming
 
 # Utilities
 export format_currency, format_percentage, format_ratio
