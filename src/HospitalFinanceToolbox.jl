@@ -86,7 +86,8 @@ using StatsPlots
 
 include("utils/constants.jl")
 include("utils/types.jl")
-include("utils/validation.jl")
+# validation.jl is not included here as it requires hospital model types
+# that are defined in RuralHospitalSim.jl, not HospitalFinanceToolbox.jl
 
 # ═══════════════════════════════════════════════════════════════
 # EPISODE COSTING
@@ -101,7 +102,7 @@ include("data_ingestion/types.jl")
 include("data_ingestion/validators.jl")
 include("data_ingestion/deidentifiers.jl")
 include("data_ingestion/audit_logger.jl")
-include("data_ingestion/DataIngestionPipeline.jl")
+include("data_ingestion/ingestion_api.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # HEALTH ECONOMICS FRAMEWORKS (CORE IMPLEMENTATION)

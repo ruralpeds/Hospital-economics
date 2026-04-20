@@ -72,6 +72,12 @@ function qaly_gain(intervention_qaly::Float64, control_qaly::Float64)::Float64
 end
 
 # ═══════════════════════════════════════════════════════════════
+# ABSTRACT TYPE FOR UTILITY SYSTEMS
+# ═══════════════════════════════════════════════════════════════
+
+abstract type QALYUtility end
+
+# ═══════════════════════════════════════════════════════════════
 # UTILITY WEIGHTING SYSTEMS
 # ═══════════════════════════════════════════════════════════════
 

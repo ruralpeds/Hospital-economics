@@ -6,7 +6,7 @@
 Results from cost-effectiveness analysis.
 
 # Fields
-- `icer::Float64` — Incremental Cost-Effectiveness Ratio ($/effect unit)
+- `icer::Float64` — Incremental Cost-Effectiveness Ratio (cost per effect unit)
 - `cost_difference::Float64` — Δ Cost (intervention - control)
 - `effect_difference::Float64` — Δ Effect (intervention - control)
 - `incremental_nmb::Float64` — Net Monetary Benefit
@@ -44,7 +44,7 @@ ICER = (Cost_intervention - Cost_control) / (Effect_intervention - Effect_contro
 - `intervention_effect::Float64` — Clinical effect (QALY, life years, etc.)
 - `control_cost::Float64` — Total cost of control/standard care
 - `control_effect::Float64` — Clinical effect of control
-- `ce_threshold::Float64` — Willingness-to-pay threshold (default \$100K/QALY)
+- `ce_threshold::Float64` — Willingness-to-pay threshold (default USD100K/QALY)
 
 # Example
 ```julia
@@ -55,8 +55,8 @@ icer = calculate_icer(
     control_effect = 1.0             # 1.0 QALYs
 )
 
-# ICER = (50k - 30k) / (1.5 - 1.0) = 20k / 0.5 = \$40,000 per QALY
-# Cost-effective if threshold is \$100K per QALY
+# ICER = (50k - 30k) / (1.5 - 1.0) = 20k / 0.5 = USD40,000 per QALY
+# Cost-effective if threshold is USD100K per QALY
 ```
 """
 function calculate_icer(;
@@ -257,11 +257,11 @@ function recommend_intervention(result::CostEffectivenessResult)::String
         if result.cost_difference < 0
             return "RECOMMEND: Intervention is cost-saving"
         else
-            return "RECOMMEND: Intervention is cost-effective (ICER = \$" * 
+            return "RECOMMEND: Intervention is cost-effective (ICER = USD" * 
                    string(round(Int, result.icer)) * " per unit effect)"
         end
     else
-        return "REJECT: Intervention exceeds cost-effectiveness threshold (ICER = \$" *
+        return "REJECT: Intervention exceeds cost-effectiveness threshold (ICER = USD" *
                string(round(Int, result.icer)) * " per unit effect)"
     end
 end

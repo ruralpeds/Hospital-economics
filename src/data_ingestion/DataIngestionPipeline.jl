@@ -57,10 +57,10 @@ using DataFrames
 using SHA
 using UUIDs
 
-include("types.jl")
-include("validators.jl")
-include("deidentifiers.jl")
-include("audit_logger.jl")
+include(joinpath(@__DIR__, "types.jl"))
+include(joinpath(@__DIR__, "validators.jl"))
+include(joinpath(@__DIR__, "deidentifiers.jl"))
+include(joinpath(@__DIR__, "audit_logger.jl"))
 
 export PatientEncounter,
        IngestionConfig,

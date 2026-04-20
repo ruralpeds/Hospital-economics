@@ -49,10 +49,10 @@ All personally identifiable information has been removed or masked:
 - primary_diagnosis::String: Primary ICD-10 code
 - secondary_diagnoses::Vector{String}: Secondary ICD-10 codes (if any)
 - procedures::Vector{String}: CPT or ICD-10-PCS procedure codes
-- total_charges::Float64: Total charges ($)
-- allowed_amount::Float64: Allowed/negotiated amount ($)
-- paid_amount::Float64: Amount paid ($)
-- patient_cost_share::Float64: Patient out-of-pocket ($)
+- total_charges::Float64: Total charges (USD)
+- allowed_amount::Float64: Allowed/negotiated amount (USD)
+- paid_amount::Float64: Amount paid (USD)
+- patient_cost_share::Float64: Patient out-of-pocket (USD)
 - payer::String: "Medicare", "Medicaid", "Commercial", "Uninsured"
 - source_system::String: Origin system (e.g., "CSV_2024_Q1")
 - ingestion_date::DateTime: When this record was ingested
@@ -183,13 +183,27 @@ Configuration parameters for data ingestion job.
 """
 struct IngestionConfig
     filepath::String
-    delimiter::Char = ','
-    skip_lines::Int = 0
+    delimiter::Char
+    skip_lines::Int
     field_mapping::Dict{String, String}  # CSV_col_name => encounter_field
-    deidentify::Bool = true
-    validate::Bool = true
-    batch_size::Int = 1000
-    dry_run::Bool = false
+    deidentify::Bool
+    validate::Bool
+    batch_size::Int
+    dry_run::Bool
+end
+
+# Constructor with defaults
+function IngestionConfig(
+    filepath::String;
+    delimiter::Char = ',',
+    skip_lines::Int = 0,
+    field_mapping::Dict{String, String} = Dict(),
+    deidentify::Bool = true,
+    validate::Bool = true,
+    batch_size::Int = 1000,
+    dry_run::Bool = false,
+)
+    IngestionConfig(filepath, delimiter, skip_lines, field_mapping, deidentify, validate, batch_size, dry_run)
 end
 
 # ============================================================================
