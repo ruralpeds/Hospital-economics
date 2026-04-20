@@ -111,6 +111,12 @@ include("data_ingestion/ingestion_api.jl")
 include("patient_cohort/cohort_builder.jl")
 
 # ═══════════════════════════════════════════════════════════════
+# COST ANALYSIS ENGINE (Module 3: Cohort-Level Cost Analysis)
+# ═══════════════════════════════════════════════════════════════
+
+include("analytics/CostAnalysis.jl")
+
+# ═══════════════════════════════════════════════════════════════
 # HEALTH ECONOMICS FRAMEWORKS (CORE IMPLEMENTATION)
 # ═══════════════════════════════════════════════════════════════
 
@@ -169,6 +175,16 @@ export calculate_icer, calculate_nce, calculate_incremental_cost, calculate_incr
 export cost_effectiveness_analysis, build_ceac, recommend_intervention
 export SimpleUtility, EQ5DUtility, get_utility
 export quality_adjusted_survival, disability_adjusted_life_years, health_adjusted_life_expectancy
+
+# Cost Analysis Engine Types
+export CohortCostSummary, BenchmarkResult, BudgetImpactModel, HighCostPatientAnalysis
+
+# Cost Analysis Engine Functions
+export calculate_cohort_total_cost, calculate_cohort_cost_summary
+export inflate_cost, inflate_cohort_costs
+export benchmark_cohort, calculate_budget_impact
+export analyze_high_cost_patients
+export format_cost_summary, format_benchmark_result, format_budget_impact
 
 # Utilities
 export format_currency, format_percentage, format_ratio
