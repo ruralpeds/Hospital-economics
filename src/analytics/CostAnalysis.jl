@@ -162,7 +162,7 @@ Adjust cost from one year to another using annual inflation rates.
 
 # Example
 ```julia
-# Adjust $50,000 from 2023 to 2026
+# Adjust \$50,000 from 2023 to 2026
 inflate_cost(50_000.0, 2023, 2026)  # ~USD 54,778
 ```
 """

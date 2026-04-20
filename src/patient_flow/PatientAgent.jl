@@ -1,30 +1,44 @@
 # patient_flow/PatientAgent.jl
-# Patient agent definition with economic tracking
+# Patient agent definition with economic tracking and clinical outcomes
 
 using Dates
+using Distributions
+using Random
 
 """
     PatientAgent
 
-Mutable patient agent for discrete event simulation with cost accumulation.
+Mutable patient agent for discrete event simulation with cost accumulation and outcome tracking.
 
-# Fields
+# Financial Fields
 - `id::String` — Unique patient identifier
 - `arrival_time::Float64` — Arrival time in simulation (hours from start)
 - `admission_date::Date` — Actual calendar admission date
-- `primary_diagnosis::String` — ICD-10 code for primary diagnosis
-- `secondary_diagnoses::Vector{String}` — Additional diagnoses
-- `drg_code::String` — Assigned DRG code
-- `assigned_service_line::String` — Service line assignment (Cardiology, Orthopedics, etc.)
-- `location::String` — Current location (waiting, ward, OR, ICU, discharged)
-- `los_target::Int` — Planned length of stay (days)
 - `cumulative_cost::Float64` — Total cost accumulated so far
 - `cost_by_day::Vector{Float64}` — Daily cost breakdown
 - `daily_costs::Dict{String, Float64}` — Cost by component (labor, supplies, overhead)
 - `resource_utilization::Dict{String, Float64}` — Resources used (bed-days, OR-minutes, etc.)
+
+# Clinical Fields
+- `primary_diagnosis::String` — ICD-10 code for primary diagnosis
+- `secondary_diagnoses::Vector{String}` — Additional diagnoses
+- `drg_code::String` — Assigned DRG code
 - `procedures::Vector{String}` — Procedures performed
-- `payer::String` — Payer type (Medicare, Medicaid, Commercial, Uninsured)
 - `comorbidity_count::Int` — Number of secondary diagnoses
+
+# Location & Service
+- `assigned_service_line::String` — Service line assignment (Cardiology, Orthopedics, etc.)
+- `location::String` — Current location (waiting, ward, OR, ICU, discharged)
+- `los_target::Int` — Planned length of stay (days)
+
+# Outcomes (Module 4)
+- `quality_score::Float64` — Simulated patient satisfaction/quality (0-1)
+- `readmission_status::Bool` — True if patient gets readmitted within 30 days
+- `mortality::Bool` — True if patient dies during/after episode
+- `complication_codes::Vector{String}` — ICD-10 complication codes
+
+# Administrative
+- `payer::String` — Payer type (Medicare, Medicaid, Commercial, Uninsured)
 - `discharge_date::Union{Date, Nothing}` — Discharge date (set at discharge)
 - `metadata::Dict{String, Any}` — Additional tracking data
 """
@@ -50,6 +64,12 @@ mutable struct PatientAgent
     payer::String
     comorbidity_count::Int
 
+    # Outcomes (Module 4)
+    quality_score::Float64
+    readmission_status::Bool
+    mortality::Bool
+    complication_codes::Vector{String}
+
     # Timestamps
     discharge_date::Union{Date, Nothing}
     metadata::Dict{String, Any}
@@ -71,6 +91,10 @@ mutable struct PatientAgent
         procedures::Vector{String} = String[],
         payer::String = "Medicare",
         comorbidity_count::Int = 0,
+        quality_score::Float64 = 0.5,
+        readmission_status::Bool = false,
+        mortality::Bool = false,
+        complication_codes::Vector{String} = String[],
         discharge_date::Union{Date, Nothing} = nothing,
         metadata::Dict{String, Any} = Dict{String, Any}()
     )
@@ -78,7 +102,9 @@ mutable struct PatientAgent
             id, arrival_time, admission_date, primary_diagnosis, secondary_diagnoses,
             drg_code, assigned_service_line, location, los_target,
             cumulative_cost, cost_by_day, daily_costs, resource_utilization,
-            procedures, payer, length(secondary_diagnoses), discharge_date, metadata
+            procedures, payer, length(secondary_diagnoses),
+            quality_score, readmission_status, mortality, complication_codes,
+            discharge_date, metadata
         )
     end
 end
@@ -216,7 +242,181 @@ function patient_to_episode(patient::PatientAgent)
         metadata=Dict(
             "service_line" => patient.assigned_service_line,
             "simulated_cost" => patient.cumulative_cost,
-            "cost_components" => copy(patient.daily_costs)
+            "cost_components" => copy(patient.daily_costs),
+            "outcomes" => Dict(
+                "quality_score" => patient.quality_score,
+                "readmission" => patient.readmission_status,
+                "mortality" => patient.mortality,
+                "complications" => copy(patient.complication_codes)
+            )
         )
     )
+end
+
+# ============================================================================
+# OUTCOME SIMULATION (Module 4)
+# ============================================================================
+
+"""
+    simulate_patient_outcomes!(patient::PatientAgent, pathway::ClinicalPathway)
+
+Simulate clinical outcomes for a patient based on their clinical pathway.
+Assigns outcomes (mortality, readmission, complications, quality) based on
+pathway distributions and patient risk factors (age, comorbidities).
+
+# Arguments
+- patient::PatientAgent: Patient to assign outcomes to
+- pathway::ClinicalPathway: Evidence-based pathway with outcome distributions
+
+# Modifies (in-place)
+- patient.mortality: Sampled from pathway + risk adjustment
+- patient.readmission_status: Sampled from pathway + risk adjustment
+- patient.complication_codes: Sampled based on complication rate
+- patient.quality_score: Calculated from outcomes and costs
+
+# Risk Adjustment
+Outcomes adjusted based on:
+- Age (>75 increases mortality/readmission risk)
+- Comorbidity count (increases complication risk)
+- Cost variance (lower relative cost improves quality)
+
+# Example
+```julia
+using HospitalFinanceToolbox
+pathway = route_to_pathway("246")  # Acute MI
+patient = PatientAgent(id="PT001", drg_code="246", comorbidity_count=2)
+simulate_patient_outcomes!(patient, pathway)
+println("Mortality: \$(patient.mortality)")
+println("Quality Score: \$(patient.quality_score)")
+```
+"""
+function simulate_patient_outcomes!(patient::PatientAgent, pathway::ClinicalPathway)
+    # ────────────────────────────────────────────────────────────────────
+    # Risk Adjustment Factors (from patient characteristics)
+    # ────────────────────────────────────────────────────────────────────
+    # Parse age from metadata or use default
+    age = get(patient.metadata, "age", 65)
+    age_factor = 1.0 + max(0, (age - 65) / 35 * 0.5)  # 0-50% increase for age >65
+
+    # Comorbidity factor (5% increase per comorbidity)
+    comorbidity_factor = 1.0 + (patient.comorbidity_count * 0.05)
+
+    # Cost variance factor (patients with higher-than-expected costs have worse outcomes)
+    los_target = pathway.expected_los
+    actual_los = isnothing(patient.discharge_date) ? los_target : Dates.value(patient.discharge_date - patient.admission_date)
+    los_variance = abs(actual_los - los_target) / los_target
+    los_factor = 1.0 + (los_variance * 0.3)  # 0-30% increase for LOS variance
+
+    # ────────────────────────────────────────────────────────────────────
+    # Simulate Mortality
+    # ────────────────────────────────────────────────────────────────────
+    adjusted_mortality_rate = min(1.0, pathway.expected_mortality_rate * age_factor * comorbidity_factor * los_factor)
+    patient.mortality = rand() < adjusted_mortality_rate
+
+    # ────────────────────────────────────────────────────────────────────
+    # Simulate 30-day Readmission
+    # ────────────────────────────────────────────────────────────────────
+    if !patient.mortality
+        adjusted_readmission_rate = min(1.0, pathway.expected_readmission_30day * age_factor * comorbidity_factor)
+        patient.readmission_status = rand() < adjusted_readmission_rate
+    else
+        patient.readmission_status = false  # No readmission if deceased
+    end
+
+    # ────────────────────────────────────────────────────────────────────
+    # Simulate Complications
+    # ────────────────────────────────────────────────────────────────────
+    adjusted_complication_rate = min(1.0, pathway.expected_complication_rate * age_factor * comorbidity_factor * los_factor)
+    if rand() < adjusted_complication_rate
+        # Assign 1-3 random complication codes (in practice would use ICD-10 specifics)
+        num_complications = rand(1:3)
+        complication_map = Dict(
+            "I97.8" => "Cardiac complication",
+            "N17.9" => "Acute kidney injury",
+            "J96.9" => "Respiratory failure",
+            "R65.20" => "Sepsis complication",
+            "A41.9" => "Septicemia",
+            "I63.9" => "Stroke complication",
+            "K91.6" => "Intra-abdominal complication"
+        )
+        complication_codes = collect(keys(complication_map))
+        patient.complication_codes = sample(complication_codes, min(num_complications, length(complication_codes)), replace=false)
+    else
+        patient.complication_codes = String[]
+    end
+
+    # ────────────────────────────────────────────────────────────────────
+    # Calculate Quality Score
+    # ────────────────────────────────────────────────────────────────────
+    patient.quality_score = calculate_quality_score(patient, pathway)
+
+    nothing
+end
+
+"""
+    calculate_quality_score(patient::PatientAgent, pathway::ClinicalPathway = ClinicalPathway())::Float64
+
+Calculate patient quality/satisfaction score (0-1) based on clinical outcomes and cost.
+
+Scoring logic:
+- Start with pathway's expected quality score
+- Adjust down for: mortality, readmission, complications
+- Adjust down for: LOS variance from expected
+- Adjust down for: high cost relative to cohort
+
+# Arguments
+- patient::PatientAgent: Patient with simulated outcomes
+- pathway::ClinicalPathway: Reference pathway (optional, default quality = 0.75)
+
+# Returns
+Float64 between 0.0 (worst) and 1.0 (best)
+
+# Adjustments
+- Mortality: -0.35 (major penalty)
+- Readmission: -0.10 (moderate penalty)
+- Per complication: -0.05 (cumulative)
+- LOS variance >50%: -0.08
+- High cost (>90th percentile): -0.05
+"""
+function calculate_quality_score(patient::PatientAgent, pathway::ClinicalPathway = ClinicalPathway())::Float64
+    score = 0.75  # Base quality score if no pathway provided
+
+    if pathway.pathway_id != ""
+        score = pathway.expected_quality_score
+    end
+
+    # Penalty for poor outcomes
+    if patient.mortality
+        score -= 0.35
+    end
+
+    if patient.readmission_status
+        score -= 0.10
+    end
+
+    # Complication penalty (5% per complication)
+    score -= length(patient.complication_codes) * 0.05
+
+    # LOS variance penalty
+    if pathway.pathway_id != ""
+        los_target = pathway.expected_los
+        actual_los = isnothing(patient.discharge_date) ? los_target : Dates.value(patient.discharge_date - patient.admission_date)
+        los_variance = abs(actual_los - los_target) / los_target
+
+        if los_variance > 0.5
+            score -= 0.08
+        end
+    end
+
+    # Cost variance penalty (if cost > expected + std dev)
+    if pathway.pathway_id != ""
+        expected_cost = pathway.expected_cost
+        cost_threshold = expected_cost + pathway.cost_std
+        if patient.cumulative_cost > cost_threshold
+            score -= 0.05
+        end
+    end
+
+    # Bound to 0.0-1.0
+    return max(0.0, min(1.0, score))
 end

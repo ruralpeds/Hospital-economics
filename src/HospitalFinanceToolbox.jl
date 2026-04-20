@@ -124,17 +124,33 @@ include("health_economics/QALY.jl")
 include("health_economics/ICER.jl")
 
 # ═══════════════════════════════════════════════════════════════
+# PATIENT FLOW SIMULATION (Module 4: Clinical Pathways & Outcomes)
+# ═══════════════════════════════════════════════════════════════
+
+include("patient_flow/ClinicalPathway.jl")
+include("patient_flow/PatientAgent.jl")
+include("patient_flow/CohortSimulation.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# VALUE-BASED CARE CONTRACTS (Module 5: Financial Impact Analysis)
+# ═══════════════════════════════════════════════════════════════
+
+include("payer_models/ValueBasedCare.jl")
+include("payer_models/QualityMetrics.jl")
+include("payer_models/FinancialImpact.jl")
+include("payer_models/BudgetImpactModel.jl")
+
+# ═══════════════════════════════════════════════════════════════
 # ADDITIONAL MODULES (Scaffolding for Future Implementation)
 # ═══════════════════════════════════════════════════════════════
 # The following modules are scaffolded and ready for implementation:
 # - episode/CostModels.jl, OutcomeTracking.jl
 # - health_economics/NMB.jl, Uncertainty.jl
-# - patient_flow/PatientAgent.jl, ClinicalPathway.jl, FlowSimulation.jl
+# - patient_flow/FlowSimulation.jl (discrete-event simulation engine)
 # - clinical_integration/PhysiologicalModel.jl, ClinicalEconomicCoupling.jl
 # - optimization/ValueBasedOptimization.jl, ResourceAllocation.jl
-# - payer_models/ValueBasedCare.jl, BudgetImpactModel.jl
 # - visualization/CostEffectiveness.jl, Dashboards.jl
-# 
+#
 # See docs/ for implementation roadmap
 
 # ═══════════════════════════════════════════════════════════════
@@ -185,6 +201,32 @@ export inflate_cost, inflate_cohort_costs
 export benchmark_cohort, calculate_budget_impact
 export analyze_high_cost_patients
 export format_cost_summary, format_benchmark_result, format_budget_impact
+
+# Patient Flow Simulation (Module 4)
+export PatientAgent
+export ClinicalPathway
+export CohortSimulationResult
+export get_clinical_pathways, route_to_pathway, get_default_pathway
+export initialize_patient_cost_tracking, accumulate_daily_cost!, add_procedure_cost!
+export route_patient_to_service!, discharge_patient!, get_patient_summary, patient_to_episode
+export simulate_patient_outcomes!, calculate_quality_score
+export simulate_cohort, format_cohort_simulation_result
+
+# Value-Based Care Contracts (Module 5)
+export PayerContract
+export FeeForServiceContract, CapitationContract, BundledPaymentContract
+export SharedSavingsContract, QualityBasedPaymentContract
+export contract_type_name, get_annual_revenue
+
+export QualityMetrics
+export calculate_quality_metrics, calculate_quality_adjustment
+export get_quality_rating, compare_metrics, format_quality_metrics
+
+export AnnualContractFinancials
+export ThreeYearContractAnalysis
+export format_contract_analysis, format_annual_financials, compare_contracts
+
+export project_contract_financials, apply_risk_adjustment, calculate_quality_penalty
 
 # Utilities
 export format_currency, format_percentage, format_ratio

@@ -63,6 +63,16 @@ using Test
     include("test_optimization_portfolio.jl")
     include("test_risk_assessment_extended.jl")
 
+    # HospitalFinanceToolbox module tests (Modules 1-5)
+    # Module 1-3: Data ingestion, patient cohorts, cost analysis
+    # (Note: These are covered by existing test files in src/HospitalFinanceToolbox tests)
+
+    # Module 4-5: Patient Flow Simulation & Value-Based Care Contracts
+    include("payer_models_tests.jl")
+
+    # Module 4-5: Integration testing
+    include("integration_modules_4_5.jl")
+
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
