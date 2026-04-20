@@ -5,6 +5,8 @@ using Dates
 using Distributions
 using Random
 
+include("ClinicalPathway.jl")
+
 """
     PatientAgent
 
