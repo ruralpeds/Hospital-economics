@@ -1,4 +1,28 @@
+using Dates
+using Statistics
+
 # episode/Episode.jl — Core episode definition and costing
+
+# Type definitions for payer and status
+@enum Payer Medicare Medicaid Commercial Uninsured
+@enum OutcomeStatus Alive Dead Discharged Transferred
+abstract type CostModel end
+
+# Default DRG base rates (2026 estimates)
+const DRG_BASE_RATES = Dict(
+    "246" => 28_000.0, "247" => 18_000.0, "248" => 22_000.0,
+    "164" => 16_000.0, "165" => 10_000.0, "166" => 14_000.0,
+    "469" => 18_000.0, "470" => 15_000.0, "471" => 12_000.0,
+    "373" => 8_000.0, "374" => 12_000.0, "375" => 6_000.0,
+)
+
+# Payer multipliers (relative to Medicare = 1.0)
+const PAYER_MULTIPLIERS = Dict(
+    Medicare => 1.0,
+    Medicaid => 0.85,
+    Commercial => 1.15,
+    Uninsured => 0.5,
+)
 
 """
     Episode

@@ -94,6 +94,16 @@ include("utils/validation.jl")
 
 include("episode/Episode.jl")
 # ═══════════════════════════════════════════════════════════════
+# DATA INGESTION & VALIDATION (HIPAA-COMPLIANT)
+# ═══════════════════════════════════════════════════════════════
+
+include("data_ingestion/types.jl")
+include("data_ingestion/validators.jl")
+include("data_ingestion/deidentifiers.jl")
+include("data_ingestion/audit_logger.jl")
+include("data_ingestion/DataIngestionPipeline.jl")
+
+# ═══════════════════════════════════════════════════════════════
 # HEALTH ECONOMICS FRAMEWORKS (CORE IMPLEMENTATION)
 # ═══════════════════════════════════════════════════════════════
 
@@ -117,6 +127,17 @@ include("health_economics/ICER.jl")
 # ═══════════════════════════════════════════════════════════════
 # EXPORTS (Core Implemented Modules)
 # ═══════════════════════════════════════════════════════════════
+
+# Data Ingestion & Validation Types
+export PatientEncounter, IngestionConfig, IngestionResult
+export AuditLogEntry, ValidationResult, ValidationError, QualityReport
+export AuditLogStore
+
+# Data Ingestion & Validation Functions
+export ingest_csv
+export validate_icd10_code, validate_cpt_code, validate_patient_encounter, validate_encounters_batch
+export generate_pseudonym, deidentify_encounter, validate_deidentification
+export log_ingestion_event, audit_log_summary
 
 # Types
 export Episode, EpisodeOutcomes, EpisodeSummary
