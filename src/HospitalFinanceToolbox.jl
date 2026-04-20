@@ -117,6 +117,12 @@ include("patient_cohort/cohort_builder.jl")
 include("analytics/CostAnalysis.jl")
 
 # ═══════════════════════════════════════════════════════════════
+# ADVANCED ANALYTICS (Phase 4A: Machine Learning & Stratification)
+# ═══════════════════════════════════════════════════════════════
+
+include("analytics/AdvancedAnalytics.jl")
+
+# ═══════════════════════════════════════════════════════════════
 # HEALTH ECONOMICS FRAMEWORKS (CORE IMPLEMENTATION)
 # ═══════════════════════════════════════════════════════════════
 
@@ -139,6 +145,16 @@ include("payer_models/ValueBasedCare.jl")
 include("payer_models/QualityMetrics.jl")
 include("payer_models/FinancialImpact.jl")
 include("payer_models/BudgetImpactModel.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# COMPARATIVE EFFECTIVENESS ANALYSIS (Module 6)
+# ═══════════════════════════════════════════════════════════════
+
+include("comparative_effectiveness/CostEffectivenessAnalysis.jl")
+include("comparative_effectiveness/QualYCalculator.jl")
+include("comparative_effectiveness/SensitivityAnalysis.jl")
+include("comparative_effectiveness/ThresholdAnalysis.jl")
+include("comparative_effectiveness/ComparativeEffectiveness.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # ADDITIONAL MODULES (Scaffolding for Future Implementation)
@@ -227,6 +243,41 @@ export ThreeYearContractAnalysis
 export format_contract_analysis, format_annual_financials, compare_contracts
 
 export project_contract_financials, apply_risk_adjustment, calculate_quality_penalty
+
+# Comparative Effectiveness Analysis (Module 6)
+export CostEffectivenessResult, CostEffectivenessPlane, ThresholdAnalysis
+export calculate_icer, calculate_net_monetary_benefit, classify_dominance
+export analyze_cost_effectiveness, format_cost_effectiveness_result
+
+export QALYCalculation, HealthState
+export get_utility_weight, get_utility_by_diagnosis, calculate_qaly
+export calculate_life_years, calculate_cohort_qalys, calculate_qalys_per_patient
+export sensitivity_qaly_to_utility, sensitivity_qaly_to_mortality
+
+export SensitivityParameter, OneWaySensitivityResult, TwoWaySensitivityResult
+export ProbabilisticSensitivityResult
+export conduct_one_way_sensitivity, tornado_analysis
+export conduct_two_way_sensitivity
+export conduct_probabilistic_sensitivity
+export calculate_ceac_at_wtp, get_ceac_confidence_interval
+export summarize_icer_distribution
+
+export BreakEvenAnalysis, WTPThreshold, EffectivenessMilepost
+export calculate_break_even_wtp, analyze_break_even
+export evaluate_at_wtp_threshold, find_optimal_wtp
+export analyze_effectiveness_trajectory
+export calculate_ceac, find_ceac_crossover
+export format_threshold_analysis
+
+export ComparisonScenario, StrategyProfile
+export compare_strategies, build_strategy_profiles
+export format_comparison_summary, format_strategy_profiles
+
+# Advanced Analytics (Phase 4A)
+export ReadmissionRiskModel, AnomalyDetectionResult, RiskStratificationResult
+export build_readmission_model, predict_readmission_risk
+export build_anomaly_detector, detect_cost_anomalies
+export stratify_patient_risk, generate_risk_report
 
 # Utilities
 export format_currency, format_percentage, format_ratio

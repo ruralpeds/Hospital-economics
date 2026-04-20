@@ -73,6 +73,12 @@ using Test
     # Module 4-5: Integration testing
     include("integration_modules_4_5.jl")
 
+    # Module 6: Comparative Effectiveness Analysis
+    include("comparative_effectiveness_tests.jl")
+
+    # Module 6: Integration with Modules 4-5
+    include("integration_module_6.jl")
+
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
