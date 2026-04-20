@@ -105,6 +105,12 @@ include("data_ingestion/audit_logger.jl")
 include("data_ingestion/ingestion_api.jl")
 
 # ═══════════════════════════════════════════════════════════════
+# PATIENT COHORT BUILDING & ANALYTICS
+# ═══════════════════════════════════════════════════════════════
+
+include("patient_cohort/cohort_builder.jl")
+
+# ═══════════════════════════════════════════════════════════════
 # HEALTH ECONOMICS FRAMEWORKS (CORE IMPLEMENTATION)
 # ═══════════════════════════════════════════════════════════════
 
@@ -139,6 +145,15 @@ export ingest_csv
 export validate_icd10_code, validate_cpt_code, validate_patient_encounter, validate_encounters_batch
 export generate_pseudonym, deidentify_encounter, validate_deidentification
 export log_ingestion_event, audit_log_summary
+
+# Patient Cohort Types
+export PatientCohort, CohortStatistics, CohortDefinition
+export CriterionType
+export AgeCriterion, DiagnosisCriterion, ProcedureCriterion, CostCriterion
+export LengthOfStayCriterion, PayerCriterion, DateRangeCriterion
+
+# Patient Cohort Functions
+export build_cohort, calculate_cohort_statistics
 
 # Types
 export Episode, EpisodeOutcomes, EpisodeSummary
