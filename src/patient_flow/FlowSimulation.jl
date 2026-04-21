@@ -4,8 +4,6 @@
 using Dates
 using Statistics
 using Random
-using Distributions
-using StatsBase
 
 """
     ServiceLineCapacity
@@ -123,7 +121,7 @@ function generate_admission(sim::HospitalSimulation, admission_date::Date, arriv
     # Payer mix (realistic rural hospital distribution)
     payer_weights = [0.45, 0.25, 0.20, 0.10]
     payer_types = ["Medicare", "Medicaid", "Commercial", "Uninsured"]
-    payer = sample(payer_types, Weights(payer_weights))
+    payer = let r = rand(); payer_types[findfirst(cumsum(payer_weights) .>= r)]; end
 
     # LOS target based on DRG
     los_target = rand(2:5)
@@ -311,8 +309,8 @@ function simulate_hospital_flow!(
     for day = 1:num_days
         hospital_date = start_date + Day(day - 1)
 
-        # Generate admissions for this day (Poisson process)
-        num_admissions = rand(Poisson(admission_rate_per_day))
+        # Generate admissions for this day (Poisson approximation using Normal)
+        num_admissions = max(0, round(Int, admission_rate_per_day + randn() * sqrt(admission_rate_per_day)))
 
         for admission_idx = 1:num_admissions
             arrival_hour = rand() * 24.0  # Uniformly distributed throughout day
