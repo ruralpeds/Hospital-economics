@@ -4,8 +4,44 @@
 using Dates
 using Statistics
 using Random
-using Distributions
-using StatsBase
+
+# ============================================================================
+# Stdlib-only helpers replacing Distributions/StatsBase
+# ============================================================================
+
+"""
+    poisson_rand(lambda::Float64)::Int
+
+Sample from a Poisson distribution using Knuth's algorithm (stdlib only).
+"""
+function poisson_rand(lambda::Float64)::Int
+    L = exp(-lambda)
+    k = 0
+    p = 1.0
+    while p > L
+        k += 1
+        p *= rand()
+    end
+    return k - 1
+end
+
+"""
+    weighted_sample(items::Vector, weights::Vector{Float64})
+
+Weighted random selection from items vector (stdlib only).
+"""
+function weighted_sample(items::Vector, weights::Vector{Float64})
+    total = sum(weights)
+    r = rand() * total
+    cumulative = 0.0
+    for (item, w) in zip(items, weights)
+        cumulative += w
+        if r <= cumulative
+            return item
+        end
+    end
+    return items[end]
+end
 
 """
     ServiceLineCapacity
@@ -61,12 +97,14 @@ mutable struct HospitalSimulation
         time_end = num_days * 24.0
 
         default_services = Dict(
-            "ED" => ServiceLineCapacity("ED", 12, 0, 12, 480.0, 0.0),
-            "General Ward" => ServiceLineCapacity("General Ward", 30, 0, 30, 0.0, 0.0),
-            "ICU" => ServiceLineCapacity("ICU", 8, 0, 8, 0.0, 0.0),
-            "OR" => ServiceLineCapacity("OR", 4, 0, 4, 8 * 60, 0.0),
-            "Cardiology" => ServiceLineCapacity("Cardiology", 12, 0, 12, 240.0, 0.0),
-            "Orthopedics" => ServiceLineCapacity("Orthopedics", 10, 0, 10, 300.0, 0.0)
+            "Emergency"       => ServiceLineCapacity("Emergency",       20, 0, 20, 480.0, 0.0),
+            "General Ward"    => ServiceLineCapacity("General Ward",    30, 0, 30,   0.0, 0.0),
+            "ICU"             => ServiceLineCapacity("ICU",              8, 0,  8,   0.0, 0.0),
+            "Cardiology"      => ServiceLineCapacity("Cardiology",      12, 0, 12, 240.0, 0.0),
+            "Orthopedics"     => ServiceLineCapacity("Orthopedics",     10, 0, 10, 300.0, 0.0),
+            "Obstetrics"      => ServiceLineCapacity("Obstetrics",       8, 0,  8,   0.0, 0.0),
+            "Neurology"       => ServiceLineCapacity("Neurology",        8, 0,  8,   0.0, 0.0),
+            "General Surgery" => ServiceLineCapacity("General Surgery", 10, 0, 10, 360.0, 0.0)
         )
 
         services = isempty(service_lines) ? default_services : service_lines
@@ -95,38 +133,48 @@ Generate a new patient admission with realistic diagnosis and service routing.
 function generate_admission(sim::HospitalSimulation, admission_date::Date, arrival_time::Float64)::PatientAgent
     patient_id = "PT_$(length(sim.patients) + 1)"
 
-    # Realistic DRG distribution for rural hospital
-    drg_codes = collect(keys(DRG_BASE_RATES))
-    drg_code = rand(drg_codes)
+    # Weighted service line assignment (realistic hospital volume distribution)
+    service_lines = ["Emergency", "General Ward", "Cardiology", "Orthopedics",
+                     "Obstetrics", "ICU", "Neurology", "General Surgery"]
+    service_weights = [0.25, 0.20, 0.15, 0.12, 0.10, 0.08, 0.05, 0.05]
+    service_line = weighted_sample(service_lines, service_weights)
 
-    # Map DRG to likely service line
-    service_map = Dict(
-        "246" => "Cardiology",
-        "247" => "Cardiology",
-        "248" => "Cardiology",
-        "164" => "Orthopedics",
-        "165" => "Orthopedics",
-        "166" => "Orthopedics",
-        "469" => "General Ward",
-        "470" => "General Ward",
-        "471" => "General Ward",
-        "373" => "General Ward",
-        "374" => "General Ward",
-        "375" => "General Ward"
+    # Map service line to representative DRG code
+    service_drg_map = Dict(
+        "Emergency"       => ["999"],
+        "General Ward"    => ["469", "470", "471"],
+        "Cardiology"      => ["246", "247", "248"],
+        "Orthopedics"     => ["469", "470", "471"],
+        "Obstetrics"      => ["373", "374", "375"],
+        "ICU"             => ["246", "247"],
+        "Neurology"       => ["023", "024"],
+        "General Surgery" => ["164", "165", "166"]
     )
-    service_line = get(service_map, drg_code, "General Ward")
+    drg_options = get(service_drg_map, service_line, ["247"])
+    drg_code = drg_options[rand(1:length(drg_options))]
 
-    # Secondary diagnoses (comorbidities)
+    # Secondary diagnoses (comorbidities — 40% of patients)
     has_comorbidity = rand() < 0.4
     secondary_diagnoses = has_comorbidity ? ["CC_001", "CC_002"] : String[]
 
     # Payer mix (realistic rural hospital distribution)
+    payer_types   = ["Medicare", "Medicaid", "Commercial", "Uninsured"]
     payer_weights = [0.45, 0.25, 0.20, 0.10]
-    payer_types = ["Medicare", "Medicaid", "Commercial", "Uninsured"]
-    payer = sample(payer_types, Weights(payer_weights))
+    payer = weighted_sample(payer_types, payer_weights)
 
-    # LOS target based on DRG
-    los_target = rand(2:5)
+    # LOS target varies by service line
+    los_ranges = Dict(
+        "Emergency"       => (1, 1),
+        "General Ward"    => (2, 5),
+        "Cardiology"      => (3, 7),
+        "Orthopedics"     => (3, 7),
+        "Obstetrics"      => (2, 4),
+        "ICU"             => (3, 8),
+        "Neurology"       => (3, 6),
+        "General Surgery" => (2, 5)
+    )
+    lo, hi = get(los_ranges, service_line, (2, 5))
+    los_target = rand(lo:hi)
 
     patient = PatientAgent(
         id=patient_id,
@@ -148,26 +196,33 @@ end
 """
     route_patient!(patient::PatientAgent, sim::HospitalSimulation)
 
-Route patient from ED to appropriate service line based on triage.
+Route patient from admission to appropriate location based on service line.
 """
 function route_patient!(patient::PatientAgent, sim::HospitalSimulation)
     service = patient.assigned_service_line
 
-    # Update patient location
-    if service == "Cardiology" || service == "Orthopedics"
+    # Initial location by service line
+    if service == "Emergency"
+        patient.location = "general ward"
+    elseif service in ["Cardiology", "Orthopedics", "Neurology", "General Surgery"]
         patient.location = "ward"
+    elseif service == "ICU"
+        patient.location = "ICU"
     else
         patient.location = "general ward"
     end
 
-    # Check for ICU admission (10% of cases with comorbidities)
-    if patient.comorbidity_count >= 2 && rand() < 0.10
+    # Escalate to ICU for high-comorbidity patients (10%)
+    if patient.location != "ICU" && patient.comorbidity_count >= 2 && rand() < 0.10
         patient.location = "ICU"
     end
 
-    # Procedure probability (increases with orthopedics)
+    # OR admission for surgical services
     if service == "Orthopedics" && rand() < 0.60
         add_procedure_cost!(patient, "99213", 2500.0)
+        patient.location = "OR"
+    elseif service == "General Surgery" && rand() < 0.75
+        add_procedure_cost!(patient, "99213", 3000.0)
         patient.location = "OR"
     end
 end
@@ -222,7 +277,11 @@ function accumulate_daily_costs!(
 
     accumulate_daily_cost!(patient, day_index, labor_cost, supplies_cost, overhead_cost)
 
-    # Update bed cost in daily_costs
+    # Include bed facility cost in patient's total cost
+    patient.cumulative_cost += bed_cost
+    if day_index <= length(patient.cost_by_day)
+        patient.cost_by_day[day_index] += bed_cost
+    end
     patient.daily_costs["bed"] = get(patient.daily_costs, "bed", 0.0) + bed_cost
 
     # Track total daily cost for hospital
@@ -276,15 +335,15 @@ function simulate_patient_day!(
         return
     end
 
-    # Accumulate costs for the day
+    # Accumulate costs for the day (use simulation_day as the day index for cost arrays)
     accumulate_daily_costs!(sim, patient, simulation_day, hospital_date)
 
-    # Check for discharge (after meeting LOS target)
-    los_actual = simulation_day - 1
+    # Actual patient LOS: days since their personal admission date
+    los_actual = Dates.value(hospital_date - patient.admission_date)
     discharge_prob = 0.0
 
     if los_actual >= patient.los_target
-        # Discharge probability increases with LOS
+        # Discharge probability increases with days beyond LOS target
         discharge_prob = 0.4 + 0.1 * (los_actual - patient.los_target)
     end
 
@@ -312,7 +371,7 @@ function simulate_hospital_flow!(
         hospital_date = start_date + Day(day - 1)
 
         # Generate admissions for this day (Poisson process)
-        num_admissions = rand(Poisson(admission_rate_per_day))
+        num_admissions = poisson_rand(admission_rate_per_day)
 
         for admission_idx = 1:num_admissions
             arrival_hour = rand() * 24.0  # Uniformly distributed throughout day
@@ -364,43 +423,84 @@ function finalize_simulation!(sim::HospitalSimulation)
     end
 
     # Aggregate by service line
-    service_costs = Dict{String, Float64}()
+    service_costs   = Dict{String, Float64}()
     service_volumes = Dict{String, Int}()
+    service_cost_sd = Dict{String, Float64}()
+
+    # Aggregate cost components across all discharged patients
+    total_labor    = sum(get(p.daily_costs, "labor",    0.0) for p in discharged_patients; init=0.0)
+    total_supplies = sum(get(p.daily_costs, "supplies", 0.0) for p in discharged_patients; init=0.0)
+    total_overhead = sum(get(p.daily_costs, "overhead", 0.0) for p in discharged_patients; init=0.0)
+
+    service_patient_costs = Dict{String, Vector{Float64}}()
 
     for patient in discharged_patients
         service = patient.assigned_service_line
         if !haskey(service_costs, service)
             service_costs[service] = 0.0
             service_volumes[service] = 0
+            service_patient_costs[service] = Float64[]
         end
         service_costs[service] += patient.cumulative_cost
         service_volumes[service] += 1
+        push!(service_patient_costs[service], patient.cumulative_cost)
     end
 
-    # Calculate service line margins (assuming 1.3× cost multiplier for revenue)
+    for (service, costs) in service_patient_costs
+        service_cost_sd[service] = length(costs) > 1 ? std(costs) : 0.0
+    end
+
+    # Revenue multipliers per service line (realistic payer mix effects)
+    revenue_multipliers = Dict(
+        "Emergency"       => 0.95,  # ED typically under-reimbursed
+        "General Ward"    => 1.10,
+        "Cardiology"      => 1.35,
+        "Orthopedics"     => 1.40,
+        "Obstetrics"      => 1.05,
+        "ICU"             => 1.20,
+        "Neurology"       => 1.25,
+        "General Surgery" => 1.30
+    )
+
+    # Calculate service line margins
     service_margins = Dict{String, Float64}()
+    service_revenues = Dict{String, Float64}()
     for (service, cost) in service_costs
-        volume = service_volumes[service]
-        revenue = cost * 1.3
-        margin = revenue - cost
-        service_margins[service] = margin / volume  # per-case margin
+        multiplier = get(revenue_multipliers, service, 1.30)
+        revenue = cost * multiplier
+        service_revenues[service] = revenue
+        service_margins[service] = revenue - cost  # total margin for service line
     end
 
     total_daily_cost = sum(values(sim.daily_costs))
 
+    # Mean cost per patient per service line
+    service_mean_cost = Dict{String, Float64}()
+    for (service, cost) in service_costs
+        volume = service_volumes[service]
+        service_mean_cost[service] = volume > 0 ? cost / volume : 0.0
+    end
+
     sim.cost_results = Dict(
-        "total_cost" => total_cost,
-        "total_patients" => total_patients,
-        "mean_cost_per_patient" => avg_cost,
-        "std_cost_per_patient" => std_cost,
-        "total_daily_cost" => total_daily_cost,
-        "service_line_costs" => service_costs,
-        "service_line_volumes" => service_volumes,
-        "service_line_margins" => service_margins,
-        "total_admissions" => sum(values(sim.daily_admissions)),
-        "total_discharges" => sum(values(sim.daily_discharges)),
-        "average_los" => mean([
-            Dates.value(p.discharge_date - p.admission_date) for p in discharged_patients if !isnothing(p.discharge_date)
+        "total_cost"              => total_cost,
+        "total_patients"          => total_patients,
+        "mean_cost_per_patient"   => avg_cost,
+        "std_cost_per_patient"    => std_cost,
+        "total_daily_cost"        => total_daily_cost,
+        "total_labor_cost"        => total_labor,
+        "total_supplies_cost"     => total_supplies,
+        "total_overhead_cost"     => total_overhead,
+        "service_line_costs"      => service_costs,
+        "service_line_volumes"    => service_volumes,
+        "service_line_margins"    => service_margins,
+        "service_line_revenues"   => service_revenues,
+        "service_mean_cost"       => service_mean_cost,
+        "service_cost_sd"         => service_cost_sd,
+        "total_admissions"        => sum(values(sim.daily_admissions)),
+        "total_discharges"        => sum(values(sim.daily_discharges)),
+        "average_los"             => isempty(discharged_patients) ? 0.0 : mean([
+            Dates.value(p.discharge_date - p.admission_date)
+            for p in discharged_patients if !isnothing(p.discharge_date)
         ])
     )
 end
