@@ -15,11 +15,15 @@ module MultiLevelPolicyCoupling
 
 export FederalPolicy, StatePolicy, HospitalStrategy
 export MedicarePaymentReform, ProposedMLLRate
+export ACARepealPolicy, MedicareAdvantageTransformation, VerticalIntegrationPolicy
+export PriceRegulationPolicy
 export MedicaidExpansion, HospitalRateSetting, RuralHospitalSupport, PayerMixShift
 export ConservativeStrategy, AggressiveExpansionStrategy, AccommodativeStrategy
 export MultiLevelPolicyScenario, PolicyCouplingOutcomes
 export simulate_policy_coupling!, analyze_policy_interactions
 export calculate_federal_impact, calculate_state_impact
+export build_aca_repeal_scenario, build_medicare_advantage_scenario
+export build_consolidation_scenario, build_price_regulation_scenario
 
 using Statistics
 
@@ -45,6 +49,25 @@ end
 mutable struct ProposedMLLRate <: FederalPolicy
     affects_services::Set{String}
     national_rate::Float64
+    implementation_year::Int
+end
+
+# ACA Repeal & Replace: models individual mandate elimination, community rating
+# modification, and optional Medicaid expansion repeal
+mutable struct ACARepealPolicy <: FederalPolicy
+    medicaid_expansion_repealed::Bool
+    individual_mandate_eliminated::Bool
+    community_rating_modification::Float64  # multiplier on risk-rated premiums (1.0 = unchanged)
+    rural_impact_multiplier::Float64        # additional burden on rural hospitals
+    implementation_year::Int
+end
+
+# Medicare Advantage Transformation: shift to risk-adjusted capitation
+mutable struct MedicareAdvantageTransformation <: FederalPolicy
+    capitation_rate_change::Float64  # fractional change in per-member payment
+    rural_rate_adjustment::Float64   # additional adjustment for rural providers
+    urban_rate_adjustment::Float64   # additional adjustment for urban providers
+    traditional_medicare_shift::Float64  # fraction of FFS volume moving to MA
     implementation_year::Int
 end
 
@@ -77,6 +100,25 @@ mutable struct PayerMixShift <: StatePolicy
     from_payer::String
     to_payer::String
     volume_shift::Float64
+    implementation_year::Int
+end
+
+# Consolidated Delivery Systems: vertical integration requirements and
+# competition impact
+mutable struct VerticalIntegrationPolicy <: StatePolicy
+    integration_requirement::Float64  # fraction of services requiring integration
+    competition_reduction::Float64    # reduction in market competition (0..1)
+    efficiency_gain::Float64          # cost efficiency from integration
+    implementation_year::Int
+end
+
+# Price Regulation Models: covers All-Payer, German/Dutch-style, and
+# Australian ACHS-style payment regulation
+mutable struct PriceRegulationPolicy <: StatePolicy
+    model_type::String              # "all_payer", "german_dutch", "australian_achs"
+    rate_cap_multiplier::Float64    # caps payment as multiple of Medicare rates
+    negotiation_discount::Float64   # fractional reduction from negotiation
+    applies_to_payers::Set{String}  # payers subject to regulation
     implementation_year::Int
 end
 
@@ -161,6 +203,36 @@ function PayerMixShift(; from_payer="", to_payer="", volume_shift=0.0, implement
     PayerMixShift(from_payer, to_payer, volume_shift, implementation_year)
 end
 
+function ACARepealPolicy(; medicaid_expansion_repealed=true, individual_mandate_eliminated=true,
+                          community_rating_modification=1.5, rural_impact_multiplier=1.2,
+                          implementation_year=1)
+    ACARepealPolicy(medicaid_expansion_repealed, individual_mandate_eliminated,
+                    community_rating_modification, rural_impact_multiplier, implementation_year)
+end
+
+function MedicareAdvantageTransformation(; capitation_rate_change=0.0, rural_rate_adjustment=-0.05,
+                                          urban_rate_adjustment=0.02,
+                                          traditional_medicare_shift=0.10,
+                                          implementation_year=1)
+    MedicareAdvantageTransformation(capitation_rate_change, rural_rate_adjustment,
+                                    urban_rate_adjustment, traditional_medicare_shift,
+                                    implementation_year)
+end
+
+function VerticalIntegrationPolicy(; integration_requirement=0.5, competition_reduction=0.20,
+                                    efficiency_gain=0.05, implementation_year=1)
+    VerticalIntegrationPolicy(integration_requirement, competition_reduction,
+                               efficiency_gain, implementation_year)
+end
+
+function PriceRegulationPolicy(; model_type="all_payer", rate_cap_multiplier=1.1,
+                                 negotiation_discount=0.10,
+                                 applies_to_payers=Set{String}(["Commercial", "Medicare", "Medicaid"]),
+                                 implementation_year=1)
+    PriceRegulationPolicy(model_type, rate_cap_multiplier, negotiation_discount,
+                           applies_to_payers, implementation_year)
+end
+
 function ConservativeStrategy(; cost_reduction_target=0.05, service_retention=0.95, investment_multiplier=0.5)
     ConservativeStrategy(cost_reduction_target, service_retention, investment_multiplier)
 end
@@ -200,7 +272,7 @@ function simulate_policy_coupling!(scenario::MultiLevelPolicyScenario,
     quality_metrics = Dict{String, Vector{Float64}}()
     hospital_closures = String[]
     total_costs = Float64[]
-    state_enrollment = [baseline_state_data.enrollment]
+    state_enrollment = Float64[baseline_state_data.enrollment]
 
     # Initialize baselines
     for (hospital_id, baseline) in baseline_hospitals
@@ -329,6 +401,20 @@ function calculate_federal_impact(policies::Vector{FederalPolicy}, year::Int)::F
             total += (avg_change - 1.0) - policy.quality_incentive_pool - policy.bundled_payment_rate * 0.05
         elseif policy isa ProposedMLLRate && year >= policy.implementation_year
             total += (policy.national_rate - 1.0) * 0.3
+        elseif policy isa ACARepealPolicy && year >= policy.implementation_year
+            # Repeal reduces coverage, tightening hospital revenue
+            if policy.medicaid_expansion_repealed
+                total -= 0.08  # loss of Medicaid expansion revenue
+            end
+            if policy.individual_mandate_eliminated
+                total -= 0.03  # higher uninsured rate increases bad debt
+            end
+            # Community rating modification affects premium risk pools
+            total -= (policy.community_rating_modification - 1.0) * 0.05
+        elseif policy isa MedicareAdvantageTransformation && year >= policy.implementation_year
+            # Net effect of capitation change plus volume shift from FFS to MA
+            total += policy.capitation_rate_change
+            total -= policy.traditional_medicare_shift * 0.05
         end
     end
     return total
@@ -343,6 +429,16 @@ function calculate_state_impact(policies::Vector{StatePolicy}, year::Int)::Float
             total += policy.coverage_increase * phase_in
         elseif policy isa PayerMixShift && year >= policy.implementation_year
             total += policy.volume_shift
+        elseif policy isa VerticalIntegrationPolicy && year >= policy.implementation_year
+            # Efficiency gains improve hospital margins; competition reduction
+            # may allow modest rate increases but also reduces market discipline
+            total += policy.efficiency_gain - policy.competition_reduction * 0.02
+        elseif policy isa PriceRegulationPolicy && year >= policy.implementation_year
+            # Rate caps compress margins; negotiation discount directly reduces revenue
+            total -= policy.negotiation_discount
+            if policy.rate_cap_multiplier < 1.0
+                total -= (1.0 - policy.rate_cap_multiplier) * 0.05
+            end
         end
     end
     return total
@@ -354,10 +450,31 @@ function analyze_policy_interactions(scenario::MultiLevelPolicyScenario,
 
     has_medicaid = any(p isa MedicaidExpansion for p in scenario.state_policies)
     has_medicare_cut = any(p isa MedicarePaymentReform for p in scenario.federal_policies)
+    has_aca_repeal = any(p isa ACARepealPolicy for p in scenario.federal_policies)
+    has_ma_transform = any(p isa MedicareAdvantageTransformation for p in scenario.federal_policies)
+    has_integration = any(p isa VerticalIntegrationPolicy for p in scenario.state_policies)
+    has_price_reg = any(p isa PriceRegulationPolicy for p in scenario.state_policies)
 
     if has_medicaid && has_medicare_cut
         interactions["medicaid_expansion_medicare_cut_stress"] = true
         interactions["stress_level"] = "high"
+    end
+
+    if has_aca_repeal
+        interactions["aca_repeal_detected"] = true
+        interactions["coverage_risk"] = "high"
+    end
+
+    if has_ma_transform
+        interactions["medicare_advantage_transformation_detected"] = true
+    end
+
+    if has_integration
+        interactions["vertical_integration_detected"] = true
+    end
+
+    if has_price_reg
+        interactions["price_regulation_detected"] = true
     end
 
     rural_hospitals = [h for h in keys(scenario.hospital_strategies) if occursin("rural", lowercase(h))]
@@ -374,6 +491,143 @@ function analyze_policy_interactions(scenario::MultiLevelPolicyScenario,
     end
 
     return interactions
+end
+
+# ====================================
+# Scenario Builders
+# ====================================
+
+"""
+    build_aca_repeal_scenario(; kwargs...) -> MultiLevelPolicyScenario
+
+Construct a pre-configured ACA Repeal & Replace scenario with individual mandate
+elimination, Medicaid expansion repeal, and modified community rating rules.
+"""
+function build_aca_repeal_scenario(;
+    community_rating_modification=1.5,
+    rural_impact_multiplier=1.2,
+    implementation_year=1,
+    hospital_strategies=Dict{String, HospitalStrategy}(),
+    scenario_name="ACA Repeal & Replace"
+)::MultiLevelPolicyScenario
+    federal = FederalPolicy[
+        ACARepealPolicy(
+            medicaid_expansion_repealed=true,
+            individual_mandate_eliminated=true,
+            community_rating_modification=community_rating_modification,
+            rural_impact_multiplier=rural_impact_multiplier,
+            implementation_year=implementation_year
+        )
+    ]
+    state = StatePolicy[
+        MedicaidExpansion(coverage_increase=-0.10, implementation_year=implementation_year),
+        PayerMixShift(from_payer="Medicaid", to_payer="Uninsured",
+                      volume_shift=0.05, implementation_year=implementation_year)
+    ]
+    MultiLevelPolicyScenario(
+        federal_policies=federal,
+        state_policies=state,
+        hospital_strategies=hospital_strategies,
+        insurance_demand_elasticity=-0.4,
+        scenario_name=scenario_name
+    )
+end
+
+"""
+    build_medicare_advantage_scenario(; kwargs...) -> MultiLevelPolicyScenario
+
+Construct a pre-configured Medicare Advantage Transformation scenario shifting
+volume from traditional FFS Medicare to risk-adjusted capitation.
+"""
+function build_medicare_advantage_scenario(;
+    capitation_rate_change=0.0,
+    rural_rate_adjustment=-0.05,
+    urban_rate_adjustment=0.02,
+    traditional_medicare_shift=0.10,
+    implementation_year=1,
+    hospital_strategies=Dict{String, HospitalStrategy}(),
+    scenario_name="Medicare Advantage Transformation"
+)::MultiLevelPolicyScenario
+    federal = FederalPolicy[
+        MedicareAdvantageTransformation(
+            capitation_rate_change=capitation_rate_change,
+            rural_rate_adjustment=rural_rate_adjustment,
+            urban_rate_adjustment=urban_rate_adjustment,
+            traditional_medicare_shift=traditional_medicare_shift,
+            implementation_year=implementation_year
+        )
+    ]
+    MultiLevelPolicyScenario(
+        federal_policies=federal,
+        hospital_strategies=hospital_strategies,
+        hospital_demand_elasticity=-0.3,
+        scenario_name=scenario_name
+    )
+end
+
+"""
+    build_consolidation_scenario(; kwargs...) -> MultiLevelPolicyScenario
+
+Construct a pre-configured Consolidated Delivery Systems scenario modeling
+vertical integration requirements and their impact on competition.
+"""
+function build_consolidation_scenario(;
+    integration_requirement=0.5,
+    competition_reduction=0.20,
+    efficiency_gain=0.05,
+    implementation_year=1,
+    hospital_strategies=Dict{String, HospitalStrategy}(),
+    scenario_name="Consolidated Delivery Systems"
+)::MultiLevelPolicyScenario
+    state = StatePolicy[
+        VerticalIntegrationPolicy(
+            integration_requirement=integration_requirement,
+            competition_reduction=competition_reduction,
+            efficiency_gain=efficiency_gain,
+            implementation_year=implementation_year
+        )
+    ]
+    MultiLevelPolicyScenario(
+        state_policies=state,
+        hospital_strategies=hospital_strategies,
+        scenario_name=scenario_name
+    )
+end
+
+"""
+    build_price_regulation_scenario(model_type; kwargs...) -> MultiLevelPolicyScenario
+
+Construct a pre-configured Price Regulation scenario.
+
+`model_type` must be one of `"all_payer"` (Maryland-style), `"german_dutch"`
+(negotiated rates), or `"australian_achs"` (activity-based funding).
+"""
+function build_price_regulation_scenario(
+    model_type::String="all_payer";
+    rate_cap_multiplier=1.1,
+    negotiation_discount=0.10,
+    applies_to_payers=Set{String}(["Commercial", "Medicare", "Medicaid"]),
+    implementation_year=1,
+    hospital_strategies=Dict{String, HospitalStrategy}(),
+    scenario_name=""
+)::MultiLevelPolicyScenario
+    model_type in ("all_payer", "german_dutch", "australian_achs") ||
+        error("model_type must be \"all_payer\", \"german_dutch\", or \"australian_achs\"")
+    sname = isempty(scenario_name) ? "Price Regulation ($model_type)" : scenario_name
+    state = StatePolicy[
+        PriceRegulationPolicy(
+            model_type=model_type,
+            rate_cap_multiplier=rate_cap_multiplier,
+            negotiation_discount=negotiation_discount,
+            applies_to_payers=applies_to_payers,
+            implementation_year=implementation_year
+        )
+    ]
+    MultiLevelPolicyScenario(
+        state_policies=state,
+        hospital_strategies=hospital_strategies,
+        scenario_name=sname
+    )
 end
 
 end  # module
