@@ -19,15 +19,43 @@ Provides infrastructure for:
 
 module PolicyValidation
 
-export CaseStudy, ValidationMetrics, ValidationResult
+export CaseStudy, ValidationMetrics, ValidationResult, OutcomeRow, ComparisonRow
 export KentuckyMedicaidExpansion, MarylandAllPayerModel
 export RuralHospitalClosureCase, COVID19ImpactCase
 export load_case_study, validate_simulation, calculate_metrics
 export generate_validation_report, compare_outcomes
 
 using Statistics
-using DataFrames
 using Dates
+
+# ====================================
+# Lightweight table types (no DataFrames dependency)
+# ====================================
+
+"""
+    OutcomeRow
+
+A single row in an outcomes table: outcome name, numeric value, and direction.
+"""
+struct OutcomeRow
+    outcome::String
+    outcome_value::Float64
+    outcome_change::Float64
+end
+
+"""
+    ComparisonRow
+
+Hospital-level comparison row: id, actual margin, simulated margin, absolute error,
+and percentage error.
+"""
+struct ComparisonRow
+    hospital_id::String
+    actual_margin::Float64
+    simulated_margin::Float64
+    error::Float64
+    error_pct::Float64
+end
 
 # ====================================
 # Validation Data Structures
@@ -56,8 +84,8 @@ mutable struct ValidationResult
     case_study_name::String
     simulation_name::String
     metrics::ValidationMetrics
-    actual_outcomes::DataFrame
-    simulated_outcomes::DataFrame
+    actual_outcomes::Vector{OutcomeRow}
+    simulated_outcomes::Vector{OutcomeRow}
     hospital_level_results::Dict{String, Dict{String, Float64}}
     summary::String
     timestamp::DateTime
@@ -256,34 +284,36 @@ function load_case_study(case_type::Type{<:CaseStudy})::CaseStudy
 end
 
 """
-    calculate_metrics(actual::DataFrame, simulated::DataFrame)::ValidationMetrics
+    calculate_metrics(actual::Vector{OutcomeRow}, simulated::Vector{OutcomeRow})::ValidationMetrics
 
 Calculate validation metrics comparing simulated vs. actual outcomes.
 """
-function calculate_metrics(actual::DataFrame, simulated::DataFrame)::ValidationMetrics
+function calculate_metrics(actual::Vector{OutcomeRow}, simulated::Vector{OutcomeRow})::ValidationMetrics
 
     # Ensure matching dimensions
-    if nrow(actual) != nrow(simulated)
-        error("Actual and simulated dataframes must have same number of rows")
+    if length(actual) != length(simulated)
+        error("Actual and simulated outcome vectors must have the same length")
     end
+
+    n = length(actual)
 
     # Calculate MAPE (Mean Absolute Percentage Error)
     errors = Float64[]
     directions_correct = 0
     total_directions = 0
 
-    for i in 1:nrow(actual)
-        if actual[i, :outcome_value] != 0.0
-            error = abs(simulated[i, :outcome_value] - actual[i, :outcome_value]) /
-                    abs(actual[i, :outcome_value])
-            push!(errors, error)
+    for i in 1:n
+        if actual[i].outcome_value != 0.0
+            err = abs(simulated[i].outcome_value - actual[i].outcome_value) /
+                  abs(actual[i].outcome_value)
+            push!(errors, err)
         end
 
         # Check directional accuracy: compare sign of simulated vs actual
-        simulated_change = sign(simulated[i, :outcome_value] - 0.0)
-        actual_change = sign(actual[i, :outcome_value] - 0.0)
+        simulated_sign = sign(simulated[i].outcome_value)
+        actual_sign    = sign(actual[i].outcome_value)
 
-        if simulated_change == actual_change || (simulated_change == 0 && actual_change == 0)
+        if simulated_sign == actual_sign
             directions_correct += 1
         end
         total_directions += 1
@@ -293,18 +323,24 @@ function calculate_metrics(actual::DataFrame, simulated::DataFrame)::ValidationM
     directional_accuracy = total_directions > 0 ? directions_correct / total_directions : 0.0
 
     # Calculate RMSE
-    residuals = simulated[:, :outcome_value] .- actual[:, :outcome_value]
+    actual_vals    = [r.outcome_value for r in actual]
+    simulated_vals = [r.outcome_value for r in simulated]
+    residuals = simulated_vals .- actual_vals
     rmse = sqrt(mean(residuals .^ 2))
 
-    # Calculate correlation
-    correlation = cor(actual[:, :outcome_value], simulated[:, :outcome_value])
+    # Calculate correlation (guard against constant arrays)
+    correlation = if n > 1 && std(actual_vals) > 0.0 && std(simulated_vals) > 0.0
+        cor(actual_vals, simulated_vals)
+    else
+        1.0
+    end
 
     # Maximum error
     max_error = maximum(abs.(residuals))
 
     return ValidationMetrics(
         mape, directional_accuracy, rmse, correlation, max_error,
-        Dict("n_observations" => nrow(actual))
+        Dict{String, Any}("n_observations" => n)
     )
 end
 
@@ -330,20 +366,13 @@ function validate_simulation(case_study::CaseStudy,
         Dict{String, Float64}()
     end
 
-    # Create actual outcomes dataframe from case study
+    # Build outcome vectors from case study
     actual_avg = length(actual_margin_dict) > 0 ? mean(values(actual_margin_dict)) : 0.0
-    actual_data = DataFrame(
-        outcome = ["margin_change"],
-        outcome_value = [actual_avg],
-        outcome_change = [actual_avg < 0 ? -1.0 : 1.0]
-    )
+    actual_data = [OutcomeRow("margin_change", actual_avg, actual_avg < 0 ? -1.0 : 1.0)]
 
-    # Create simulated outcomes dataframe
-    simulated_data = DataFrame(
-        outcome = ["margin_change"],
-        outcome_value = [get(simulated_outcomes, "avg_margin_change", 0.0)],
-        outcome_change = [get(simulated_outcomes, "margin_change_direction", 0.0)]
-    )
+    simulated_avg = get(simulated_outcomes, "avg_margin_change", 0.0)
+    simulated_direction = get(simulated_outcomes, "margin_change_direction", 0.0)
+    simulated_data = [OutcomeRow("margin_change", simulated_avg, simulated_direction)]
 
     # Calculate metrics
     metrics = calculate_metrics(actual_data, simulated_data)
@@ -353,9 +382,9 @@ function validate_simulation(case_study::CaseStudy,
     for (hospital_id, actual_margin) in actual_margin_dict
         simulated_margin = get(simulated_outcomes, "hospital_$hospital_id", 0.0)
         hospital_results[hospital_id] = Dict(
-            "actual" => actual_margin,
+            "actual"    => actual_margin,
             "simulated" => simulated_margin,
-            "error" => abs(simulated_margin - actual_margin)
+            "error"     => abs(simulated_margin - actual_margin)
         )
     end
 
@@ -375,29 +404,22 @@ function validate_simulation(case_study::CaseStudy,
 end
 
 """
-    compare_outcomes(actual::Dict, simulated::Dict)::DataFrame
+    compare_outcomes(actual::Dict, simulated::Dict)::Vector{ComparisonRow}
 
 Compare actual vs. simulated outcomes at hospital level.
+Returns a vector of ComparisonRow sorted by hospital_id.
 """
-function compare_outcomes(actual::Dict, simulated::Dict)::DataFrame
+function compare_outcomes(actual::Dict, simulated::Dict)::Vector{ComparisonRow}
 
-    hospitals = union(keys(actual), keys(simulated))
+    hospitals = sort(collect(union(keys(actual), keys(simulated))))
 
-    results = DataFrame(
-        hospital_id = String[],
-        actual_margin = Float64[],
-        simulated_margin = Float64[],
-        error = Float64[],
-        error_pct = Float64[]
-    )
-
-    for hospital_id in sort(collect(hospitals))
-        actual_val = get(actual, hospital_id, 0.0)
+    results = ComparisonRow[]
+    for hospital_id in hospitals
+        actual_val    = get(actual,    hospital_id, 0.0)
         simulated_val = get(simulated, hospital_id, 0.0)
-        error = simulated_val - actual_val
-        error_pct = actual_val != 0.0 ? (error / actual_val) * 100.0 : 0.0
-
-        push!(results, (hospital_id, actual_val, simulated_val, error, error_pct))
+        err     = simulated_val - actual_val
+        err_pct = actual_val != 0.0 ? (err / actual_val) * 100.0 : 0.0
+        push!(results, ComparisonRow(hospital_id, actual_val, simulated_val, err, err_pct))
     end
 
     return results

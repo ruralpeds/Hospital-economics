@@ -79,6 +79,9 @@ using Test
     # Module 6: Integration with Modules 4-5
     include("integration_module_6.jl")
 
+    # Phase 3.3: Validation on Real-World Policy Cases
+    include("test_policy_validation.jl")
+
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
