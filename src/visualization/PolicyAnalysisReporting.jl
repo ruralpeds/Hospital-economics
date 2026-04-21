@@ -25,14 +25,13 @@ module PolicyAnalysisReporting
 
 export CEACData, NetBenefitData, BudgetImpactData
 export EquityAnalysis, SensitivityAnalysis, NetworkVisualization
+export SummaryTable
 export plot_ceac_curves, plot_net_benefit_curves, plot_budget_impact
 export plot_equity_analysis, plot_sensitivity_tornado, plot_hospital_network
 export generate_summary_table, export_analysis_data
 
 using Statistics
-using DataFrames
-using CSV
-using JSON3
+using Printf
 
 # ====================================
 # Data Structures for Visualizations
@@ -430,33 +429,51 @@ end
 # ====================================
 
 """
+    SummaryTable
+
+Lightweight tabular structure for publication-ready policy outcome summaries.
+Provides column-vector access and `size` compatible with common table patterns.
+"""
+struct SummaryTable
+    Scenario::Vector{String}
+    TotalCost::Vector{Float64}
+    TotalQALYs::Vector{Float64}
+    CostPerQALY::Vector{Float64}
+    HospitalMargin::Vector{Float64}
+    Quality::Vector{Float64}
+    PatientAccess::Vector{Float64}
+end
+
+const SUMMARY_TABLE_COLUMNS = 7
+
+Base.size(t::SummaryTable, d::Int) = d == 1 ? length(t.Scenario) : d == 2 ? SUMMARY_TABLE_COLUMNS : 1
+Base.size(t::SummaryTable) = (length(t.Scenario), SUMMARY_TABLE_COLUMNS)
+
+"""
     generate_summary_table(
         scenario_names::Vector{String},
-        outcomes::Dict{String, Float64}
-    )::DataFrame
+        outcomes::Dict
+    )::SummaryTable
 
 Generate publication-ready summary table of policy outcomes.
 """
 function generate_summary_table(scenario_names::Vector{String},
-                                outcomes::Dict)::DataFrame
-
-    n_scenarios = length(scenario_names)
-    summary = DataFrame(
-        Scenario = scenario_names,
-        TotalCost = fill(get(outcomes, "total_cost", 0.0), n_scenarios),
-        TotalQALYs = fill(get(outcomes, "total_qalys", 0.0), n_scenarios),
-        CostPerQALY = fill(get(outcomes, "icer", 0.0), n_scenarios),
-        HospitalMargin = fill(get(outcomes, "hospital_margin", 0.0), n_scenarios),
-        Quality = fill(get(outcomes, "quality_score", 0.0), n_scenarios),
-        PatientAccess = fill(get(outcomes, "access_metric", 0.0), n_scenarios)
+                                outcomes::Dict)::SummaryTable
+    n = length(scenario_names)
+    return SummaryTable(
+        scenario_names,
+        fill(Float64(get(outcomes, "total_cost",    0.0)), n),
+        fill(Float64(get(outcomes, "total_qalys",   0.0)), n),
+        fill(Float64(get(outcomes, "icer",          0.0)), n),
+        fill(Float64(get(outcomes, "hospital_margin", 0.0)), n),
+        fill(Float64(get(outcomes, "quality_score", 0.0)), n),
+        fill(Float64(get(outcomes, "access_metric", 0.0)), n)
     )
-
-    return summary
 end
 
 """
     export_analysis_data(
-        scenario_results::Dict{String, Any},
+        scenario_results::Dict,
         output_filename::String;
         format::String="csv"
     )::String
@@ -466,7 +483,7 @@ Export analysis results to file for sharing and replication.
 # Arguments
 - `scenario_results`: Dictionary of results to export
 - `output_filename`: Path to output file
-- `format`: Export format ("csv", "json", or "html")
+- `format`: Export format ("csv" or "json")
 
 # Returns
 - Path to exported file
@@ -474,18 +491,88 @@ Export analysis results to file for sharing and replication.
 function export_analysis_data(scenario_results::Dict,
                               output_filename::String;
                               format::String="csv")::String
-
-    if format == "csv" && haskey(scenario_results, :dataframe)
-        CSV.write(output_filename, scenario_results[:dataframe])
-    elseif format == "csv" && haskey(scenario_results, "dataframe")
-        CSV.write(output_filename, scenario_results["dataframe"])
+    if format == "csv"
+        table = nothing
+        for key in (:dataframe, "dataframe", :summary_table, "summary_table")
+            if haskey(scenario_results, key)
+                table = scenario_results[key]
+                break
+            end
+        end
+        if table isa SummaryTable
+            open(output_filename, "w") do io
+                println(io, "Scenario,TotalCost,TotalQALYs,CostPerQALY,HospitalMargin,Quality,PatientAccess")
+                for i in 1:length(table.Scenario)
+                    println(io, join([
+                        _csv_field(table.Scenario[i]),
+                        table.TotalCost[i],
+                        table.TotalQALYs[i],
+                        table.CostPerQALY[i],
+                        table.HospitalMargin[i],
+                        table.Quality[i],
+                        table.PatientAccess[i]
+                    ], ","))
+                end
+            end
+        end
     elseif format == "json"
-        open(output_filename, "w") do f
-            JSON.print(f, scenario_results)
+        open(output_filename, "w") do io
+            _write_json(io, scenario_results)
         end
     end
-
     return output_filename
 end
+
+# Quote a string field for CSV, escaping embedded quotes per RFC 4180.
+function _csv_field(s::AbstractString)::String
+    if occursin(',', s) || occursin('"', s) || occursin('\n', s) || occursin('\r', s)
+        return "\"" * replace(s, "\"" => "\"\"") * "\""
+    end
+    return s
+end
+
+# Minimal JSON serialiser (no external deps)
+function _json_escape(s::AbstractString)::String
+    buf = IOBuffer()
+    for c in s
+        if c == '"';        write(buf, "\\\"")
+        elseif c == '\\';   write(buf, "\\\\")
+        elseif c == '\b';   write(buf, "\\b")
+        elseif c == '\f';   write(buf, "\\f")
+        elseif c == '\n';   write(buf, "\\n")
+        elseif c == '\r';   write(buf, "\\r")
+        elseif c == '\t';   write(buf, "\\t")
+        elseif UInt32(c) < 0x20
+            write(buf, @sprintf("\\u%04x", UInt32(c)))
+        else
+            write(buf, c)
+        end
+    end
+    return String(take!(buf))
+end
+
+_write_json(io::IO, v::AbstractString) = print(io, "\"", _json_escape(v), "\"")
+_write_json(io::IO, v::Bool) = print(io, v ? "true" : "false")
+_write_json(io::IO, v::Number) = print(io, v)
+_write_json(io::IO, v::Nothing) = print(io, "null")
+function _write_json(io::IO, v::AbstractVector)
+    print(io, "[")
+    for (i, item) in enumerate(v)
+        i > 1 && print(io, ",")
+        _write_json(io, item)
+    end
+    print(io, "]")
+end
+function _write_json(io::IO, v::AbstractDict)
+    print(io, "{")
+    for (i, (k, val)) in enumerate(v)
+        i > 1 && print(io, ",")
+        _write_json(io, string(k))
+        print(io, ":")
+        _write_json(io, val)
+    end
+    print(io, "}")
+end
+_write_json(io::IO, v) = print(io, "\"", _json_escape(string(v)), "\"")
 
 end  # module
