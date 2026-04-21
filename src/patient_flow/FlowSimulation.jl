@@ -121,7 +121,7 @@ function generate_admission(sim::HospitalSimulation, admission_date::Date, arriv
     # Payer mix (realistic rural hospital distribution)
     payer_weights = [0.45, 0.25, 0.20, 0.10]
     payer_types = ["Medicare", "Medicaid", "Commercial", "Uninsured"]
-    payer = let r = rand(); payer_types[findfirst(cumsum(payer_weights) .>= r)]; end
+    payer = let r = rand(); payer_types[something(findfirst(cumsum(payer_weights) .>= r), length(payer_types))]; end
 
     # LOS target based on DRG
     los_target = rand(2:5)
@@ -309,8 +309,11 @@ function simulate_hospital_flow!(
     for day = 1:num_days
         hospital_date = start_date + Day(day - 1)
 
-        # Generate admissions for this day (Poisson approximation using Normal)
-        num_admissions = max(0, round(Int, admission_rate_per_day + randn() * sqrt(admission_rate_per_day)))
+        # Generate admissions for this day (Knuth algorithm for exact Poisson draws)
+        num_admissions = let L = exp(-admission_rate_per_day), k = 0, p = 1.0
+            while p > L; k += 1; p *= rand(); end
+            k - 1
+        end
 
         for admission_idx = 1:num_admissions
             arrival_hour = rand() * 24.0  # Uniformly distributed throughout day
