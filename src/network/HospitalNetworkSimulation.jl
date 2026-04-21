@@ -152,11 +152,7 @@ mutable struct HospitalNetwork
             lon = -84.0 + rand(-2.0:0.1:2.0)
 
             # Larger hospitals have more beds (scale by hospital index)
-            total_beds = if i == 1; 250
-                         elseif i <= 2; 150
-                         elseif i <= 3; 80
-                         else 50
-                         end
+            total_beds = i == 1 ? 250 : (i <= 2 ? 150 : (i <= 3 ? 80 : 50))
 
             # Service lines vary by hospital size
             service_lines = Set(["General Ward", "ED"])
@@ -373,12 +369,17 @@ function route_patient_to_hospital!(
 
     if haskey(network.hospitals, hospital_id)
         hospital = network.hospitals[hospital_id]
+
+        # Record overflow status BEFORE incrementing capacity so the flag correctly
+        # reflects whether the patient was admitted to an already-full hospital.
+        was_at_capacity = !has_capacity(network, hospital_id)
+
         patient.metadata["assigned_hospital"] = hospital_id
         patient.metadata["hospital_name"] = hospital.hospital_name
         patient.metadata["distance_to_hospital"] = calculate_distance(patient_location, hospital.location)
-        patient.metadata["overflowed"] = !has_capacity(network, hospital_id)
+        patient.metadata["overflowed"] = was_at_capacity
 
-        # Update capacity state
+        # Update capacity state after recording overflow status
         network.capacity_state[hospital_id] = get(network.capacity_state, hospital_id, 0) + 1
     end
 end
