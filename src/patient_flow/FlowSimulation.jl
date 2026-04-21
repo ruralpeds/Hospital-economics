@@ -13,6 +13,8 @@ using Random
     poisson_rand(lambda::Float64)::Int
 
 Sample from a Poisson distribution using Knuth's algorithm (stdlib only).
+Efficient for lambda ≤ 50; for larger lambda the loop count grows proportionally.
+In this simulation admission rates are typically 3–50 admissions/day.
 """
 function poisson_rand(lambda::Float64)::Int
     L = exp(-lambda)
