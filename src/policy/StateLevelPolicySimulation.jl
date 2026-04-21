@@ -315,10 +315,10 @@ function _apply_medicaid_expansion(hospital::Hospital,
     shift = uninsured_share * policy.coverage_increase * phase_in
     mix["Uninsured"] = max(0.0, uninsured_share - shift)
     new_medicaid     = medicaid_share + shift
-    # Apply payment rate multiplier to expanded Medicaid share only
-    mix["Medicaid"]  = new_medicaid * policy.payment_rate_multiplier +
-                       medicaid_share * (1.0 - policy.payment_rate_multiplier)
-    mix["Medicaid"]  = min(1.0, medicaid_share + shift)
+    # Apply payment rate multiplier: weighted blend of existing and expanded shares
+    mix["Medicaid"]  = min(1.0,
+                           new_medicaid * policy.payment_rate_multiplier +
+                           medicaid_share * (1.0 - policy.payment_rate_multiplier))
 
     # Volume increases because previously-uninsured patients now seek care
     volume_increase = hospital.baseline_volume * shift * 0.5
@@ -605,8 +605,7 @@ function analyze_policy_outcomes(outcomes::PolicyOutcomes)::Dict{String, Any}
     summary["coverage_improvement"] = get(outcomes.access_impact, "coverage_change", 0.0)
     summary["uninsured_reduction"]  = get(outcomes.access_impact, "uninsured_reduction", 0.0)
 
-    if haskey(outcomes.quality_metrics, "")
-    elseif !isempty(outcomes.quality_metrics)
+    if !isempty(outcomes.quality_metrics)
         active_q = [id for id in keys(outcomes.quality_metrics)
                     if id ∉ outcomes.hospital_closures]
         if !isempty(active_q)
