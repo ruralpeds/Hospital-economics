@@ -309,9 +309,9 @@ function calculate_metrics(actual::Vector{OutcomeRow}, simulated::Vector{Outcome
             push!(errors, err)
         end
 
-        # Check directional accuracy: compare sign of simulated vs actual
-        simulated_sign = sign(simulated[i].outcome_value)
-        actual_sign    = sign(actual[i].outcome_value)
+        # Check directional accuracy using the explicit outcome_change direction field
+        simulated_sign = sign(simulated[i].outcome_change)
+        actual_sign    = sign(actual[i].outcome_change)
 
         if simulated_sign == actual_sign
             directions_correct += 1
@@ -328,11 +328,11 @@ function calculate_metrics(actual::Vector{OutcomeRow}, simulated::Vector{Outcome
     residuals = simulated_vals .- actual_vals
     rmse = sqrt(mean(residuals .^ 2))
 
-    # Calculate correlation (guard against constant arrays)
+    # Calculate correlation (guard against constant arrays or single observations)
     correlation = if n > 1 && std(actual_vals) > 0.0 && std(simulated_vals) > 0.0
         cor(actual_vals, simulated_vals)
     else
-        1.0
+        NaN
     end
 
     # Maximum error

@@ -130,12 +130,12 @@ using .PolicyValidation
     end
 
     @testset "Calculate Metrics - Zero Values" begin
-        actual    = [OutcomeRow("change", 0.0, 0.0)]
+        actual    = [OutcomeRow("change", 0.0,  0.0)]
         simulated = [OutcomeRow("change", 0.01, 1.0)]
 
         metrics = calculate_metrics(actual, simulated)
 
-        # MAPE should handle zero baseline gracefully (skipped)
+        # MAPE should handle zero baseline gracefully (skipped when actual is zero)
         @test metrics.mape >= 0.0
     end
 
