@@ -22,15 +22,17 @@ using Dates
 
 """Ordered list of (pattern, replacement) tuples applied by `redact_text`."""
 const PHI_PATTERNS = [
-    # SSN: 123-45-6789 or 123456789
+    # SSN (dashed): 123-45-6789
     (r"\b\d{3}-\d{2}-\d{4}\b",                    "[SSN]"),
-    (r"\b\d{9}\b",                                  "[SSN]"),  # bare 9-digit
     # DOB: MM/DD/YYYY or MM-DD-YYYY or M/D/YYYY
     (r"\b(0?[1-9]|1[012])[-/](0?[1-9]|[12]\d|3[01])[-/](19|20)\d{2}\b", "[DOB]"),
     # MRN: MRN: 12345678 or MRN 12345678 (4–12 digits)
     (r"(?i)\bMRN[:\s]*\d{4,12}\b",                "[MRN]"),
-    # Phone: (800) 555-1234 / 800-555-1234 / +1.800.555.1234 etc.
+    # Phone (run BEFORE bare SSN to consume formatted numbers first):
+    # (800) 555-1234 / 800-555-1234 / +1.800.555.1234 etc.
     (r"\b(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b", "[PHONE]"),
+    # SSN (bare 9-digit): applied after phone so formatted numbers are already gone
+    (r"\b\d{9}\b",                                  "[SSN]"),
     # Email
     (r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b", "[EMAIL]"),
     # Insurance member/claim/group IDs (keyword-prefixed)

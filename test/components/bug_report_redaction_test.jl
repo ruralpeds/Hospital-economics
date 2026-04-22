@@ -21,7 +21,8 @@ using .BugReportRedaction
         @test redact_text("SSN: 123-45-6789") == "SSN: [SSN]"
         @test redact_text("Social 987-65-4321 on file") == "Social [SSN] on file"
         @test !contains(redact_text("no ssn here: 12-34-5678"), "[SSN]")  # wrong digit groups
-        @test !contains(redact_text("call 800-555-1234"), "[SSN]")        # phone, not SSN
+        # Phone pattern runs before bare-9-digit SSN; formatted phone must NOT be tagged as SSN
+        @test !contains(redact_text("call 800-555-1234"), "[SSN]")
         @test contains(redact_text("id 123456789"), "[SSN]")  # bare 9-digit
     end
 

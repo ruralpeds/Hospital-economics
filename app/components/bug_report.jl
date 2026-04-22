@@ -269,10 +269,11 @@ function bug_report_button(; position::Symbol = :bottom_right)
   // ── PHI redaction patterns (mirrors server-side BugReportRedaction.jl) ──
   const PHI_PATTERNS = [
     [/\\b\\d{3}-\\d{2}-\\d{4}\\b/g,                              '[SSN]'],
-    [/\\b\\d{9}\\b/g,                                             '[SSN]'],
     [/\\b(0?[1-9]|1[012])[-\\/](0?[1-9]|[12]\\d|3[01])[-\\/](19|20)\\d{2}\\b/g, '[DOB]'],
     [/\\bMRN[:\\s]*\\d{4,12}\\b/gi,                              '[MRN]'],
+    // Phone before bare-9-digit SSN so formatted numbers are consumed first
     [/\\b(\\+?1[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}\\b/g, '[PHONE]'],
+    [/\\b\\d{9}\\b/g,                                             '[SSN]'],
     [/\\b[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}\\b/g, '[EMAIL]'],
     [/\\b(member|claim|group|policy|subscriber|plan|beneficiary)\\s*(id|#|no\\.?|number)[:\\s#]*[A-Z0-9\\-]{4,20}\\b/gi, '[INSURANCE_ID]'],
     [/\\b[A-Z]{2,4}\\d{7,12}\\b/g,                               '[INSURANCE_ID]'],
