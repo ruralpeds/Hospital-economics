@@ -11,6 +11,17 @@ using Stipple, StippleUI, StipplePlotly
 using Logging, Dates
 
 # ---------------------------------------------------------------------------
+# Reusable component library  (app/components/)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "form_grid.jl"))
+include(joinpath(APP_ROOT, "components", "result_table.jl"))
+include(joinpath(APP_ROOT, "components", "plot_panel.jl"))
+include(joinpath(APP_ROOT, "components", "export_bar.jl"))
+include(joinpath(APP_ROOT, "components", "cohort_picker.jl"))
+include(joinpath(APP_ROOT, "components", "scenario_picker.jl"))
+include(joinpath(APP_ROOT, "components", "audit_log_viewer.jl"))
+
+# ---------------------------------------------------------------------------
 # Bootstrap helpers
 # ---------------------------------------------------------------------------
 const APP_ROOT = @__DIR__
@@ -142,6 +153,14 @@ include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
 include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
+
+# ---------------------------------------------------------------------------
+# Dev-only component library demo (disabled in production)
+# ---------------------------------------------------------------------------
+if get(ENV, "GENIE_ENV", "dev") != "prod"
+    include(joinpath(APP_ROOT, "views", "dev", "DevComponentsModel.jl"))
+    include(joinpath(APP_ROOT, "views", "dev", "dev_components.jl"))
+end
 
 # ---------------------------------------------------------------------------
 # Include routes

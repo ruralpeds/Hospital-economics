@@ -189,6 +189,20 @@ function app_layout(model, page_title::String, content::Vector)
                         item_section(avatar=true, [q__icon(name="school")]),
                         item_section([item_label("Education Center")]),
                     ]),
+
+                    # ── Dev tools (non-production only) ───────────────
+                    if get(ENV, "GENIE_ENV", "dev") != "prod"
+                        [
+                            separator(class="q-my-sm"),
+                            item_label(header=true, "Developer"),
+                            item(clickable=true, href="/dev/components", [
+                                item_section(avatar=true, [q__icon(name="widgets")]),
+                                item_section([item_label("Component Library")]),
+                            ]),
+                        ]
+                    else
+                        []
+                    end...,
                 ])
             ]),
 
