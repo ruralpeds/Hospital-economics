@@ -4,10 +4,7 @@
 # ============================================================================
 
 # Stage 1: Build and precompile
-# Base image is pulled from the AWS ECR public mirror of Docker Hub's
-# library/julia, which has no anonymous pull rate limit and no auth.
-# Tag matches docker.io/library/julia:1.11-bookworm exactly.
-FROM public.ecr.aws/docker/library/julia:1.11-bookworm AS builder
+FROM julia:1.11-bookworm AS builder
 
 WORKDIR /app
 
@@ -36,7 +33,7 @@ RUN julia --project=. -e '
 '
 
 # Stage 2: Production runtime
-FROM public.ecr.aws/docker/library/julia:1.11-slim-bookworm AS runtime
+FROM julia:1.11-slim-bookworm AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
