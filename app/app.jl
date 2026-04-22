@@ -30,6 +30,13 @@ end
 include(joinpath(APP_ROOT, "views", "layouts", "app_layout.jl"))
 
 # ---------------------------------------------------------------------------
+# Include BugReport component + controller (E27)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "bug_report_redaction.jl"))
+include(joinpath(APP_ROOT, "components", "bug_report.jl"))
+include(joinpath(APP_ROOT, "controllers", "BugReportController.jl"))
+
+# ---------------------------------------------------------------------------
 # Include reactive models — Core views
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "dashboard", "DashboardModel.jl"))

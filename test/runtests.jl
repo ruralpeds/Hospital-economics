@@ -82,4 +82,9 @@ using Test
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
+
+    # E27 — BugReport component tests
+    include("components/bug_report_redaction_test.jl")
+    include("controllers/bug_report_controller_test.jl")
+
 end
