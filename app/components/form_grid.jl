@@ -188,18 +188,20 @@ function form_grid(
     title::String = "",
     class::String = "",
 )
+    # Header row (title + optional upload button inline)
     header_row = isempty(title) ? [] : [
         row(class="items-center q-mb-sm", [
             cell(class="col", [h6(title, class="q-mb-none")]),
             isnothing(upload_model_field) ? [] : cell(class="col-auto", [
-                btn("Fill from upload", icon="upload", flat=true,
+                btn("Fill from upload", icon="cloud_upload", flat=true,
                     color="secondary", dense=true,
                     @click(upload_model_field)),
             ]),
         ]),
     ]
 
-    upload_btn = isnothing(upload_model_field) ? [] : [
+    # When there is no title, render the upload button below the fields instead
+    upload_btn_below = (isnothing(upload_model_field) || !isempty(title)) ? [] : [
         row(class="q-mt-sm", [
             cell(class="col-12", [
                 btn("Fill from upload", icon="cloud_upload", color="secondary",
@@ -212,7 +214,7 @@ function form_grid(
 
     card(class="q-mb-md " * class, [
         card_section([
-            [header_row..., rows_html, upload_btn...]
+            [header_row..., rows_html, upload_btn_below...]
         ]),
     ])
 end

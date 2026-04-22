@@ -6,6 +6,7 @@ Provides enough reactive state to demonstrate every reusable component
 without wiring to real domain logic.
 """
 using Stipple, StippleUI, StipplePlotly
+using Dates
 
 @app begin
     @in left_drawer_open::Bool = true

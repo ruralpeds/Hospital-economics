@@ -46,7 +46,11 @@ result_table(
 | `field` | ✅ | Key in the row dict |
 | `sortable` | | `true`/`false` (default `false`) |
 | `align` | | `"left"` / `"right"` / `"center"` |
-| `format` | | `"currency"`, `"percent"`, `"number"`, or omit |
+| `format` | | `"currency"`, `"percent"` (expects decimal 0–1), `"number"`, or omit |
+
+> **Note on `"percent"` format:** The column formatter multiplies the value by 100 and appends `%`.
+> This means your data must be stored as a decimal ratio (e.g. `0.038` = 3.8 %).
+> If your margin values are already in percentage form (e.g. `3.8`), leave `format` blank and add `%` to the column `label` instead.
 
 ## Example
 

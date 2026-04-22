@@ -66,7 +66,7 @@ form_grid(
 ```julia
 form_grid([
     (name=:discount_rate, type=:percent, label="Discount Rate",
-     default=0.03, min=0.0, max=0.15, step=0.1,
+     default=0.03, min=0.0, max=0.15, step=0.01,
      help="Annual discount rate for present-value calculations."),
     (name=:time_horizon, type=:integer, label="Time Horizon (years)",
      default=10, min=1, max=50),
