@@ -160,6 +160,40 @@ reactive.
 ### 3.8 `AuditLogViewer`
 - Renders entries from `audit_logger.jl` with filtering.
 
+### 3.9 `BugReport` — in-app bug reporter (GitHub issues)
+- **Entry point:** floating `bug_report_button()` included in
+  `page_template` so every tab (and every future tab) automatically gets
+  a "Report a bug" affordance.
+- **Form:** category (bug / feature / data-quality / UX / performance /
+  security), severity (S1–S4), one-line summary, steps to reproduce,
+  expected vs. actual, optional screenshot (`html2canvas`), optional
+  email for follow-up.
+- **Auto-captured context:** route, browser UA, viewport, app version,
+  git SHA, timestamp, last 20 reactive state deltas (scrubbed),
+  authenticated user id if present.
+- **PHI redaction:** client-side regex pass (SSN, DOB, MRN, name
+  patterns) on every text field and the screenshot canvas **before** the
+  payload leaves the browser. Server re-scans and strips on receipt.
+- **Spam protection, layered:**
+  1. Honeypot field (invisible; populated = silent reject).
+  2. Minimum dwell time (reject submits < 3s).
+  3. **Cloudflare Turnstile** widget (free, privacy-friendly, no
+     tracking); fallback to hCaptcha.
+  4. Rate limits: 5/hour/IP, 20/day/session, persisted in SearchLight.
+  5. Content heuristics: minimum length, max URLs, basic profanity +
+     PII regex.
+- **Server:** `POST /api/bugreport` → `BugReportController.handle_submit`
+  validates → calls GitHub REST
+  `POST /repos/{owner}/{repo}/issues` with an env-var token
+  (`BUG_REPORT_GITHUB_TOKEN`, fine-grained PAT scoped to
+  `issues: write` on this repo only). Token is **never** sent to the
+  browser.
+- **Issue template** (`docs/ui/bug_report_template.md`): severity/
+  category labels, reproduction checklist, env block,
+  `Source: in-app` label, screenshot uploaded as gist if > 8 MB.
+- **Tests:** unit tests for redaction + spam filters; Playwright E2E
+  asserts a mocked GitHub API receives the expected payload.
+
 ---
 
 ## 4. Tab Specification Template
@@ -282,12 +316,15 @@ searchable table with "Open form" deep-links into the right concept tab.
 
 ## 6. Build Phases
 
-### Phase A — Foundations (Epic 1 + 2 + 3)
+### Phase A — Foundations (Epic 1 + 2 + 3 + 27)
 1. `app/components/` skeleton + doc for each reusable component.
 2. `Upload` component with full CSV/XLS/Parquet support and preview.
 3. `FormGrid`, `ResultTable`, `PlotPanel`, `ExportBar` minimum viable.
-4. `FunctionController` scaffolding and `/api/fn/<name>` pattern.
-5. CI: Playwright smoke test for upload + one form submission.
+4. `BugReport` component wired into `page_template`, so every current
+   and future tab ships with in-app bug reporting to GitHub issues.
+5. `FunctionController` scaffolding and `/api/fn/<name>` pattern.
+6. CI: Playwright smoke test for upload + one form submission + one
+   bug report round-trip (mocked GitHub).
 
 ### Phase B — Core finance tabs (Epics 4–8)
 1. Data Intake, Data Preparation, Cohort Builder, Cost Analysis,
@@ -373,6 +410,7 @@ Issues filed on GitHub (see repo Issues tab, label `web-ui`):
 | E1   | Shared UI framework + layout refresh     |
 | E2   | Reusable `Upload` component (CSV/XLS/Parquet/JSON/HCRIS) |
 | E3   | Reusable `FormGrid`, `ResultTable`, `PlotPanel`, `ExportBar` |
+| E27  | Reusable `BugReport` — in-app bug reporter → GitHub issues (Phase A) |
 | E4   | Data Intake tab (`/data/intake`)         |
 | E5   | Data Preparation tab (`/data/prepare`)   |
 | E6   | Cohort Builder tab (`/cohorts`)          |
