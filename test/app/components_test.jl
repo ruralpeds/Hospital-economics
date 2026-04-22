@@ -99,6 +99,34 @@ end
     # empty subtitle produces no extra <p> tag for the subtitle
     html_no_sub = not_yet_implemented_html("Test Tab"; subtitle="")
     @test !contains(html_no_sub, """<p style="color:var(--color-muted""")
+
+    # XSS escaping — malicious input must not appear unescaped
+    html_xss = not_yet_implemented_html("<script>alert(1)</script>")
+    @test !contains(html_xss, "<script>")
+    @test contains(html_xss, "&lt;script&gt;")
+
+    html_xss_sub = not_yet_implemented_html("Tab"; subtitle="<img onerror=x>")
+    @test !contains(html_xss_sub, "<img")
+    @test contains(html_xss_sub, "&lt;img")
+end
+
+@testset "Component Library — html_escape" begin
+    @test html_escape("Hello") == "Hello"
+    @test html_escape("<b>bold</b>") == "&lt;b&gt;bold&lt;/b&gt;"
+    @test html_escape("a & b") == "a &amp; b"
+    @test html_escape("""say "hi" & 'bye'""") == "say &quot;hi&quot; &amp; &#x27;bye&#x27;"
+    @test html_escape("") == ""
+    @test html_escape("<script>alert(1)</script>") == "&lt;script&gt;alert(1)&lt;/script&gt;"
+end
+
+@testset "Component Library — _safe_href" begin
+    @test _safe_href("/dashboard") == "/dashboard"
+    @test _safe_href("/data/intake") == "/data/intake"
+    @test _safe_href("https://example.com") == "https://example.com"
+    @test _safe_href("http://example.com") == "http://example.com"
+    @test _safe_href("javascript:alert(1)") == "#"
+    @test _safe_href("data:text/html,<h1>xss</h1>") == "#"
+    @test _safe_href("/path?q=<>&x=\"") == "/path?q=&lt;&gt;&amp;x=&quot;"
 end
 
 @testset "Component Library — error_banner dispatch" begin

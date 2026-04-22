@@ -43,6 +43,30 @@ const APP_SPACING = (
 )
 
 # ---------------------------------------------------------------------------
+# html_escape — escapes characters with special meaning in HTML
+#
+# Prevents XSS when user-supplied strings are interpolated into HTML markup.
+# Must be applied to every user-supplied value placed inside HTML attributes
+# or text content.
+# ---------------------------------------------------------------------------
+function html_escape(s::String)::String
+    s = replace(s, "&"  => "&amp;")
+    s = replace(s, "<"  => "&lt;")
+    s = replace(s, ">"  => "&gt;")
+    s = replace(s, "\"" => "&quot;")
+    s = replace(s, "'"  => "&#x27;")
+    return s
+end
+
+# Only allow safe href schemes to prevent javascript: URI injection.
+function _safe_href(href::String)::String
+    startswith(href, "/")       && return html_escape(href)
+    startswith(href, "https://") && return html_escape(href)
+    startswith(href, "http://")  && return html_escape(href)
+    return "#"  # reject unsafe schemes
+end
+
+# ---------------------------------------------------------------------------
 # not_yet_implemented_html — standalone HTML for placeholder concept routes
 #
 # Returns a complete HTML document string suitable for use with Genie's
@@ -55,15 +79,17 @@ const APP_SPACING = (
 #   subtitle   (String) — short description; omitted if empty
 # ---------------------------------------------------------------------------
 function not_yet_implemented_html(tab_title::String; subtitle::String = "")
+    safe_title = html_escape(tab_title)
+    safe_sub   = html_escape(subtitle)
     sub_line = isempty(subtitle) ? "" :
-        """<p style="color:var(--color-muted);margin:.25rem 0 0">$(subtitle)</p>"""
+        """<p style="color:var(--color-muted);margin:.25rem 0 0">$(safe_sub)</p>"""
 
     """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>$(tab_title) — Rural Hospital Economics</title>
+  <title>$(safe_title) — Rural Hospital Economics</title>
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -73,7 +99,7 @@ function not_yet_implemented_html(tab_title::String; subtitle::String = "")
       <span style="font-size:2rem;">🚧</span>
       <div>
         <h1 style="margin:0;font-size:1.5rem;color:var(--color-primary,#1565c0);">
-          $(tab_title)
+          $(safe_title)
         </h1>
         $(sub_line)
       </div>
@@ -112,7 +138,7 @@ function page_header(title::String, subtitle::String,
     else
         [
             Html.div(class="q-breadcrumbs q-mb-xs text-caption text-muted",
-                join(map(b -> """<a href="$(b.second)" class="text-primary">$(b.first)</a>""",
+                join(map(b -> """<a href="$(_safe_href(b.second))" class="text-primary">$(html_escape(b.first))</a>""",
                          breadcrumbs), " / ")),
         ]
     end
