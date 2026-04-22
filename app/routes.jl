@@ -223,6 +223,134 @@ route("/capital-scoring") do
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Data
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/data/intake") do
+    html(not_yet_implemented_html("Data Intake",
+        subtitle="Ingest CSV, XLS/XLSX, JSON, Parquet, and HCRIS files"))
+end
+
+route("/cohorts") do
+    html(not_yet_implemented_html("Cohort Builder",
+        subtitle="Define patient cohorts using inclusion/exclusion criteria"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Financial
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/cost-analysis") do
+    html(not_yet_implemented_html("Cost Analysis",
+        subtitle="Total cost of care, episode costs, high-cost patient identification"))
+end
+
+route("/revenue") do
+    html(not_yet_implemented_html("Revenue & Reimbursement",
+        subtitle="Total revenue, payer mix, denied claims, provider payment"))
+end
+
+route("/profitability") do
+    html(not_yet_implemented_html("Profitability & Operations",
+        subtitle="Contribution margin, break-even, operating margin, cost structure"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Clinical
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/quality") do
+    html(not_yet_implemented_html("Quality & Clinical Outcomes",
+        subtitle="Readmission rates, mortality, quality metrics, outcome disparities"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Statistical
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/stats") do
+    html(not_yet_implemented_html("Descriptive & Inferential Stats",
+        subtitle="Summary statistics, t-tests, ANOVA, chi-square, confidence intervals"))
+end
+
+route("/regression") do
+    html(not_yet_implemented_html("Regression Lab",
+        subtitle="Linear, logistic, Poisson, negative binomial, Cox regression"))
+end
+
+route("/causal") do
+    html(not_yet_implemented_html("Causal Inference Lab",
+        subtitle="Propensity matching, IV analysis, DiD, regression discontinuity"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Economic Evaluation
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/cea") do
+    html(not_yet_implemented_html("Cost-Effectiveness Analysis (CEA)",
+        subtitle="ICER, CEAC, cost-effectiveness plane, NMB, dominance classification"))
+end
+
+route("/cba") do
+    html(not_yet_implemented_html("Cost-Benefit Analysis (CBA) & Budget Impact",
+        subtitle="NPV, ROI, benefit-cost ratio, budget impact modeling"))
+end
+
+route("/comparative") do
+    html(not_yet_implemented_html("Comparative Effectiveness",
+        subtitle="Treatment outcome comparisons, practice variation, SMR, subgroup analysis"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Advanced
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/visualize") do
+    html(not_yet_implemented_html("Visualization Workbench",
+        subtitle="Cost trends, tornado diagrams, survival curves, forest plots, heatmaps"))
+end
+
+route("/reports") do
+    html(not_yet_implemented_html("Reports & Export",
+        subtitle="Financial reports, quality reports, executive summaries, PDF/XLSX export"))
+end
+
+route("/database") do
+    html(not_yet_implemented_html("Database & Queries",
+        subtitle="Query patient records, claims, encounters, and financial data"))
+end
+
+route("/ml") do
+    html(not_yet_implemented_html("Advanced Analytics / ML",
+        subtitle="Risk prediction, readmission models, anomaly detection, stratification"))
+end
+
+route("/systems") do
+    html(not_yet_implemented_html("Network & Systems",
+        subtitle="Referral network analysis, care coordination gaps, care pathways"))
+end
+
+route("/scenario-lab") do
+    html(not_yet_implemented_html("Scenario & Sensitivity Lab",
+        subtitle="Best/base/worst case scenarios, one-way and probabilistic sensitivity"))
+end
+
+route("/functions") do
+    html(not_yet_implemented_html("Function Explorer",
+        subtitle="Browse and invoke all catalog functions with deep-links into concept tabs"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Governance
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/audit") do
+    html(not_yet_implemented_html("Audit & Governance",
+        subtitle="Audit log viewer, data lineage, HIPAA compliance checks"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Simulation (delegated to SimulationController)
 # ═══════════════════════════════════════════════════════════════════════════
 
