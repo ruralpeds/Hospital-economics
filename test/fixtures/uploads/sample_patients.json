@@ -1,0 +1,7 @@
+[
+  {"patient_id": "P001", "admission_date": "2024-01-10", "discharge_date": "2024-01-13", "primary_diagnosis": "E11.9", "total_charges": 15000.00, "payer": "Medicare"},
+  {"patient_id": "P002", "admission_date": "2024-01-11", "discharge_date": "2024-01-14", "primary_diagnosis": "J44.0", "total_charges": 9800.00, "payer": "Commercial"},
+  {"patient_id": "P003", "admission_date": "2024-01-12", "discharge_date": "2024-01-18", "primary_diagnosis": "I10", "total_charges": 22500.00, "payer": "Medicaid"},
+  {"patient_id": "P004", "admission_date": "2024-01-15", "discharge_date": "2024-01-16", "primary_diagnosis": "Z23", "total_charges": 4200.00, "payer": "Commercial"},
+  {"patient_id": "P005", "admission_date": "2024-01-16", "discharge_date": "2024-01-25", "primary_diagnosis": "K92.1", "total_charges": 38000.00, "payer": "Medicare"}
+]
