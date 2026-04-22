@@ -210,7 +210,9 @@ function _sniff_phi_values(sample_values::AbstractVector{<:AbstractString})::Boo
 end
 
 function _pseudonymise_value(value::String, salt::String)::String
-    h = hash(value * salt)
+    # Keyed-hash fallback: mix salt as a seed offset
+    seed = foldr((c, acc) -> xor(acc, UInt64(c)), codeunits(salt); init=UInt64(0x6c62272e07bb0142))
+    h = hash(value, seed)
     return string(h, base=16)[1:min(16, end)]
 end
 

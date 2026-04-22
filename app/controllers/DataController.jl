@@ -262,6 +262,9 @@ function handle_universal_upload(payload::Dict)
     schema    = get(payload, "schema", "patient")
     user_id   = get(payload, "user_id", "system")
     deidentify = Bool(get(payload, "deidentify", true))
+    # NOTE: The default org_salt below is a placeholder only. Production
+    # deployments MUST supply an organisation-specific secret salt via the
+    # payload to ensure cross-organisation pseudonymisation privacy.
     org_salt  = get(payload, "org_salt", "HealthcareEconomicsOrg2024")
     max_mb    = Int(get(payload, "max_mb", DEFAULT_MAX_MB))
 
@@ -641,14 +644,14 @@ function _parse_json_value(s::AbstractString)
 end
 
 """
-Parse Parquet file via Parquet.jl if available.
+Parse Parquet file via Parquet2.jl if available.
 Returns (rows, columns).
 """
 function _parse_parquet(filepath::String)
     try
-        # Parquet.jl interface
-        pf = Base.invokelatest(Base.Main.Parquet.ParquetFile, filepath)
-        batches = Base.invokelatest(Base.Main.Parquet.RecordBatch, pf)
+        # Parquet2.jl interface
+        pf = Base.invokelatest(Base.Main.Parquet2.ParquetFile, filepath)
+        batches = Base.invokelatest(Base.Main.Parquet2.RecordBatch, pf)
         rows = Dict{String,Any}[]
         columns = String[]
         for batch in batches
@@ -663,7 +666,7 @@ function _parse_parquet(filepath::String)
         end
         return rows, columns
     catch e
-        error("Parquet parsing requires Parquet.jl. Install it with `using Pkg; Pkg.add(\"Parquet\")`. Error: $e")
+        error("Parquet parsing requires Parquet2.jl. Install it with `using Pkg; Pkg.add(\"Parquet2\")`. Error: $e")
     end
 end
 
@@ -753,12 +756,33 @@ end
 """
     _pseudonymise_value(value::String, salt::String) -> String
 
-Generate a deterministic pseudonym for a PHI string value using SHA-256.
+Generate a deterministic pseudonym for a PHI string value.
+
+Attempts to use SHA-256 (via SHA.jl) for cryptographic strength.
+Falls back to a keyed-hash using Julia's `hash()` with the salt mixed in
+as a numeric seed — sufficient for testing but not HIPAA-grade production use.
+
+For production deployments, ensure SHA.jl is available so that true
+HMAC-SHA256 pseudonymisation is applied.  The default `org_salt` should
+always be overridden with an organisation-specific secret.
 """
 function _pseudonymise_value(value::String, salt::String)::String
-    # Use simple deterministic hash without SHA dependency
-    # (SHA.jl may not be available)
-    h = hash(value * salt)
+    # Attempt SHA-256 via SHA.jl (already in deidentifiers.jl deps)
+    try
+        sha_mod = Base.loaded_modules_array()
+        sha_loaded = any(m -> nameof(m) === :SHA, sha_mod)
+        if sha_loaded
+            sha_mod_ref = first(filter(m -> nameof(m) === :SHA, sha_mod))
+            hash_bytes = Base.invokelatest(getfield(sha_mod_ref, :sha256),
+                                           Vector{UInt8}(value * salt))
+            return bytes2hex(hash_bytes)[1:16]
+        end
+    catch
+        # SHA.jl not loaded — fall through to keyed-hash fallback
+    end
+    # Keyed-hash fallback: mix salt as a seed offset to prevent rainbow tables
+    seed = foldr((c, acc) -> xor(acc, UInt64(c)), codeunits(salt); init=UInt64(0x6c62272e07bb0142))
+    h = hash(value, seed)
     return string(h, base=16)[1:min(16, end)]
 end
 

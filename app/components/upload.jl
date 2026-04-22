@@ -694,6 +694,8 @@ function upload_model_fields(prefix::String)::String
     @out $(prefix)_validation_rules::Vector = []
     @out $(prefix)_validation_failed::Bool = false
     @in  $(prefix)_apply_deidentify::Bool = true
+    # NOTE: Replace the default salt below with your organisation's secret key.
+    # The default is a placeholder only; using it in production weakens pseudonymisation.
     @in  $(prefix)_org_salt::String = "HealthcareEconomicsOrg2024"
     @in  $(prefix)_committing::Bool = false
     @out $(prefix)_committed::Bool = false
