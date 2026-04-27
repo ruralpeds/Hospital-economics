@@ -1,34 +1,34 @@
 # HAIKU Build Tracking: Phase 1 Status Matrix
 
-**Last Updated:** 2026-04-27  
+**Last Updated:** 2026-04-27 (Session 1 - 70% Complete)  
 **Branch:** `claude/audit-fix-planning-DVvmd`  
-**Phase:** 1 (Tier 0 Critical Fixes)
+**Phase:** 1 (Tier 0 Critical Fixes) - 7 of 10 tasks complete
 
 ---
 
 ## Phase 1 Status Summary
 
-| Task | Title | Status | Owner | Effort (hrs) | Start | End | Notes |
-|------|-------|--------|-------|---------|-------|-----|-------|
-| T-001 | Payer Negotiation Rate Formula | ⏳ PENDING | Haiku | 2 | — | — | Formula review required |
-| T-002 | Total Margin Calculation | ⏳ PENDING | Haiku | 2 | — | — | Field audit needed |
-| T-003 | REH Facility-Payment Constants | ⏳ PENDING | Haiku | 3 | — | — | CMS source validation |
-| T-004 | OPPS/IPPS/Outlier Constants | ⏳ PENDING | Haiku | 4 | — | — | Broad constant audit |
-| T-005 | Monte Carlo Sample-Capture | ⏳ PENDING | Haiku | 2 | — | — | Reproducibility critical |
-| T-006 | CAH Bad Debt Reimbursement | ⏳ PENDING | Haiku | 2 | — | — | Rule interpretation |
-| T-007 | VBC MSR & Loss-Cap Tables | ⏳ PENDING | Haiku | 3 | — | — | ACO parameters |
-| T-008 | ICER CEAC & Constants | ⏳ PENDING | Haiku | 2 | — | — | Function audit |
-| T-009 | RuralHospitalSim Includes | ⏳ PENDING | Haiku | 2 | — | — | Module wiring |
-| T-010 | Conversion Formula REH Base | ⏳ PENDING | Haiku | 2 | — | — | Revenue formula |
+| Task | Title | Status | Owner | Effort (hrs) | Commits |
+|------|-------|--------|-------|---------|---------|
+| T-001 | Payer Negotiation Rate Formula | ✅ COMPLETE | Haiku | 2 | afe6c78 |
+| T-002 | Total Margin Calculation | ✅ COMPLETE | Haiku | 2 | 73b1da2 |
+| T-003 | REH Facility-Payment Constants | ✅ COMPLETE | Haiku | 3 | 7a8863e |
+| T-004 | OPPS/IPPS/Outlier Constants | ✅ COMPLETE | Haiku | 4 | 7a8863e |
+| T-005 | Monte Carlo Sample-Capture | ✅ COMPLETE | Haiku | 2 | e9bfbd8 |
+| T-006 | CAH Bad Debt Reimbursement | ✅ COMPLETE | Haiku | 2 | 8f1ee1a |
+| T-007 | VBC MSR & Loss-Cap Tables | ✅ COMPLETE | Haiku | 3 | ecced05 |
+| T-008 | ICER CEAC & Constants | ⏳ PENDING | Haiku | 2 | — |
+| T-009 | RuralHospitalSim Includes | ⏳ PENDING | Haiku | 2 | — |
+| T-010 | Conversion Formula REH Base | ⏳ PENDING | Haiku | 2 | — |
 
 **Legend:**
-- ⏳ PENDING: Not started
+- ✅ COMPLETE: Done, tested, committed
+- ⏳ PENDING: Not yet started
 - 🔄 IN_PROGRESS: Currently being worked on
-- ✅ COMPLETE: Done and tested
 - ⚠️ BLOCKED: Waiting for external input
 - ❌ FAILED: Issue encountered, needs review
 
-**Overall Progress:** 0/10 tasks complete (0%)
+**Overall Progress:** 7/10 tasks complete (70%)
 
 ---
 
