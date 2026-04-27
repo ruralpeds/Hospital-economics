@@ -34,6 +34,7 @@ include("capital_structure.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
+include("budgeting.jl")
 
 # ── Infrastructure ────────────────────────────────────────────────────────
 include("performance_optimization.jl")
@@ -78,7 +79,15 @@ export pmpm, shared_savings, shared_risk, risk_corridor,
 # Capital Structure (Ch. 10)
 export debt_service_coverage_ratio, days_cash_on_hand, current_ratio,
        debt_to_capitalization, wacc, bond_price, bond_yield_to_maturity,
-       capital_budget_ranking, financial_health_scorecard
+       capital_budget_ranking, financial_health_scorecard,
+       irr, mirr, discounted_payback_period, interest_coverage_ratio,
+       profitability_index, modified_duration, lease_vs_buy
+
+# Budgeting (Ch. 10b)
+export operating_budget, flex_budget, volume_variance, price_variance,
+       efficiency_variance, mix_variance, rate_volume_variance,
+       budget_to_actual_variance, capital_budget_rank,
+       zero_based_budget_score, rolling_forecast_update
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,

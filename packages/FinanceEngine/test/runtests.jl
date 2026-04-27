@@ -288,6 +288,215 @@ include("audit_tests.jl")
         @test haskey(forecast, :stress_risk)
     end
 
+    # ── Capital Structure additions ────────────────────────────────────────
+
+    @testset "IRR — basic project" begin
+        # -100 now, +60 in period 1, +60 in period 2 → IRR ≈ 13.07%
+        cfs = [-100.0, 60.0, 60.0]
+        r = irr(cfs)
+        @test !ismissing(r)
+        @test r ≈ 0.1307 atol=1e-4
+    end
+
+    @testset "IRR — no real root returns missing" begin
+        # All positive cash flows — no crossover
+        @test ismissing(irr([10.0, 20.0, 30.0]))
+    end
+
+    @testset "IRR — single cashflow throws" begin
+        @test_throws Exception irr([-100.0])
+    end
+
+    @testset "MIRR — standard case" begin
+        cfs = [-100.0, 50.0, 60.0, 70.0]
+        r = mirr(cfs, 0.08, 0.12)
+        @test r > 0.0
+        @test r ≈ (70.0*(1.12)^0 + 60.0*(1.12)^1 + 50.0*(1.12)^2)^(1/3) /
+                  (100.0 / (1.08)^0)^(1/3) - 1 atol=0.01
+    end
+
+    @testset "MIRR — no negative flows throws" begin
+        @test_throws Exception mirr([10.0, 20.0, 30.0], 0.08, 0.12)
+    end
+
+    @testset "Discounted Payback — recovers within horizon" begin
+        # -100 at t=0, +60 discounted, +60 discounted
+        cfs = [-100.0, 60.0, 60.0]
+        dpp = discounted_payback_period(cfs, 0.10)
+        @test isfinite(dpp)
+        @test dpp > 1.0 && dpp < 3.0
+    end
+
+    @testset "Discounted Payback — never recovers returns Inf" begin
+        @test discounted_payback_period([-1000.0, 1.0, 1.0], 0.10) == Inf
+    end
+
+    @testset "Interest Coverage Ratio" begin
+        @test interest_coverage_ratio(4_000_000.0, 1_000_000.0) ≈ 4.0
+        @test_throws Exception interest_coverage_ratio(1_000_000.0, 0.0)
+    end
+
+    @testset "Interest Coverage Ratio — below lender threshold" begin
+        # ICR < 2.5 is typically a covenant concern
+        @test interest_coverage_ratio(200_000.0, 100_000.0) ≈ 2.0
+    end
+
+    @testset "Profitability Index — value-creating project" begin
+        @test profitability_index(50_000.0, 100_000.0) ≈ 1.5
+    end
+
+    @testset "Profitability Index — zero NPV project" begin
+        @test profitability_index(0.0, 100_000.0) ≈ 1.0
+    end
+
+    @testset "Profitability Index — negative initial investment throws" begin
+        @test_throws Exception profitability_index(50_000.0, 0.0)
+    end
+
+    @testset "Modified Duration — two-period bond" begin
+        cfs = [50.0, 1050.0]  # coupon + principal
+        d = modified_duration(cfs, 0.05)
+        @test d > 0.0
+        @test d < 2.0  # duration < maturity
+    end
+
+    @testset "Modified Duration — empty cashflows throws" begin
+        @test_throws Exception modified_duration(Float64[], 0.05)
+    end
+
+    @testset "Lease vs Buy — lease preferred" begin
+        # Low lease payments → lease wins
+        r = lease_vs_buy(100_000.0, [8_000.0, 8_000.0, 8_000.0, 8_000.0, 8_000.0],
+                         10_000.0, 0.08, 5)
+        @test r.preferred == :lease
+        @test r.lease_pv < r.buy_pv
+    end
+
+    @testset "Lease vs Buy — nonprofit tax_rate=0 default" begin
+        r = lease_vs_buy(50_000.0, [12_000.0, 12_000.0, 12_000.0],
+                         5_000.0, 0.06, 3)
+        @test r.buy_pv > 0
+        @test r.preferred in (:lease, :buy)
+    end
+
+    @testset "Lease vs Buy — invalid asset cost throws" begin
+        @test_throws Exception lease_vs_buy(0.0, [1000.0], 0.0, 0.05, 5)
+    end
+
+    # ── Budgeting ──────────────────────────────────────────────────────────
+
+    @testset "Operating Budget — basic" begin
+        b = operating_budget(50_000.0, 200.0, 100.0, 500.0)
+        @test b.revenue ≈ 50_000.0
+        @test b.variable_costs ≈ 20_000.0
+        @test b.fixed_costs ≈ 50_000.0
+        @test b.total_costs ≈ 70_000.0
+        @test b.operating_income ≈ -20_000.0
+    end
+
+    @testset "Operating Budget — other revenue" begin
+        b = operating_budget(10_000.0, 50.0, 100.0, 200.0; other_revenue=5_000.0)
+        @test b.revenue ≈ 25_000.0
+    end
+
+    @testset "Flex Budget — equals operating budget at actual volume" begin
+        orig = operating_budget(10_000.0, 100.0, 200.0, 300.0)
+        flex = flex_budget(10_000.0, 100.0, 180.0, 300.0)
+        @test flex.revenue ≈ 54_000.0
+        @test flex.variable_costs ≈ 18_000.0
+        @test orig.fixed_costs == flex.fixed_costs
+    end
+
+    @testset "Volume Variance — favorable" begin
+        @test volume_variance(50.0, 110.0, 100.0) ≈ 500.0
+    end
+
+    @testset "Volume Variance — unfavorable" begin
+        @test volume_variance(50.0, 90.0, 100.0) ≈ -500.0
+    end
+
+    @testset "Price Variance" begin
+        @test price_variance(210.0, 200.0, 100.0) ≈ 1_000.0
+    end
+
+    @testset "Efficiency Variance — overuse unfavorable" begin
+        @test efficiency_variance(20.0, 550.0, 5.0, 100.0) ≈ 1_000.0
+    end
+
+    @testset "Mix Variance — equal mix has zero variance" begin
+        mv = mix_variance([50.0, 50.0], [50.0, 50.0], [100.0, 80.0])
+        @test mv.total_mix_variance ≈ 0.0 atol=1e-10
+    end
+
+    @testset "Mix Variance — length mismatch throws" begin
+        @test_throws Exception mix_variance([1.0, 2.0], [1.0], [10.0, 10.0])
+    end
+
+    @testset "Rate Volume Variance — decomposition" begin
+        rv = rate_volume_variance(210_000.0, 200_000.0, 110.0, 100.0, 2_000.0)
+        @test rv.total_variance ≈ 10_000.0
+        @test rv.volume_variance ≈ 20_000.0
+        @test rv.rate_variance ≈ -10_000.0
+    end
+
+    @testset "Budget to Actual Variance — under budget" begin
+        v = budget_to_actual_variance(100_000.0, 90_000.0)
+        @test v.dollar_variance ≈ 10_000.0
+        @test v.pct_variance ≈ 0.10
+    end
+
+    @testset "Budget to Actual Variance — zero budget throws" begin
+        @test_throws Exception budget_to_actual_variance(0.0, 50_000.0)
+    end
+
+    @testset "Capital Budget Rank — highest NPV + strategic wins" begin
+        projects = [
+            (name="MRI",  npv=500_000.0, strategic_score=8.0),
+            (name="EHR",  npv=200_000.0, strategic_score=9.0),
+            (name="Boiler", npv=50_000.0, strategic_score=3.0),
+        ]
+        ranked = capital_budget_rank(projects)
+        @test length(ranked) == 3
+        @test ranked[1].name in ("MRI", "EHR")
+        @test ranked[end].name == "Boiler"
+    end
+
+    @testset "Capital Budget Rank — empty throws" begin
+        @test_throws Exception capital_budget_rank([])
+    end
+
+    @testset "Capital Budget Rank — weights not summing to 1 throws" begin
+        projects = [(name="X", npv=100.0, strategic_score=5.0)]
+        @test_throws Exception capital_budget_rank(projects; npv_weight=0.5, strategic_weight=0.4)
+    end
+
+    @testset "Zero Based Budget Score — valid" begin
+        s = zero_based_budget_score(8.0, 7.0, 6.0)
+        @test s ≈ 0.4*8.0 + 0.3*7.0 + 0.3*6.0 atol=1e-10
+    end
+
+    @testset "Zero Based Budget Score — out of range throws" begin
+        @test_throws Exception zero_based_budget_score(11.0, 5.0, 5.0)
+    end
+
+    @testset "Rolling Forecast Update — on pace" begin
+        r = rolling_forecast_update(500_000.0, 6, 12, 1_000_000.0)
+        @test r.projected_annual ≈ 1_000_000.0
+        @test r.variance_to_budget ≈ 0.0 atol=1e-10
+        @test r.pct_variance ≈ 0.0 atol=1e-10
+    end
+
+    @testset "Rolling Forecast Update — over budget" begin
+        r = rolling_forecast_update(600_000.0, 6, 12, 1_000_000.0)
+        @test r.projected_annual ≈ 1_200_000.0
+        @test r.variance_to_budget ≈ -200_000.0
+        @test r.pct_variance ≈ -0.20 atol=1e-10
+    end
+
+    @testset "Rolling Forecast Update — elapsed ≥ total throws" begin
+        @test_throws Exception rolling_forecast_update(100.0, 12, 12, 1000.0)
+    end
+
     @testset "Strategic Planning" begin
         # Test cost trajectory
         result = cost_trajectory(
