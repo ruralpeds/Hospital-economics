@@ -68,6 +68,13 @@ include(joinpath(APP_ROOT, "views", "strategic_planner", "StrategicPlannerModel.
 include(joinpath(APP_ROOT, "views", "policy_impact", "PolicyImpactModel.jl"))
 
 # ---------------------------------------------------------------------------
+# Include reactive models — MBA Analytics (M1 Starter)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "three_statement", "ThreeStatementModel.jl"))
+include(joinpath(APP_ROOT, "views", "dupont", "DuPontModel.jl"))
+include(joinpath(APP_ROOT, "views", "distress_scoring", "DistressScoringModel.jl"))
+
+# ---------------------------------------------------------------------------
 # Include reactive models — V3.1 modules
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "team_bundled", "TEAMBundledModel.jl"))
@@ -121,6 +128,13 @@ include(joinpath(APP_ROOT, "views", "strategic_planner", "strategic_planner.jl")
 include(joinpath(APP_ROOT, "views", "policy_impact", "policy_impact.jl"))
 
 # ---------------------------------------------------------------------------
+# Include view functions — MBA Analytics (M1 Starter)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "three_statement", "three_statement.jl"))
+include(joinpath(APP_ROOT, "views", "dupont", "dupont.jl"))
+include(joinpath(APP_ROOT, "views", "distress_scoring", "distress_scoring.jl"))
+
+# ---------------------------------------------------------------------------
 # Include view functions — V3.1 modules
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "team_bundled", "team_bundled.jl"))
@@ -142,6 +156,7 @@ include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
 include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
+include(joinpath(APP_ROOT, "controllers", "AnalyticsController.jl"))
 
 # ---------------------------------------------------------------------------
 # Include routes
