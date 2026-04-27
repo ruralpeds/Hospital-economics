@@ -55,6 +55,19 @@ route("/education") do
     page(model, ui_education) |> html
 end
 
+# A-04 & A-05: Nonprofit WACC and Capital Budgeting
+route("/wacc") do
+    include("views/wacc/WACCModel.jl")
+    model = wacc_model |> init
+    page(model, ui_wacc) |> html
+end
+
+route("/capex") do
+    include("views/capex/CapexModel.jl")
+    model = capex_model |> init
+    page(model, ui_capex) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Analysis Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -370,6 +383,28 @@ route("/api/analytics/distress-scoring", method=POST) do
         json(result)
     catch e
         _safe_error("Distress scoring", e)
+    end
+end
+
+# A-04: Nonprofit WACC Calculator
+route("/api/analytics/wacc", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_wacc(payload)
+        json(result)
+    catch e
+        _safe_error("WACC calculation", e)
+    end
+end
+
+# A-05: Capital Budgeting
+route("/api/optimize/capex-ranking", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_capex_ranking(payload)
+        json(result)
+    catch e
+        _safe_error("CapEx ranking", e)
     end
 end
 

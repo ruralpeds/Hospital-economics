@@ -422,6 +422,170 @@ function handle_hcris_import(payload::Dict)::Dict
     end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# A-04: Nonprofit WACC Calculator
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_wacc(payload::Dict)::Dict
+
+API handler for nonprofit WACC calculation.
+
+Expected payload keys:
+  - cost_of_equity_model: String ("capm", "conservative", "aggressive")
+  - risk_free_rate: Float64
+  - market_risk_premium: Float64
+  - beta: Float64
+  - rating: String (S&P rating, e.g., "B")
+  - lt_debt: Float64
+  - net_assets: Float64
+
+Returns WACC calculation results.
+"""
+function handle_wacc(payload::Dict)::Dict
+    try
+        cost_of_equity_model = Symbol(lowercase(get(payload, "cost_of_equity_model", "capm")))
+        risk_free_rate = Float64(get(payload, "risk_free_rate", 0.04))
+        market_risk_premium = Float64(get(payload, "market_risk_premium", 0.06))
+        beta = Float64(get(payload, "beta", 1.0))
+        rating = String(get(payload, "rating", "B"))
+        lt_debt = Float64(get(payload, "lt_debt", 20_000_000.0))
+        net_assets = Float64(get(payload, "net_assets", 25_000_000.0))
+
+        # Create balance sheet
+        bs = BalanceSheetSnapshot(
+            as_of_date = today(),
+            cash_and_equivalents = 2_000_000.0,
+            short_term_investments = 1_000_000.0,
+            accounts_receivable_net = 3_000_000.0,
+            inventory = 500_000.0,
+            gross_ppe = 50_000_000.0,
+            accumulated_depreciation = 10_000_000.0,
+            long_term_investments = 5_000_000.0,
+            accounts_payable = 2_000_000.0,
+            accrued_expenses = 1_000_000.0,
+            current_portion_lt_debt = 500_000.0,
+            long_term_debt = lt_debt,
+            net_assets_unrestricted = net_assets
+        )
+
+        # Create dummy financials
+        financials = (
+            total_operating_revenue = 20_000_000.0,
+            total_operating_expenses = 19_000_000.0
+        )
+
+        # Calculate WACC
+        wacc_result = calculate_wacc(
+            financials, bs;
+            cost_of_equity_model = cost_of_equity_model,
+            tax_exempt = true,
+            risk_free_rate = risk_free_rate,
+            market_risk_premium = market_risk_premium,
+            beta = beta,
+            rating = rating
+        )
+
+        return Dict(
+            "status" => "ok",
+            "wacc" => wacc_result.wacc,
+            "cost_of_equity" => wacc_result.cost_of_equity,
+            "cost_of_debt" => wacc_result.cost_of_debt,
+            "target_debt_ratio" => wacc_result.target_debt_ratio,
+            "equity_ratio" => 1.0 - wacc_result.target_debt_ratio
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# A-05: Capital Budgeting (CapEx Ranking)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_capex_ranking(payload::Dict)::Dict
+
+API handler for capital project ranking.
+
+Expected payload keys:
+  - projects: Vector of project dicts with:
+    - name: String
+    - initial_outlay: Float64
+    - useful_life: Int
+    - annual_cf: Vector{Float64}
+    - salvage_value: Float64 (optional)
+  - wacc: Float64 (discount rate)
+  - budget_constraint: Float64 or null
+
+Returns ranked projects with NPV, IRR, profitability index.
+"""
+function handle_capex_ranking(payload::Dict)::Dict
+    try
+        projects_data = get(payload, "projects", [])
+        wacc = Float64(get(payload, "wacc", 0.08))
+        budget_constraint = get(payload, "budget_constraint", nothing)
+
+        if isempty(projects_data)
+            return Dict(
+                "status" => "error",
+                "message" => "No projects provided"
+            )
+        end
+
+        # Build CapexProject structs
+        projects = [
+            CapexProject(
+                name = String(p["name"]),
+                initial_outlay = Float64(p["initial_outlay"]),
+                useful_life = Int(p["useful_life"]),
+                annual_cf = Float64.(p["annual_cf"]),
+                salvage_value = Float64(get(p, "salvage_value", 0.0))
+            )
+            for p in projects_data
+        ]
+
+        # Rank projects
+        if isnothing(budget_constraint)
+            ranking_df = rank_projects(projects, wacc)
+        else
+            ranking_df = rank_projects(projects, wacc; budget_constraint = Float64(budget_constraint))
+        end
+
+        # Convert to JSON-serializable format
+        ranked_projects = [
+            Dict(
+                "name" => row.name,
+                "initial_outlay" => row.initial_outlay,
+                "npv" => row.npv,
+                "irr" => row.irr,
+                "payback_years" => row.payback_years,
+                "profitability_index" => row.profitability_index,
+                "pi_rank" => row.pi_rank,
+                "selected" => row.selected,
+                "cumulative_investment" => row.cumulative_investment
+            )
+            for row in eachrow(ranking_df)
+        ]
+
+        return Dict(
+            "status" => "ok",
+            "ranked_projects" => ranked_projects,
+            "total_projects" => nrow(ranking_df),
+            "total_investment" => sum(ranking_df.initial_outlay),
+            "total_npv" => sum(ranking_df.npv)
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end  # module AnalyticsController
 
 
