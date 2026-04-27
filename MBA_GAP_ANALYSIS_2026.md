@@ -22,7 +22,42 @@ The repo is **architecturally far stronger than the older `STRATEGIC_IMPLEMENTAT
 - **Branch sprawl: high.** 22 remote branches, only `main` is canonical. 14 `copilot/*` and 4 `claude/*` branches still live; several appear stale. A consolidation pass is overdue.
 - **Test claims vs reality:** `IMPLEMENTATION_STATUS.md` claimed "645+ tests / 100% coverage." The `test/` directory has 64 unique test files (and 14 dupes). No Codecov badge is wired into the CI; coverage figures are self-asserted.
 
-The remainder of this document is the actionable gap list. The work is partitioned into **six analytics domains** (§2), with each gap given a **priority (P0/P1/P2), MBA-evaluator weight, target module, and acceptance test sketch**, followed by an **execution plan** (§3) and **branch-consolidation plan** (§4).
+The remainder of this document is the actionable gap list. The work is partitioned into **six analytics domains** (§2), with each gap given a **priority (P0/P1/P2), MBA-evaluator weight, target module, and acceptance test sketch**, followed by an **execution plan** (§3), a **branch-consolidation plan** (§4), and a **pure-Julia architecture spec** (§7) that pins down where each new module lives in the existing Genie/Stipple stack.
+
+---
+
+## 0.1 Stack constraint — pure Julia, full stack
+
+This project is **pure Julia for both backend and web UI**. The gap analysis below is written *under that constraint*: every new module, controller, view, report generator, scheduler, and test must be reachable from `Pkg.add` plus the existing app skeleton. No React, no Node-only services, no Python sidecars, no FFI bridges to non-Julia analytics engines.
+
+The canonical stack already chosen by the repo is:
+
+| Layer | Package(s) | Role |
+|---|---|---|
+| HTTP / routing / sessions / auth | `GenieFramework`, `GenieAuthentication` | Web server, controllers, middleware. |
+| Reactive UI model | `Stipple` | `@app … @in / @out` reactive state. |
+| UI components | `StippleUI` (Quasar bindings) | Forms, tables, dialogs, drawers — all generated from Julia DSL. |
+| Charts in browser | `StipplePlotly`, `PlotlyBase`, `Plots`, `StatsPlots` | Interactive financial / clinical charts. |
+| ORM / DB | `SearchLight` + PostgreSQL (+ TimescaleDB) | Migrations, models, queries. |
+| Optimization | `JuMP`, `HiGHS` | LP / MILP / NLP solvers. |
+| Sim engines | `Agents`, `DifferentialEquations`, `Distributions` | ABM / DES / SD / MC. |
+| ML / stats | `GLM`, `StatsBase`, `HypothesisTests` | Regression, hypothesis tests. |
+| Persistence / IO | `JSON3`, `CSV`, `XLSX`, `SQLite` (in FinanceEngine) | Scenario save/load, HCRIS import, board-packet exports. |
+| Quality gates | `Aqua`, `JET`, `Test` | Per the project's `julia-enterprise-repo` skill standard. |
+| E2E (only non-Julia layer) | Playwright | Browser-driven smoke tests. Acceptable as the *only* JS-side tool because it talks to the Julia stack purely over HTTP. |
+
+What this rules out for this repo specifically (and where I will deviate from the user's default Web UI standard):
+
+- **Hartzog Web Standard v3.0** (React + Observable JS + Tailwind + CSS Modules) is the user's *default* for new web projects. **It does not apply here.** This repo is committed to Stipple + Quasar (via StippleUI), and replacing that would be a months-long rewrite that erases the 17 already-functioning views.
+- No `react`, `vue`, `svelte`, `htmx`, `astro`, `nextjs` of any kind in the application layer. The existing `package.json` / `tsconfig.json` / `playwright.config.ts` exist solely to drive Playwright; they should be moved under `e2e/` (still §6) but their *existence* is fine — they don't drive the application UI.
+- No DOCX export from the application itself. Board packets and rating memos are generated as **HTML (Stipple-rendered) and PDF (via Weave.jl or Typst.jl)**, not Word. The user's general DOCX-default for clinical/theology content does not apply to this app's runtime outputs.
+- No Python ML services. Closure ML, Bayesian VBC, Cox PH, XGBoost-equivalent, etc., are all done in-Julia using `MLJ.jl`, `Turing.jl`, `Survival.jl`, `EvoTrees.jl`, `LightGBM.jl` (Julia binding only), or pure-Julia implementations.
+
+What this implies for *every* module proposed in §2:
+
+> **Every new analytics module gets four artifacts: (1) a Julia function/struct in the appropriate `src/` family or in a `packages/*` package, (2) a `Genie` route + controller method, (3) a Stipple reactive view in `app/views/<name>/`, and (4) tests in `test/`.** The detailed scaffolding pattern is in §7.
+
+This makes the gap list strictly additive on top of the existing architecture, with no UI-framework migration risk.
 
 ---
 
@@ -177,8 +212,8 @@ For each gap I give: **what's missing, where it should live, the MBA-evaluator r
 
 | ID | Gap | Target module | Acceptance test sketch | P |
 |---|---|---|---|---|
-| F-01 | **Board-ready packet generator** — auto-render a 12-page board PDF (cover, exec summary, scorecard, scenarios, risks, capital plan, payer-mix walk, productivity, quality, community impact, financials, appendix). | `src/visualization/board_packet.jl` + `pdf` skill | Given a fiscal year, produces a deterministic 12-page PDF that an actual hospital board would accept. | **P0** |
-| F-02 | **Rating-agency-style memo** (Moody's / Fitch format) — narrative + ratios + peer comparison + outlook. | `src/visualization/rating_memo.jl` | Renders a docx that mirrors the Moody's "Issuer Comment" structure. | **P1** |
+| F-01 | **Board-ready packet generator** — auto-render a 12-page board PDF (cover, exec summary, scorecard, scenarios, risks, capital plan, payer-mix walk, productivity, quality, community impact, financials, appendix). Pure-Julia rendering chain: data assembled in Julia → `Weave.jl` (Markdown → LaTeX → PDF) **or** `Typst.jl` (Julia → Typst → PDF). Plot inserts use `Plots.jl` / `StatsPlots.jl` PDF/SVG output. | `src/visualization/board_packet.jl` (no external skill needed) | Given a fiscal year, produces a deterministic 12-page PDF; the same JSON input always produces a byte-identical PDF (timestamps masked). | **P0** |
+| F-02 | **Rating-agency-style memo** (Moody's / Fitch format) — narrative + ratios + peer comparison + outlook. Pure-Julia output as **HTML (Stipple-rendered, downloadable)** plus **PDF (via Weave.jl or Typst.jl)**. No DOCX in the runtime path. | `src/visualization/rating_memo.jl` | Renders an HTML+PDF pair that mirrors the Moody's "Issuer Comment" structure. | **P1** |
 | F-03 | **CFO 1-pager (weekly/monthly)** — single-screen KPI dashboard with sparklines, RAG status, and exception flags. | Extend `app/views/dashboard/` | Loads in <500 ms on the existing Stipple dashboard; passes Playwright spec. | **P0** |
 | F-04 | **Sensitivity-tornado on every model** — exists for sensitivity analysis but not exposed uniformly across modules. | `src/visualization/tornado.jl` | A single API call `tornado(model, params)` returns sorted bars. | **P1** |
 | F-05 | **Scenario diff/compare** — current scenario_persistence stores scenarios but has no diff. | Extend `scenario_persistence.jl` | Two scenarios → side-by-side delta table. | **P1** |
@@ -218,21 +253,9 @@ These are the items that move the platform from "credible MBA toolkit" to "resea
 5. **CMS data ingestion** — HCRIS, POS, MA-PD, SDP, Hospital Compare, MEDPAR — bundled in `data/` with idempotent download scripts. **(1 wk; P0.)**
 6. **Reproducible research bundle** — `make benchmarks` should produce the figures/tables for a future RUPRI-style working paper. **(P1.)**
 
-### Suggested package decomposition after the gaps close
+### Suggested package decomposition
 
-The `RuralHospitalSim` umbrella package is straining. Once M2 is done, split into:
-
-| Package | Purpose |
-|---|---|
-| `RuralCore.jl` (exists) | Auth, audit, types, validation |
-| `FinanceEngine.jl` (exists, expand) | All A-* and C-* corporate-finance math |
-| `RuralReimbursement.jl` (new) | All E-* CMS / Medicaid reimbursement math |
-| `RuralAnalytics.jl` (new) | DEA, SFA, ML closure, Bayesian VBC, copula MC |
-| `RuralStrategy.jl` (new) | Balanced scorecard, real options, M&A, scenario planning |
-| `RuralReports.jl` (new) | Board packet, rating memo, tornado, scenario diff |
-| `RuralHospitalSim.jl` (umbrella) | Web app, controllers, integration |
-
-This makes each package independently testable, separately versionable, and individually citable.
+The umbrella package decomposition is now specified in **§7.5** — see that section. It is unchanged in spirit from the cross-cutting workstreams here but extended with explicit pure-Julia stack rationale.
 
 ---
 
@@ -322,8 +345,134 @@ When all 14 work end-to-end, the platform clears the bar.
 - Delete `src/optimization/dummy.jl`, `src/clinical_integration/dummy.jl`, `src/payer_models/dummy.jl`, `src/visualization/dummy.jl`, `src/patient_flow/dummy.jl` — they are zero-byte or near-zero-byte placeholders that pollute module loading.
 - Delete all 42 ` 2.*`, ` 3.*`, ` 4.*` macOS Finder duplicates.
 - Resolve the `Project.toml` Julia compat split — the umbrella declares `julia = "1.11"`, `FinanceEngine` declares `julia = "1.12"`. Pick one (recommend 1.11 LTS-track).
-- The `tsconfig.json` + `package.json` + `playwright.config.ts` at the repo root suggest a JS toolchain that's only used for E2E. Move it under `e2e/` so the root package.json doesn't confuse repo scanners and SBOM tools.
+- The `tsconfig.json` + `package.json` + `playwright.config.ts` at the repo root drive only the Playwright E2E suite. They do **not** drive the application UI (which is pure Julia via Stipple/StippleUI). Move them under `e2e/` so the root tree advertises a pure-Julia application correctly to SBOM tools and new contributors. The Playwright dev-dependency itself is acceptable as the only non-Julia layer because it talks to the Julia server purely over HTTP.
 - `BUILD_LOG.md`, `BUILD_AUTOMATION_GUIDE.md`, `CLAUDE_CODE_CLI_GUIDE.md` are operational notes that belong in `docs/operations/`, not at the repo root.
+
+---
+
+## 7. Pure-Julia architecture spec for every new module
+
+This section pins down the scaffolding pattern so any contributor can add a new MBA-grade analytics gap from §2 without inventing structure. Every gap → four artifacts. Nothing else.
+
+### 7.1 The four-artifact rule
+
+For a hypothetical gap **A-02 DuPont decomposition**, the artifacts are:
+
+| Artifact | Path | Role |
+|---|---|---|
+| 1. Domain function & types | `src/finance/dupont.jl` (or `packages/FinanceEngine/src/dupont.jl` if it should be reusable across multiple downstream tools) | Pure Julia. Takes typed structs (`AnnualFinancials`, `BalanceSheet`), returns a typed result struct (`DuPont3Factor`, `DuPont5Factor`). No I/O. No globals. Aqua + JET clean. |
+| 2. Genie route + controller method | `app/controllers/AnalyticsController.jl::dupont(payload)` and `routes.jl::route("/api/dupont", AnalyticsController.dupont, method=POST)` | Validates JSON payload, calls (1), returns `JSON3.write(result)`. |
+| 3. Stipple reactive view | `app/views/dupont/DupontModel.jl` + `app/views/dupont/dupont.jl` | `@app` block with `@in` inputs, `@out` results, `@onchange` reactive handlers. UI DSL composes Quasar cards / tables / Plotly waterfall. |
+| 4. Tests | `test/test_dupont.jl` (unit) + `e2e/tests/dupont.spec.ts` (smoke) | Unit covers branches, edge cases, math correctness vs textbook example. E2E confirms the route renders without error. |
+
+Every gap in §2 is annotated with a "target module" — that is artifact (1). Artifacts (2)–(4) are implied and not re-listed per gap.
+
+### 7.2 Stipple reactive-view template
+
+```julia
+# app/views/<feature>/<Feature>Model.jl
+using Stipple, StippleUI, StipplePlotly
+using ...RuralHospitalSim: <feature_function>, <FeatureResult>
+
+@app begin
+    @in left_drawer_open::Bool = true
+
+    # Inputs
+    @in fiscal_year::Int = 2024
+    @in ccn::String = ""
+
+    # Outputs
+    @out result::Union{<FeatureResult>, Nothing} = nothing
+    @out error_message::String = ""
+    @out is_loading::Bool = false
+
+    @onchange ccn, fiscal_year begin
+        is_loading = true
+        try
+            result = <feature_function>(ccn, fiscal_year)
+            error_message = ""
+        catch err
+            error_message = sprint(showerror, err)
+            result = nothing
+        end
+        is_loading = false
+    end
+end
+
+# app/views/<feature>/<feature>.jl
+function ui_<feature>(model)
+    app_layout(model, "<Feature Title>", [
+        row([cell(class="col", [
+            q__input(:ccn, label="Hospital CCN", filled=true),
+            q__input(:fiscal_year, label="Fiscal year", filled=true, type="number"),
+        ])]),
+        card(class="q-mt-md", [card_section([
+            # Plotly chart bound to result via {{ result.* }}
+            plotly(:<feature>_chart),
+        ])]),
+    ])
+end
+```
+
+This pattern is already used by `app/views/reh_wizard/`, `app/views/financial_sim/`, `app/views/dashboard/`, and 14 others. New analytics views must conform.
+
+### 7.3 Reporting / export pipeline (pure Julia)
+
+For F-01 (board packet), F-02 (rating memo), and similar long-form deliverables:
+
+| Step | Tool | Notes |
+|---|---|---|
+| 1. Assemble data | Julia structs | All numbers come from Julia analytics functions, never from the browser. |
+| 2. Render charts | `Plots.jl` / `StatsPlots.jl` to `.svg` or `.pdf` | Vector output for print quality; `Plots.savefig(p, "fig.pdf")`. |
+| 3. Render document | **Option A: `Weave.jl`** — Markdown template with embedded Julia → LaTeX → PDF. Mature, widely used. **Option B: `Typst.jl`** — Julia → Typst → PDF. Faster compile, modern typography. **Option C:** Stipple-rendered HTML downloadable directly when no print fidelity is needed. | Pick **A** for v1 (mature ecosystem), evaluate **B** for v2. |
+| 4. Combine / sign | `PDFmerger.jl` | Stitches sections, adds cover + appendix. |
+| 5. Persist + audit | `RuralCore.AuditTrail` | Each generated packet logs `who / when / inputs hash / output hash` for HIPAA compliance. |
+
+No `pandoc`, no `wkhtmltopdf`, no headless Chrome. Pure Julia plus a TeX or Typst binary on the build host (which is acceptable because they are not part of the application — they are part of the report build chain, like `gcc` for binary deps).
+
+### 7.4 Scheduled & batch jobs (pure Julia)
+
+The platform will need scheduled work (HCRIS quarterly refresh, CMS rule-monitor (F-07), monthly board-packet auto-generation):
+
+| Need | Tool | Notes |
+|---|---|---|
+| Cron-style scheduling | `Cron.jl` or Genie's built-in tasks | Ships with Genie; no system-cron coupling needed. |
+| Background jobs | Genie tasks + `Distributed`-based worker pool already wired in `FinanceEngine/performance_optimization.jl` | Reuse the existing `setup_worker_pool`. |
+| HTTP fetching for HCRIS / Federal Register | `HTTP.jl` | Pure Julia. |
+| Email of board packets | `SMTPClient.jl` | Pure Julia. |
+
+### 7.5 Package decomposition (revised for pure-Julia stack)
+
+The §3 cross-cutting recommendation to split the umbrella becomes more important under the pure-Julia constraint, because the `RuralHospitalSim` umbrella currently bundles *both* the web app and the analytics. They should split:
+
+| Package | Path | Purpose |
+|---|---|---|
+| `RuralCore.jl` | `packages/RuralCore` (exists) | Auth, audit, types, validation. No Genie / no Stipple deps. |
+| `FinanceEngine.jl` | `packages/FinanceEngine` (exists, expand for Domain A & C) | All corporate-finance & cost-accounting math. No web deps. |
+| `RuralReimbursement.jl` | **new** `packages/RuralReimbursement` | All Domain E payment math (CAH, REH, MA, RHC, 340B, MIPS/VBP/HRRP/HACRP, TEAM). No web deps. |
+| `RuralAnalytics.jl` | **new** `packages/RuralAnalytics` | DEA, SFA, Cox PH, copula MC, Bayesian VBC, VaR/CVaR. No web deps. |
+| `RuralStrategy.jl` | **new** `packages/RuralStrategy` | Balanced scorecard, real options, M&A valuation, scenario planning. No web deps. |
+| `RuralReports.jl` | **new** `packages/RuralReports` | Weave/Typst templates, board packet, rating memo. Depends on the analytics packages but **not on Genie/Stipple**. |
+| `RuralHospitalSim.jl` | repo root | The Genie/Stipple **application** that wires everything together. The only package that depends on web frameworks. |
+
+This split has three concrete benefits in a pure-Julia stack:
+
+1. The analytics packages can be `Pkg.add`ed by an external researcher who wants only the math (e.g., for a Pluto.jl notebook), without dragging in the entire web framework.
+2. CI runs faster — only the application package needs Stipple/Genie precompile time.
+3. JuliaHub publication is cleaner: each analytics package can be registered and cited independently in publications.
+
+### 7.6 Analyst self-service via Pluto.jl
+
+Once the package decomposition is done, ship 4–6 reference **Pluto.jl notebooks** under `notebooks/`:
+
+- `01_three_statement_model.jl` — drive A-01 from a CCN to a 5-yr projection.
+- `02_dupont_and_distress.jl` — A-02, A-03 walkthrough.
+- `03_cah_to_reh_real_options.jl` — A-06, E-02 decision under uncertainty.
+- `04_service_line_portfolio.jl` — B-03 efficient frontier.
+- `05_dea_efficiency.jl` — C-01 with a peer set.
+- `06_mips_vbp_hrrp_impact.jl` — E-06 payment-program impact.
+
+These are pure-Julia, browser-based, fully reactive, and serve as the analyst's "reproducible scenario" capability for §5 acceptance criterion #14.
 
 ---
 
