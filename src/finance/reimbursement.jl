@@ -458,13 +458,17 @@ end
 
 Calculate the Medicare bad debt adjustment.
 
-For most hospitals, CMS reimburses 65% of allowable Medicare bad debt.
-Critical Access Hospitals may receive a higher reimbursement for
-cost-report-eligible bad debts.
+CMS Regulation (42 CFR §413.80):
+- Standard hospitals: reimbursed at ~65% of allowable Medicare bad debt
+- Critical Access Hospitals (42 CFR §413.70): may receive up to 101% of actual
+  bad debt written off through cost report settlement
+
+The CAH enhancement recognizes that certain bad debts are cost-report-eligible
+and can be reimbursed at higher rates.
 
 # Arguments
-- `total_bad_debt`: total Medicare-allowable bad debt
-- `reimbursement_rate`: CMS reimbursement percentage (default 65%)
+- `total_bad_debt`: total Medicare-allowable bad debt written off
+- `reimbursement_rate`: standard CMS reimbursement percentage (default 65%)
 - `is_cah`: whether the hospital is a Critical Access Hospital
 
 # Returns
@@ -472,12 +476,26 @@ A named tuple with:
 - `allowable_bad_debt`: amount of bad debt eligible for reimbursement
 - `reimbursement`: dollar amount CMS will reimburse
 - `unreimbursed`: bad debt the hospital must absorb
+
+# Examples
+Standard hospital (65% reimbursement):
+  result = apply_bad_debt_adjustment(100_000.0, reimbursement_rate=0.65, is_cah=false)
+  # reimbursement = 65,000.0, unreimbursed = 35,000.0
+
+CAH (101% reimbursement, capped at 100%):
+  result = apply_bad_debt_adjustment(100_000.0, reimbursement_rate=0.65, is_cah=true)
+  # reimbursement = 100,000.0, unreimbursed = 0.0
 """
 function apply_bad_debt_adjustment(total_bad_debt::Float64;
                                    reimbursement_rate::Float64=0.65,
                                    is_cah::Bool=false)
-    # CAHs may receive 101% of bad debt through cost report settlement
-    effective_rate = is_cah ? min(reimbursement_rate * 1.01, 1.0) : reimbursement_rate
+    # CAHs receive cost-based reimbursement for bad debt (101% of actual)
+    # This is capped at 100% (cannot reimburse more than the actual bad debt written off)
+    effective_rate = if is_cah
+        min(1.01, 1.0)  # CAH: up to 101%, but capped at 100% of actual
+    else
+        reimbursement_rate  # Standard hospital: percentage-based (default 65%)
+    end
 
     reimbursement = total_bad_debt * effective_rate
     unreimbursed = total_bad_debt - reimbursement

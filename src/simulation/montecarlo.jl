@@ -141,18 +141,47 @@ end
     _collect_sampled_params(mc_params, rng) -> Dict{Symbol, Float64}
 
 Collect the sampled distributional parameter values into a dictionary
-for record-keeping.
+for record-keeping. MUST call sample() in identical order as
+_sample_deterministic_params to maintain RNG reproducibility.
+
+This function mirrors the sampling sequence in _sample_deterministic_params:
+1. volume_growth
+2. cost_inflation (for cost_inflation_rate)
+3. salary_inflation
+4. supply_inflation
+5. cost_inflation (again, for reimbursement_adjustment)
+6. payer_mix_shift
+
+Then additional parameters:
+7. ma_penetration_growth
+8. staffing_turnover
+9. travel_nurse_premium
+
+The order is critical: if you change it, you break seed-based reproducibility
+because RNG state will diverge.
 """
 function _collect_sampled_params(mc_params::MonteCarloParams, rng::AbstractRNG)::Dict{Symbol, Float64}
+    # CRITICAL: Must sample in IDENTICAL order as _sample_deterministic_params
+    volume_growth = sample(mc_params.volume_growth, rng)
+    cost_inflation = sample(mc_params.cost_inflation, rng)
+    salary_inflation = sample(mc_params.salary_inflation, rng)
+    supply_inflation = sample(mc_params.supply_inflation, rng)
+    reimbursement_adjustment_base = sample(mc_params.cost_inflation, rng) * 0.5  # Same as _sample_deterministic_params
+    payer_mix_shift = sample(mc_params.payer_mix_shift, rng)
+    ma_penetration_growth = sample(mc_params.ma_penetration_growth, rng)
+    staffing_turnover = sample(mc_params.staffing_turnover, rng)
+    travel_nurse_premium = sample(mc_params.travel_nurse_premium, rng)
+
     return Dict{Symbol, Float64}(
-        :volume_growth => sample(mc_params.volume_growth, rng),
-        :cost_inflation => sample(mc_params.cost_inflation, rng),
-        :salary_inflation => sample(mc_params.salary_inflation, rng),
-        :supply_inflation => sample(mc_params.supply_inflation, rng),
-        :payer_mix_shift => sample(mc_params.payer_mix_shift, rng),
-        :ma_penetration_growth => sample(mc_params.ma_penetration_growth, rng),
-        :staffing_turnover => sample(mc_params.staffing_turnover, rng),
-        :travel_nurse_premium => sample(mc_params.travel_nurse_premium, rng),
+        :volume_growth => volume_growth,
+        :cost_inflation => cost_inflation,
+        :salary_inflation => salary_inflation,
+        :supply_inflation => supply_inflation,
+        :reimbursement_adjustment => reimbursement_adjustment_base,  # Now included!
+        :payer_mix_shift => payer_mix_shift,
+        :ma_penetration_growth => ma_penetration_growth,
+        :staffing_turnover => staffing_turnover,
+        :travel_nurse_premium => travel_nurse_premium,
     )
 end
 

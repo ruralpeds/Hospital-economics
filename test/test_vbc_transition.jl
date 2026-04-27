@@ -51,7 +51,9 @@ include(joinpath(@__DIR__, "..", "src", "finance", "vbc_transition.jl"))
         @test !r.meets_minimum_savings
         @test r.shared_savings_payment == 0.0
         @test r.shared_loss_payment > 0.0
-        # raw_loss = 100_000 * 0.40 = 40_000; loss_cap = 1_000_000 * 0.15 = 150_000
+        # Calculation: raw_loss = |(-100_000)| * 0.40 = 40_000
+        # MSSP Enhanced loss_cap = 1_000_000 * 0.10 = 100_000
+        # shared_loss_payment = min(40_000, 100_000) = 40_000
         @test r.shared_loss_payment == 40_000.0
         @test r.net_vbc_income < 0.0
     end

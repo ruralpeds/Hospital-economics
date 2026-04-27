@@ -27,12 +27,29 @@ include(joinpath(@__DIR__, "..", "src", "finance", "ratios.jl"))
     end
 
     @testset "total_margin" begin
+        # Test 1: No financing costs (interest = 0)
         fin = AnnualFinancials(fiscal_year=2024, fiscal_year_end=Date(2024,12,31),
             total_revenue=12_000_000.0, total_operating_expenses=11_400_000.0)
+        # net_income = 12M - 11.4M - 0 = 0.6M; margin = 0.6M / 12M = 0.05
         @test total_margin(fin) ≈ 600_000.0 / 12_000_000.0
 
+        # Test 2: With financing costs (interest_expense)
+        fin_with_interest = AnnualFinancials(fiscal_year=2024, fiscal_year_end=Date(2024,12,31),
+            total_revenue=12_000_000.0, total_operating_expenses=11_400_000.0,
+            interest_expense=200_000.0)
+        # net_income = 12M - 11.4M - 0.2M = 0.4M; margin = 0.4M / 12M ≈ 0.0333
+        @test total_margin(fin_with_interest) ≈ 400_000.0 / 12_000_000.0
+
+        # Test 3: Zero revenue
         fin_zero = AnnualFinancials(fiscal_year=2024, fiscal_year_end=Date(2024,12,31))
         @test total_margin(fin_zero) == 0.0
+
+        # Test 4: Negative margin (operating loss exceeds interest)
+        fin_loss = AnnualFinancials(fiscal_year=2024, fiscal_year_end=Date(2024,12,31),
+            total_revenue=10_000_000.0, total_operating_expenses=10_500_000.0,
+            interest_expense=150_000.0)
+        # net_income = 10M - 10.5M - 0.15M = -0.65M; margin = -0.65M / 10M = -0.065
+        @test total_margin(fin_loss) ≈ -650_000.0 / 10_000_000.0
     end
 
     @testset "days_cash_on_hand" begin

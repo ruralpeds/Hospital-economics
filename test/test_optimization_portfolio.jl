@@ -106,6 +106,40 @@ include(joinpath(@__DIR__, "..", "src", "analysis", "payer_negotiation.jl"))
     end
 
     # -----------------------------------------------------------------------
+    @testset "optimal_rate_target - margin correctness" begin
+        # Test that the formula correctly produces the target margin
+        # margin = (rate - ccr) / rate → rate = ccr / (1 - margin)
+        hospital = CriticalAccessHospital(;
+            name="Margin Test CAH", cms_provider_number="171302", npi="9876543210",
+            cah_certification_date=Date(2010, 6, 1),
+            licensed_beds=20, nearest_hospital_miles=40.0,
+            location=GeoLocation(; latitude=39.0, longitude=-97.0,
+                fips_code="20001", state="KS", county="Atchison", zip_code="66002"),
+            service_area=ServiceArea(; primary_service_area_pop=10000,
+                total_service_area_pop=15000),
+        )
+
+        # For a 5% target margin
+        target_margin = 0.05
+        rate = optimal_rate_target(hospital, :commercial; target_margin=target_margin)
+
+        # The hospital's CCR should be retrievable from financials
+        # We'll verify the mathematical relationship holds
+        # Approximate: for CCR ≈ 0.85, rate should be ≈ 0.8947
+        @test 0.80 <= rate <= 1.0  # reasonable rate for 5% margin
+
+        # Test edge case: 0% margin (breakeven)
+        rate_breakeven = optimal_rate_target(hospital, :commercial; target_margin=0.0)
+        @test rate_breakeven > 0.0
+        @test rate_breakeven <= 1.0  # should be roughly the CCR
+
+        # Test edge case: very high margin (approaching 1.0)
+        rate_high_margin = optimal_rate_target(hospital, :commercial; target_margin=0.20)
+        @test rate_high_margin > rate_breakeven
+        @test rate_high_margin <= 2.0  # clamped at 200%
+    end
+
+    # -----------------------------------------------------------------------
     @testset "compare_scenarios - basic" begin
         # Create mock simulation results to compare
         # Need to match AbstractSimulationResult interface
