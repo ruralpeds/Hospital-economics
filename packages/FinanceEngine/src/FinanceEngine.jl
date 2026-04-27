@@ -35,6 +35,11 @@ include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
 include("budgeting.jl")
+include("accounting.jl")
+include("actuarial.jl")
+include("reimbursement.jl")
+include("forecasting.jl")
+include("cost_effectiveness.jl")
 
 # ── Infrastructure ────────────────────────────────────────────────────────
 include("performance_optimization.jl")
@@ -100,6 +105,43 @@ export preventive_care_roi, telehealth_cost_effectiveness,
 # Supply Chain (Ch. 13)
 export economic_order_quantity, safety_stock, inventory_turnover,
        pharmaceutical_cost_analysis, stockout_cost, vendor_scorecard
+
+# Accounting (Ch. 11)
+export income_statement, ebitda, ebitda_margin, total_margin,
+       operating_margin_hfma, operating_leverage, balance_sheet_ratios,
+       quick_ratio, debt_to_equity, equity_multiplier, cash_flow_indirect,
+       straight_line_depreciation, macrs_depreciation_schedule,
+       net_assets_change, fund_accounting_summary, charitable_community_benefit_rate
+
+# Actuarial (Ch. 12)
+export loss_development_factors, claims_triangle_development, ibnr_reserve,
+       hcc_prospective_score, pmpm_by_category, admin_expense_ratio,
+       premium_rate_development, community_rating_premium,
+       utilization_rate, admissions_per_thousand, ed_visits_per_thousand,
+       claim_frequency, claim_severity, pure_premium,
+       credibility_weight, blended_rate
+
+# Reimbursement (Ch. 13)
+export drg_payment, ms_drg_payment, apr_drg_payment, opps_apc_payment,
+       rvu_to_payment, rbrvs_payment, capitation_pmpm, pmpm_trend,
+       payer_contract_net, days_in_ar, denial_rate, clean_claim_rate,
+       gross_collection_rate, cash_collection_efficiency,
+       bad_debt_rate, charity_care_rate, uncompensated_care_rate,
+       revenue_cycle_scorecard
+
+# Forecasting (Ch. 14)
+export simple_exponential_smoothing, holt_double_exponential,
+       holt_winters_additive, weighted_moving_average,
+       seasonal_indices, deseasonalize, reseasonalize,
+       budget_variance, budget_variance_pct, flexible_budget_variance,
+       forecast_rmse, forecast_mape, forecast_bias
+
+# Cost-Effectiveness Analysis (Ch. 15)
+export markov_cohort, markov_cycle_traces, icer, cea_dominant,
+       net_monetary_benefit, willingness_to_pay_threshold,
+       daly, life_years_gained, qaly_adjusted_life_years,
+       budget_impact_analysis, decision_tree_ev,
+       probabilistic_sensitivity_analysis, tornado_diagram_inputs
 
 # Performance Optimization
 export ProfileResult, CacheLayer, parallelize_sweep, benchmark_abm, setup_worker_pool,
