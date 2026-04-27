@@ -341,5 +341,7 @@ include("audit_tests.jl")
     end
 end
 
+include("test_three_statement.jl")
+
 include("aqua_tests.jl")
 include("jet_tests.jl")

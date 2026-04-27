@@ -26,6 +26,7 @@ include("optimization.jl")
 include("financial_monitoring.jl")
 include("strategic_planning.jl")
 include("value_based_care.jl")
+include("three_statement.jl")
 
 # ── New healthcare economics domains ──────────────────────────────────────
 include("cost_accounting.jl")
@@ -47,6 +48,10 @@ include("undo_redo.jl")
 # Core Financial (Ch. 1)
 export npv, roi, operating_margin, cost_per_patient, break_even_units,
        payback_period, drg_revenue, weighted_payer_rate, net_collection_rate
+
+# Three-Statement Projection (Ch. 1b)
+export BalanceSheetSnapshot, ProjectionAssumptions, ThreeStatementProjection,
+       project_three_statement, bs_balances
 
 # Econometrics (Ch. 2)
 export simple_linear_regression, predict_linear, r_squared, mean_absolute_error
