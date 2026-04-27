@@ -251,19 +251,42 @@ end
     # -----------------------------------------------------------------------
     @testset "apply_bad_debt_adjustment" begin
         total_bad_debt = 100_000.0
-        result = apply_bad_debt_adjustment(total_bad_debt)
 
+        # Test 1: Standard hospital (65% reimbursement)
+        result = apply_bad_debt_adjustment(total_bad_debt)
         @test result.reimbursement > 0.0
         @test result.unreimbursed > 0.0
         @test isapprox(result.reimbursement + result.unreimbursed, total_bad_debt; rtol=0.01)
         @test isapprox(result.reimbursement, total_bad_debt * 0.65; rtol=0.01)
+        @test isapprox(result.unreimbursed, total_bad_debt * 0.35; rtol=0.01)
 
-        # CAH flag
+        # Test 2: CAH (cost-based, up to 101% capped at 100%)
         result_cah = apply_bad_debt_adjustment(total_bad_debt; is_cah=true)
-        @test result_cah.reimbursement > 0.0
+        # CAH should get 100% reimbursement (min(1.01, 1.0) = 1.0)
+        @test isapprox(result_cah.reimbursement, total_bad_debt * 1.0; rtol=0.01)
+        @test isapprox(result_cah.unreimbursed, 0.0; atol=1.0)  # Should be essentially zero
+        @test result_cah.reimbursement > result.reimbursement  # CAH gets more than standard
 
-        # Zero bad debt
+        # Test 3: Custom reimbursement rate
+        result_custom = apply_bad_debt_adjustment(total_bad_debt; reimbursement_rate=0.80)
+        @test isapprox(result_custom.reimbursement, total_bad_debt * 0.80; rtol=0.01)
+
+        # Test 4: CAH with custom rate (CAH overrides the custom rate)
+        result_cah_custom = apply_bad_debt_adjustment(total_bad_debt; reimbursement_rate=0.80, is_cah=true)
+        @test isapprox(result_cah_custom.reimbursement, total_bad_debt * 1.0; rtol=0.01)
+
+        # Test 5: Zero bad debt
         result_zero = apply_bad_debt_adjustment(0.0)
         @test result_zero.reimbursement == 0.0
+        @test result_zero.unreimbursed == 0.0
+
+        # Test 6: Large bad debt
+        large_bad_debt = 5_000_000.0
+        result_large = apply_bad_debt_adjustment(large_bad_debt)
+        @test isapprox(result_large.reimbursement, large_bad_debt * 0.65; rtol=0.01)
+
+        # Test 7: CAH with large bad debt
+        result_cah_large = apply_bad_debt_adjustment(large_bad_debt; is_cah=true)
+        @test isapprox(result_cah_large.reimbursement, large_bad_debt * 1.0; rtol=0.01)
     end
 end
