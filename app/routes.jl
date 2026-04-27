@@ -134,6 +134,11 @@ route("/dupont") do
     page(model, ui_dupont) |> html
 end
 
+route("/distress-scoring") do
+    model = distress_scoring_model |> init
+    page(model, ui_distress_scoring) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Strategic Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -355,6 +360,16 @@ route("/api/analytics/dupont", method=POST) do
         json(result)
     catch e
         _safe_error("DuPont decomposition", e)
+    end
+end
+
+route("/api/analytics/distress-scoring", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_distress_scoring(payload)
+        json(result)
+    catch e
+        _safe_error("Distress scoring", e)
     end
 end
 

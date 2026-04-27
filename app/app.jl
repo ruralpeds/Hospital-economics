@@ -72,6 +72,7 @@ include(joinpath(APP_ROOT, "views", "policy_impact", "PolicyImpactModel.jl"))
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "three_statement", "ThreeStatementModel.jl"))
 include(joinpath(APP_ROOT, "views", "dupont", "DuPontModel.jl"))
+include(joinpath(APP_ROOT, "views", "distress_scoring", "DistressScoringModel.jl"))
 
 # ---------------------------------------------------------------------------
 # Include reactive models — V3.1 modules
@@ -131,6 +132,7 @@ include(joinpath(APP_ROOT, "views", "policy_impact", "policy_impact.jl"))
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "three_statement", "three_statement.jl"))
 include(joinpath(APP_ROOT, "views", "dupont", "dupont.jl"))
+include(joinpath(APP_ROOT, "views", "distress_scoring", "distress_scoring.jl"))
 
 # ---------------------------------------------------------------------------
 # Include view functions — V3.1 modules

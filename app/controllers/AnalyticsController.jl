@@ -270,4 +270,105 @@ function handle_dupont(payload::Dict)::Dict
     end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Distress Scoring (Altman Z″ + Beneish M)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_distress_scoring(payload::Dict)::Dict
+
+API handler for Altman Z″ and Beneish M-score distress analysis.
+"""
+function handle_distress_scoring(payload::Dict)::Dict
+    try
+        # Extract financials (current and prior year)
+        fin_curr = (
+            total_operating_revenue = Float64(get(payload, "revenue_current", 20_000_000.0)),
+            total_operating_expenses = Float64(get(payload, "expenses_current", 19_000_000.0)),
+            ebit = Float64(get(payload, "ebit_current", 1_000_000.0)),
+            interest_expense = Float64(get(payload, "interest_current", 500_000.0)),
+            ebt = Float64(get(payload, "ebt_current", 500_000.0)),
+            net_income = Float64(get(payload, "ni_current", 500_000.0)),
+            depreciation = Float64(get(payload, "depr_current", 500_000.0))
+        )
+
+        fin_prior = (
+            total_operating_revenue = Float64(get(payload, "revenue_prior", 19_500_000.0)),
+            total_operating_expenses = Float64(get(payload, "expenses_prior", 18_500_000.0)),
+            ebit = Float64(get(payload, "ebit_prior", 1_000_000.0)),
+            interest_expense = Float64(get(payload, "interest_prior", 500_000.0)),
+            ebt = Float64(get(payload, "ebt_prior", 500_000.0)),
+            net_income = Float64(get(payload, "ni_prior", 500_000.0)),
+            depreciation = Float64(get(payload, "depr_prior", 500_000.0))
+        )
+
+        # Extract BS (simplified to key fields)
+        bs_curr = BalanceSheetSnapshot(
+            as_of_date = today(),
+            cash_and_equivalents = Float64(get(payload, "cash_curr", 2_000_000.0)),
+            accounts_receivable_net = Float64(get(payload, "ar_curr", 3_000_000.0)),
+            inventory = Float64(get(payload, "inv_curr", 500_000.0)),
+            short_term_investments = Float64(get(payload, "sti_curr", 1_000_000.0)),
+            gross_ppe = Float64(get(payload, "ppe_gross_curr", 50_000_000.0)),
+            accumulated_depreciation = Float64(get(payload, "depr_accum_curr", 10_000_000.0)),
+            long_term_investments = Float64(get(payload, "lti_curr", 5_000_000.0)),
+            accounts_payable = Float64(get(payload, "ap_curr", 2_000_000.0)),
+            accrued_expenses = Float64(get(payload, "accrued_curr", 1_000_000.0)),
+            current_portion_lt_debt = Float64(get(payload, "cpltd_curr", 500_000.0)),
+            long_term_debt = Float64(get(payload, "ltd_curr", 20_000_000.0)),
+            net_assets_unrestricted = Float64(get(payload, "na_curr", 25_000_000.0))
+        )
+
+        bs_prior = BalanceSheetSnapshot(
+            as_of_date = today() - Year(1),
+            cash_and_equivalents = Float64(get(payload, "cash_prior", 2_000_000.0)),
+            accounts_receivable_net = Float64(get(payload, "ar_prior", 3_000_000.0)),
+            inventory = Float64(get(payload, "inv_prior", 500_000.0)),
+            short_term_investments = Float64(get(payload, "sti_prior", 1_000_000.0)),
+            gross_ppe = Float64(get(payload, "ppe_gross_prior", 50_000_000.0)),
+            accumulated_depreciation = Float64(get(payload, "depr_accum_prior", 9_500_000.0)),
+            long_term_investments = Float64(get(payload, "lti_prior", 5_000_000.0)),
+            accounts_payable = Float64(get(payload, "ap_prior", 2_000_000.0)),
+            accrued_expenses = Float64(get(payload, "accrued_prior", 1_000_000.0)),
+            current_portion_lt_debt = Float64(get(payload, "cpltd_prior", 500_000.0)),
+            long_term_debt = Float64(get(payload, "ltd_prior", 20_500_000.0)),
+            net_assets_unrestricted = Float64(get(payload, "na_prior", 24_500_000.0))
+        )
+
+        # Compute scores
+        z_score = altman_z_double_prime(fin_curr, bs_curr)
+        m_score = beneish_m_score(fin_curr, fin_prior, bs_curr, bs_prior)
+
+        return Dict(
+            "status" => "success",
+            "altman" => Dict(
+                "z_double_prime" => round(z_score.z_double_prime, digits=4),
+                "band" => String(z_score.band),
+                "x1" => round(z_score.x1_working_capital_ratio, digits=4),
+                "x2" => round(z_score.x2_retained_earnings_ratio, digits=4),
+                "x3" => round(z_score.x3_ebit_ratio, digits=4),
+                "x4" => round(z_score.x4_equity_ratio, digits=4)
+            ),
+            "beneish" => Dict(
+                "m_score" => round(m_score.m_score, digits=4),
+                "flag_manipulation" => m_score.flag_manipulation,
+                "dsri" => round(m_score.dsri, digits=4),
+                "gmi" => round(m_score.gmi, digits=4),
+                "aqi" => round(m_score.aqi, digits=4),
+                "sgi" => round(m_score.sgi, digits=4),
+                "depi" => round(m_score.depi, digits=4),
+                "sgai" => round(m_score.sgai, digits=4),
+                "lvgi" => round(m_score.lvgi, digits=4),
+                "tata" => round(m_score.tata, digits=6)
+            )
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end  # module AnalyticsController
+
