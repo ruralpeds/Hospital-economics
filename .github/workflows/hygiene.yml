@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 6 * * *'   # 06:00 UTC daily
   workflow_dispatch:       # allow manual runs from the Actions tab
+  pull_request:            # also check on PRs
+  push:                    # also check on push
 
 permissions:
   issues: write
@@ -11,6 +13,31 @@ permissions:
   contents: write
 
 jobs:
+  check-file-dupes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for macOS dupe files
+        run: |
+          DUPES=$(find . -type f -not -path './.git/*' -regextype posix-extended -regex '.* [234]\..*' | wc -l)
+          if [ "$DUPES" -gt 0 ]; then
+            echo "❌ Found $DUPES duplicate files (macOS Finder artifacts)"
+            find . -type f -not -path './.git/*' -regextype posix-extended -regex '.* [234]\..*' | head -10
+            exit 1
+          fi
+          echo "✓ No macOS duplicate files found"
+
+      - name: Check for dummy.jl placeholders
+        run: |
+          DUMMIES=$(find . -type f -name 'dummy.jl' -not -path './.git/*' | wc -l)
+          if [ "$DUMMIES" -gt 0 ]; then
+            echo "❌ Found $DUMMIES dummy.jl placeholder files"
+            find . -type f -name 'dummy.jl' -not -path './.git/*'
+            exit 1
+          fi
+          echo "✓ No dummy.jl placeholder files found"
+
   stale:
     runs-on: ubuntu-latest
     steps:
