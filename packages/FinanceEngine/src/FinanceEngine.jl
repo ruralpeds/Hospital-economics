@@ -20,6 +20,7 @@ using LinearAlgebra
 
 # ── Core engines ──────────────────────────────────────────────────────────
 include("financial.jl")
+include("dupont.jl")
 include("econometrics.jl")
 include("simulation.jl")
 include("optimization.jl")
@@ -48,6 +49,9 @@ include("undo_redo.jl")
 # Core Financial (Ch. 1)
 export npv, roi, operating_margin, cost_per_patient, break_even_units,
        payback_period, drg_revenue, weighted_payer_rate, net_collection_rate
+
+# DuPont Decomposition (Ch. 1a)
+export DuPont3Factor, DuPont5Factor, dupont_3factor, dupont_5factor
 
 # Three-Statement Projection (Ch. 1b)
 export BalanceSheetSnapshot, ProjectionAssumptions, ThreeStatementProjection,
