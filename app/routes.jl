@@ -124,6 +124,11 @@ route("/benchmark") do
     page(model, ui_benchmark) |> html
 end
 
+route("/three-statement") do
+    model = three_statement_model |> init
+    page(model, ui_three_statement) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Strategic Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -321,6 +326,20 @@ route("/api/conversion", method=POST) do
         json(result)
     catch e
         _safe_error("REH conversion analysis", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — MBA Analytics (delegated to AnalyticsController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/analytics/three-statement", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_three_statement(payload)
+        json(result)
+    catch e
+        _safe_error("Three-statement projection", e)
     end
 end
 
