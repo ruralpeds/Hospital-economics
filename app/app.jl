@@ -71,6 +71,7 @@ include(joinpath(APP_ROOT, "views", "policy_impact", "PolicyImpactModel.jl"))
 # Include reactive models — MBA Analytics (M1 Starter)
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "three_statement", "ThreeStatementModel.jl"))
+include(joinpath(APP_ROOT, "views", "dupont", "DuPontModel.jl"))
 
 # ---------------------------------------------------------------------------
 # Include reactive models — V3.1 modules
@@ -129,6 +130,7 @@ include(joinpath(APP_ROOT, "views", "policy_impact", "policy_impact.jl"))
 # Include view functions — MBA Analytics (M1 Starter)
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "three_statement", "three_statement.jl"))
+include(joinpath(APP_ROOT, "views", "dupont", "dupont.jl"))
 
 # ---------------------------------------------------------------------------
 # Include view functions — V3.1 modules

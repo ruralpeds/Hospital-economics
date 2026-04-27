@@ -165,4 +165,109 @@ function handle_three_statement(payload::Dict)::Dict
     end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# DuPont Decomposition
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_dupont(payload::Dict)::Dict
+
+API handler for DuPont decomposition.
+
+Expected payload keys:
+  - baseline_revenue: Float64
+  - ebit: Float64
+  - interest_expense: Float64
+  - ebt: Float64
+  - net_income: Float64
+  - bs_cash, bs_ar, bs_inventory, bs_gross_ppe, bs_accumulated_depr, etc.
+  - tax_exempt: Bool
+
+Returns a Dict with 3-factor and 5-factor DuPont results.
+"""
+function handle_dupont(payload::Dict)::Dict
+    try
+        # Extract financials
+        baseline_revenue = Float64(get(payload, "baseline_revenue", 20_000_000.0))
+        ebit = Float64(get(payload, "ebit", 1_000_000.0))
+        interest_expense = Float64(get(payload, "interest_expense", 500_000.0))
+        ebt = Float64(get(payload, "ebt", ebit - interest_expense))
+        net_income = Float64(get(payload, "net_income", ebt))
+        tax_exempt = Bool(get(payload, "tax_exempt", true))
+
+        # Extract balance sheet
+        bs_cash = Float64(get(payload, "bs_cash", 2_000_000.0))
+        bs_short_term_inv = Float64(get(payload, "bs_short_term_inv", 1_000_000.0))
+        bs_ar = Float64(get(payload, "bs_ar", 3_000_000.0))
+        bs_inventory = Float64(get(payload, "bs_inventory", 500_000.0))
+        bs_gross_ppe = Float64(get(payload, "bs_gross_ppe", 50_000_000.0))
+        bs_accumulated_depr = Float64(get(payload, "bs_accumulated_depr", 10_000_000.0))
+        bs_lt_inv = Float64(get(payload, "bs_lt_inv", 5_000_000.0))
+        bs_ap = Float64(get(payload, "bs_ap", 2_000_000.0))
+        bs_accrued_exp = Float64(get(payload, "bs_accrued_exp", 1_000_000.0))
+        bs_cp_debt = Float64(get(payload, "bs_cp_debt", 500_000.0))
+        bs_lt_debt = Float64(get(payload, "bs_lt_debt", 20_000_000.0))
+        bs_net_assets = Float64(get(payload, "bs_net_assets", 25_000_000.0))
+
+        # Build financials NamedTuple
+        financials = (
+            total_operating_revenue = baseline_revenue,
+            ebit = ebit,
+            interest_expense = interest_expense,
+            ebt = ebt,
+            net_income = net_income
+        )
+
+        # Build balance sheet
+        bs = BalanceSheetSnapshot(
+            as_of_date = today(),
+            cash_and_equivalents = bs_cash,
+            short_term_investments = bs_short_term_inv,
+            accounts_receivable_net = bs_ar,
+            inventory = bs_inventory,
+            gross_ppe = bs_gross_ppe,
+            accumulated_depreciation = bs_accumulated_depr,
+            long_term_investments = bs_lt_inv,
+            accounts_payable = bs_ap,
+            accrued_expenses = bs_accrued_exp,
+            current_portion_lt_debt = bs_cp_debt,
+            long_term_debt = bs_lt_debt,
+            net_assets_unrestricted = bs_net_assets
+        )
+
+        # Compute DuPont decompositions
+        dp3 = dupont_3factor(financials, bs)
+        dp5 = dupont_5factor(financials, bs, tax_exempt=tax_exempt)
+
+        # Format response
+        return Dict(
+            "status" => "success",
+            "three_factor" => Dict(
+                "net_profit_margin" => round(dp3.net_profit_margin, digits=6),
+                "asset_turnover" => round(dp3.asset_turnover, digits=4),
+                "equity_multiplier" => round(dp3.equity_multiplier, digits=4),
+                "return_on_net_assets" => round(dp3.return_on_net_assets, digits=6)
+            ),
+            "five_factor" => Dict(
+                "operating_margin" => round(dp5.operating_margin, digits=6),
+                "asset_turnover" => round(dp5.asset_turnover, digits=4),
+                "equity_multiplier" => round(dp5.equity_multiplier, digits=4),
+                "interest_burden" => round(dp5.interest_burden, digits=6),
+                "tax_burden" => round(dp5.tax_burden, digits=6),
+                "return_on_net_assets" => round(dp5.return_on_net_assets, digits=6)
+            ),
+            "metadata" => Dict(
+                "tax_exempt" => tax_exempt,
+                "revenue" => round(baseline_revenue, digits=2),
+                "net_income" => round(net_income, digits=2)
+            )
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end  # module AnalyticsController

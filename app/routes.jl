@@ -129,6 +129,11 @@ route("/three-statement") do
     page(model, ui_three_statement) |> html
 end
 
+route("/dupont") do
+    model = dupont_model |> init
+    page(model, ui_dupont) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Strategic Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -340,6 +345,16 @@ route("/api/analytics/three-statement", method=POST) do
         json(result)
     catch e
         _safe_error("Three-statement projection", e)
+    end
+end
+
+route("/api/analytics/dupont", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_dupont(payload)
+        json(result)
+    catch e
+        _safe_error("DuPont decomposition", e)
     end
 end
 
