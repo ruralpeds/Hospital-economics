@@ -153,30 +153,39 @@ required for the hospital to achieve the given operating margin target on
 that payer's volume.
 
 The calculation uses the hospital's most recent `AnnualFinancials` to
-determine the cost-to-charge ratio, then solves for the rate that produces
-the target margin:
+determine the cost-to-charge ratio (CCR), then solves for the rate that
+produces the target margin. The rate is derived from:
 
-    rate = CCR × (1 + target_margin)
+    margin = (rate - CCR) / rate
+
+Solving for rate:
+
+    rate = CCR / (1 - margin)
 
 where CCR = total_operating_expenses / gross_patient_revenue.
 
 If the hospital has a `payer_mix` with a matching contract, the payer's
-volume share is used to weight the result.  Otherwise the blended CCR is
-returned directly.
+cost characteristics are factored in via an adjustment multiplier
+(e.g., Medicare 0.95x, Medicaid 0.93x, Commercial 1.05x).
 
 # Arguments
 - `hospital::AbstractHospital`: hospital entity with financial data.
 - `payer_type::Symbol`: one of `:medicare`, `:medicaid`, `:commercial`, `:self_pay`, etc.
-- `target_margin::Float64`: desired operating margin (0.0 = breakeven).
+- `target_margin::Float64`: desired operating margin (0.0 = breakeven, 0.05 = 5%).
 
 # Returns
-The required reimbursement rate as a fraction of charges.
+The required reimbursement rate as a fraction of charges, clamped to [0.0, 2.0].
 
 # Example
 ```julia
 rate = optimal_rate_target(my_cah, :commercial; target_margin=0.03)
 println("Need ", round(rate * 100, digits=1), "% of charges to hit 3% margin")
 ```
+
+# Mathematical Validation
+For CCR = 0.85 and target_margin = 0.05:
+  rate = 0.85 / (1 - 0.05) = 0.85 / 0.95 ≈ 0.8947
+  Actual margin = (0.8947 - 0.85) / 0.8947 ≈ 0.05 ✓
 """
 function optimal_rate_target(hospital::AbstractHospital, payer_type::Symbol;
                              target_margin::Float64=0.0)::Float64
@@ -215,8 +224,13 @@ function optimal_rate_target(hospital::AbstractHospital, payer_type::Symbol;
         end
     end
 
-    # Required rate: costs * (1 + margin) expressed as fraction of charges
-    required_rate = ccr * (1.0 + target_margin)
+    # Required rate: CCR / (1 - margin) expressed as fraction of charges
+    # Derivation: margin = (rate - ccr) / rate → rate = ccr / (1 - margin)
+    required_rate = if target_margin >= 1.0
+        2.0  # mathematically undefined; return maximum plausible rate
+    else
+        ccr / (1.0 - target_margin)
+    end
 
     return clamp(required_rate, 0.0, 2.0)  # sanity cap at 200% of charges
 end
