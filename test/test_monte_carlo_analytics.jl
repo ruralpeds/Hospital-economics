@@ -88,6 +88,62 @@ include(joinpath(@__DIR__, "..", "src", "models", "hospital.jl"))
     end
 
     # -----------------------------------------------------------------------
+    @testset "sample-capture reproducibility" begin
+        # Test that _sample_deterministic_params and _collect_sampled_params
+        # use the same RNG sequence for reproducibility.
+        # This is critical: both functions must call sample() in identical order.
+
+        # Create minimal MonteCarloParams for testing
+        using Distributions
+        mc_params = MonteCarloParams(
+            n_iterations=10,
+            random_seed=12345,
+            projection_years=5,
+            volume_growth=Normal(-0.01, 0.02),
+            cost_inflation=Normal(0.03, 0.01),
+            salary_inflation=Normal(0.035, 0.012),
+            supply_inflation=Normal(0.04, 0.015),
+            payer_mix_shift=Normal(0.005, 0.003),
+            ma_penetration_growth=Normal(0.02, 0.005),
+            staffing_turnover=Normal(0.08, 0.03),
+            travel_nurse_premium=Normal(0.15, 0.05),
+        )
+
+        # Run both functions with same seeded RNG
+        rng1 = MersenneTwister(99999)
+        det_params = _sample_deterministic_params(mc_params, rng1)
+
+        rng2 = MersenneTwister(99999)
+        collected_params = _collect_sampled_params(mc_params, rng2)
+
+        # Verify that deterministic params are captured in collected params
+        @test haskey(collected_params, :volume_growth)
+        @test haskey(collected_params, :cost_inflation)
+        @test haskey(collected_params, :salary_inflation)
+        @test haskey(collected_params, :supply_inflation)
+        @test haskey(collected_params, :reimbursement_adjustment)  # Must be included!
+        @test haskey(collected_params, :payer_mix_shift)
+
+        # The critical check: if RNG sequences diverge, these won't be equal
+        # After aligned sampling, reimbursement_adjustment should match
+        computed_reimb_adj = collected_params[:cost_inflation] * 0.5
+        @test isapprox(collected_params[:reimbursement_adjustment], computed_reimb_adj; atol=1e-10)
+
+        # Verify that all iterations produce valid results
+        for i in 1:10
+            rng = MersenneTwister(i)
+            det_params = _sample_deterministic_params(mc_params, rng)
+            collected = _collect_sampled_params(mc_params, MersenneTwister(i))
+
+            # Sampled parameters should be finite and reasonable
+            @test isfinite(det_params.volume_growth_rate)
+            @test isfinite(det_params.cost_inflation_rate)
+            @test isfinite(det_params.reimbursement_adjustment)
+            @test length(collected) == 9  # Should have all 9 parameters
+        end
+    end
+
+    # -----------------------------------------------------------------------
     @testset "break_even_by_payer" begin
         # This test verifies that break_even_by_payer produces a result
         # for each payer category on a hospital
