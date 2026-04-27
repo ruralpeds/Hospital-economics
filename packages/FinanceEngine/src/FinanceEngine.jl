@@ -21,6 +21,7 @@ using LinearAlgebra
 # ── Core engines ──────────────────────────────────────────────────────────
 include("financial.jl")
 include("dupont.jl")
+include("distress_scoring.jl")
 include("econometrics.jl")
 include("simulation.jl")
 include("optimization.jl")
@@ -52,6 +53,9 @@ export npv, roi, operating_margin, cost_per_patient, break_even_units,
 
 # DuPont Decomposition (Ch. 1a)
 export DuPont3Factor, DuPont5Factor, dupont_3factor, dupont_5factor
+
+# Distress Scoring (Ch. 1c)
+export AltmanZScore, BeneishMScore, altman_z_double_prime, beneish_m_score
 
 # Three-Statement Projection (Ch. 1b)
 export BalanceSheetSnapshot, ProjectionAssumptions, ThreeStatementProjection,
