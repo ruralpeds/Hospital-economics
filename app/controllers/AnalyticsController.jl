@@ -11,6 +11,7 @@ module AnalyticsController
 using JSON3, Dates
 using ...RuralHospitalSim
 using FinanceEngine
+include(joinpath(@__DIR__, "..", "..", "src", "data_ingestion", "hcris_importer.jl"))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Three-Statement Projection
@@ -370,5 +371,57 @@ function handle_distress_scoring(payload::Dict)::Dict
     end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# HCRIS Auto-Import
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_hcris_import(payload::Dict)::Dict
+
+API handler for HCRIS auto-import by CCN.
+"""
+function handle_hcris_import(payload::Dict)::Dict
+    try
+        ccn = String(get(payload, "ccn", ""))
+        fiscal_year = Int(get(payload, "fiscal_year", Dates.year(today())))
+
+        isempty(ccn) && throw(ArgumentError("CCN is required"))
+
+        # Import from HCRIS
+        result = import_hcris(ccn, fiscal_year)
+
+        return Dict(
+            "status" => "success",
+            "ccn" => ccn,
+            "fiscal_year" => fiscal_year,
+            "financials" => Dict(
+                "total_operating_revenue" => result.financials.total_operating_revenue,
+                "total_operating_expenses" => result.financials.total_operating_expenses,
+                "operating_income" => result.financials.operating_income,
+                "net_assets" => result.financials.net_assets,
+                "current_ratio" => result.financials.current_ratio,
+                "days_cash_on_hand" => result.financials.days_cash_on_hand,
+                "inpatient_discharges" => result.financials.inpatient_discharges,
+                "ed_visits" => result.financials.ed_visits
+            ),
+            "balance_sheet" => Dict(
+                "total_assets" => (result.balance_sheet.cash_and_equivalents +
+                                   result.balance_sheet.accounts_receivable_net +
+                                   result.balance_sheet.gross_ppe - result.balance_sheet.accumulated_depreciation),
+                "total_liabilities" => (result.balance_sheet.accounts_payable +
+                                        result.balance_sheet.long_term_debt),
+                "net_assets" => result.balance_sheet.net_assets_unrestricted
+            ),
+            "metadata" => result.metadata
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end  # module AnalyticsController
+
 

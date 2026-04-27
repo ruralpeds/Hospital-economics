@@ -373,6 +373,16 @@ route("/api/analytics/distress-scoring", method=POST) do
     end
 end
 
+route("/api/import/hcris-auto", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_hcris_import(payload)
+        json(result)
+    catch e
+        _safe_error("HCRIS import", e)
+    end
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Data Import/Export (delegated to DataController)
 # ═══════════════════════════════════════════════════════════════════════════
