@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.schema.json",
+
+  "model": "ollama/gemma4:27b",
+
+  "providers": {
+    "ollama": {
+      "name": "Ollama (local)",
+      "baseURL": "http://127.0.0.1:11434/v1"
+    }
+  },
+
+  "autoshare": false,
+  "theme": "opencode",
+
+  "instructions": [
+    "You are working on the **Rural Hospital Economics Platform** (ruralpeds/Hospital-economics).",
+    "Stack: Julia 1.11, Genie/Stipple web framework, SearchLight ORM (PostgreSQL), JuMP/HiGHS optimisation, ABM/DES/MC simulation.",
+    "Two internal packages: packages/FinanceEngine (CFO analytics) and packages/RuralCore (auth, audit, config).",
+    "All tests run with: julia --compiled-modules=no --startup-file=no --project=. test/TESTFILE.jl",
+    "Build commands: make deps (install), make run (dev server on :8000), make test (full suite), make lint (Aqua.jl).",
+    "CSS uses CSS custom properties (var(--color-*), var(--space-*)) — never raw hex codes.",
+    "Use html_escape() from app/components/common.jl for all user strings interpolated into HTML.",
+    "Use _safe_href() from app/components/common.jl for href attributes to prevent javascript: URI injection.",
+    "New analytics modules follow the four-artifact rule: (1) src/ or packages/ function/struct, (2) Genie route + controller method, (3) Stipple reactive view in app/views/<name>/, (4) tests in test/.",
+    "P0 open gaps to address first: MIPS/VBP/HRRP/HACRP scoring (E-06), treasury 13-week cash model (A-09), service-line Markowitz portfolio (B-03), DEA efficiency frontier (C-01), board PDF packet generator (F-01), HCRIS CLI importer (F-06), real-options valuation (A-06), nonprofit WACC/MADS/synthetic-rating (A-04).",
+    "Full gap list and architecture spec: MBA_GAP_ANALYSIS_2026.md.",
+    "Julia packages in Project.toml are declared but some may not be installed in the current environment; use stdlib fallbacks (Statistics, Printf, Dates, Random, UUIDs) when external packages are unavailable.",
+    "MultiLevelPolicyCoupling.simulate_policy_coupling! requires enrollment as Float64, not Int."
+  ],
+
+  "keybindings": {
+    "leader": "ctrl+x"
+  }
+}
