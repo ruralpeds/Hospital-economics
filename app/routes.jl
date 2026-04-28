@@ -687,50 +687,6 @@ route("/api/analytics/rhc-optimization", method=POST) do
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
-# API Routes — MBA Analytics (delegated to AnalyticsController)
-# ═══════════════════════════════════════════════════════════════════════════
-
-route("/api/analytics/three-statement", method=POST) do
-    try
-        payload = jsonpayload()
-        result = AnalyticsController.handle_three_statement(payload)
-        json(result)
-    catch e
-        _safe_error("Three-statement projection", e)
-    end
-end
-
-route("/api/analytics/dupont", method=POST) do
-    try
-        payload = jsonpayload()
-        result = AnalyticsController.handle_dupont(payload)
-        json(result)
-    catch e
-        _safe_error("DuPont decomposition", e)
-    end
-end
-
-route("/api/analytics/distress-scoring", method=POST) do
-    try
-        payload = jsonpayload()
-        result = AnalyticsController.handle_distress_scoring(payload)
-        json(result)
-    catch e
-        _safe_error("Distress scoring", e)
-    end
-end
-
-route("/api/import/hcris-auto", method=POST) do
-    try
-        payload = jsonpayload()
-        result = AnalyticsController.handle_hcris_import(payload)
-        json(result)
-    catch e
-        _safe_error("HCRIS import", e)
-    end
-end
-
-# ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Data Import/Export (delegated to DataController)
 # ═══════════════════════════════════════════════════════════════════════════
 
