@@ -532,6 +532,3 @@ end
     end
 end
 
-println("\n" * "="^60)
-println("Upload Component Tests — Complete")
-println("="^60)
