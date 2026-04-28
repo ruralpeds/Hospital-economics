@@ -1,5 +1,42 @@
 # Hospital Economics Platform - CHANGELOG
 
+## v1.1 (2026-04-25) - Phase 4A: Advanced Analytics & Comparative Effectiveness
+
+### 🚀 New Features
+
+#### Phase 4A: Advanced Analytics (72 tests)
+- **AdvancedAnalytics.jl** — Machine learning capabilities for patient risk management:
+  - `ReadmissionRiskModel`: Logistic regression for 30-day readmission prediction (GLM.jl)
+  - `AnomalyDetectionResult`: Cost outlier detection using z-score and IQR methods
+  - `RiskStratificationResult`: Multi-dimensional risk scoring (40% readmission + 30% cost anomaly + 30% complication)
+  - Key functions: `build_readmission_model()`, `predict_readmission_risk()`, `build_anomaly_detector()`, `detect_cost_anomalies()`, `stratify_patient_risk()`, `generate_risk_report()`
+  - Risk categories: Low (<0.33), Medium (0.33–0.67), High (>0.67)
+
+#### Module 6: Comparative Effectiveness & Health Economics (86 tests)
+- **CostEffectivenessAnalysis.jl** — Core CE framework: ICER, NMB, dominance classification (Dominant / Dominated / Incremental)
+- **QualYCalculator.jl** — QALY calculations with utility weighting and quality-adjusted survival curves
+- **SensitivityAnalysis.jl** — Tornado plots, one-way and multi-way sensitivity analysis
+- **ThresholdAnalysis.jl** — Willingness-to-pay threshold analysis across WTP ranges
+- **ComparativeEffectiveness.jl** — Multi-strategy comparison framework for contract and intervention evaluation
+
+### 📊 Test Coverage Update
+| Phase | Tests | Cumulative |
+|-------|-------|------------|
+| Phase 1 (Foundation) | 276+ | 276+ |
+| Phase 2 (Network & Optimization) | 107+ | 383+ |
+| Phase 3 (Policy & Release) | 262+ | 645+ |
+| Phase 4A (Advanced Analytics) | 72 | 717+ |
+| Module 6 (Comparative Effectiveness) | 54 | 771+ |
+| Module 6 Integration | 32 | **803+** |
+
+### 🔧 Dependencies Added
+- `GLM.jl` — Generalized linear models for logistic regression
+
+### 📄 Documentation Added
+- `MODULE_6_COMPARATIVE_EFFECTIVENESS.md` — Complete guide for the comparative effectiveness module
+
+---
+
 ## v1.0 (2026-04-20) - Production Release
 
 ### 🚀 Major Features
@@ -144,7 +181,7 @@ Please report bugs and feature requests via GitHub Issues.
 
 ## Future Versions
 
-- **v1.1** (Q2 2026): Advanced analytics and machine learning
-- **v1.2** (Q3 2026): Web-based user interface
-- **v2.0** (Q4 2026): Real-time data integration and clinical coupling
+- **v1.2** (Q3 2026): Web-based user interface and interactive dashboards
+- **v1.3** (Q3 2026): Data integration with CMS HCRIS and state Medicaid claims
+- **v2.0** (Q4 2026): Real-time data integration and clinical coupling (PedNeoSim.jl)
 
