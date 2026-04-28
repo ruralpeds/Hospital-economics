@@ -11,17 +11,6 @@ using Stipple, StippleUI, StipplePlotly
 using Logging, Dates
 
 # ---------------------------------------------------------------------------
-# Reusable component library  (app/components/)
-# ---------------------------------------------------------------------------
-include(joinpath(APP_ROOT, "components", "form_grid.jl"))
-include(joinpath(APP_ROOT, "components", "result_table.jl"))
-include(joinpath(APP_ROOT, "components", "plot_panel.jl"))
-include(joinpath(APP_ROOT, "components", "export_bar.jl"))
-include(joinpath(APP_ROOT, "components", "cohort_picker.jl"))
-include(joinpath(APP_ROOT, "components", "scenario_picker.jl"))
-include(joinpath(APP_ROOT, "components", "audit_log_viewer.jl"))
-
-# ---------------------------------------------------------------------------
 # Bootstrap helpers
 # ---------------------------------------------------------------------------
 const APP_ROOT = @__DIR__
@@ -34,6 +23,17 @@ function load_config()
     isfile(init_path) && include(init_path)
     @info "Loaded configuration for environment: $env"
 end
+
+# ---------------------------------------------------------------------------
+# Reusable component library  (app/components/)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "form_grid.jl"))
+include(joinpath(APP_ROOT, "components", "result_table.jl"))
+include(joinpath(APP_ROOT, "components", "plot_panel.jl"))
+include(joinpath(APP_ROOT, "components", "export_bar.jl"))
+include(joinpath(APP_ROOT, "components", "cohort_picker.jl"))
+include(joinpath(APP_ROOT, "components", "scenario_picker.jl"))
+include(joinpath(APP_ROOT, "components", "audit_log_viewer.jl"))
 
 # ---------------------------------------------------------------------------
 # Include shared layout
