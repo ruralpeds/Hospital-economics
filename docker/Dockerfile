@@ -8,9 +8,11 @@ FROM julia:1.11-bookworm AS builder
 
 WORKDIR /app
 
-# Copy project files first for better layer caching
+# Copy project files first for better layer caching.
+# Manifest.toml is not committed — Pkg.instantiate() resolves from
+# Project.toml. Do NOT use `COPY Manifest.toml* .`: Docker's COPY errors
+# when a wildcard matches zero files, which broke CI on every PR.
 COPY Project.toml .
-COPY Manifest.toml* .
 
 # Install dependencies
 RUN julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
