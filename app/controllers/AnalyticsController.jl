@@ -586,6 +586,132 @@ function handle_capex_ranking(payload::Dict)::Dict
     end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# A-07: VBC Bayesian Scenario Modeling
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_vbc_bayesian(payload::Dict) -> Dict
+
+API handler for VBC Bayesian posterior sampling.
+
+Expected payload:
+  - scenario: Dict with name, scenario_type, shared_savings_rate, risk_bearing
+  - historical_savings: Vector of annual savings values
+
+Returns posterior statistics and visualization data.
+"""
+function handle_vbc_bayesian(payload::Dict)::Dict
+    try
+        scenario_data = get(payload, "scenario", Dict())
+        historical_savings = Float64.(get(payload, "historical_savings", [100_000.0]))
+
+        # Build VBC scenario
+        scenario = VBCScenario(
+            name = String(get(scenario_data, "name", "Unknown")),
+            scenario_type = Symbol(lowercase(get(scenario_data, "scenario_type", "aco"))),
+            shared_savings_rate = Float64(get(scenario_data, "shared_savings_rate", 0.50)),
+            risk_bearing = Float64(get(scenario_data, "risk_bearing", 0.30))
+        )
+
+        # Sample posterior
+        post = sample_vbc_posterior(scenario, historical_savings; n_iterations=1000, seed=42)
+
+        return Dict(
+            "status" => "ok",
+            "scenario_name" => post.scenario_name,
+            "scenario_type" => string(post.scenario_type),
+            "posterior_mean_savings" => post.posterior_mean_savings,
+            "posterior_std" => post.posterior_std,
+            "ci_lower" => post.credible_interval_lower,
+            "ci_upper" => post.credible_interval_upper,
+            "prob_positive" => post.prob_positive_savings,
+            "prior_mean" => post.prior_mean,
+            "prior_std" => post.prior_std,
+            "n_iterations" => post.n_iterations,
+            "convergence_rhat" => post.convergence_rhat
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+"""
+    handle_vbc_compare_scenarios(payload::Dict) -> Dict
+
+API handler for comparing multiple VBC scenarios.
+
+Expected payload:
+  - scenarios: Vector of scenario dicts
+
+Returns ranked scenarios with posteriors.
+"""
+function handle_vbc_compare_scenarios(payload::Dict)::Dict
+    try
+        scenarios_data = get(payload, "scenarios", [])
+        if isempty(scenarios_data)
+            return Dict(
+                "status" => "error",
+                "message" => "No scenarios provided"
+            )
+        end
+
+        # Build VBC scenarios
+        scenarios = [
+            VBCScenario(
+                name = String(get(s, "name", "Unknown")),
+                scenario_type = Symbol(lowercase(get(s, "scenario_type", "aco"))),
+                shared_savings_rate = Float64(get(s, "shared_savings_rate", 0.50)),
+                risk_bearing = Float64(get(s, "risk_bearing", 0.30))
+            )
+            for s in scenarios_data
+        ]
+
+        # Build historical data dict (default if not provided)
+        historical_dict = Dict(
+            scenario.name => [
+                Float64(get(s, "historical_savings", [100_000.0, 110_000.0]))[1]
+            ]
+            for (s, scenario) in zip(scenarios_data, scenarios)
+        )
+
+        # Compare scenarios
+        ranking_df = compare_scenarios(scenarios, historical_dict)
+
+        # Convert to JSON-serializable format
+        ranked_scenarios = [
+            Dict(
+                "rank" => row.rank,
+                "scenario_name" => row.scenario_name,
+                "scenario_type" => row.scenario_type,
+                "posterior_mean_savings" => row.posterior_mean_savings,
+                "posterior_std" => row.posterior_std,
+                "ci_lower" => row.ci_lower,
+                "ci_upper" => row.ci_upper,
+                "prob_positive" => row.prob_positive,
+                "ranking_score" => row.ranking_score,
+                "shared_savings_rate" => row.shared_savings_rate,
+                "risk_bearing" => row.risk_bearing
+            )
+            for row in eachrow(ranking_df)
+        ]
+
+        return Dict(
+            "status" => "ok",
+            "ranked_scenarios" => ranked_scenarios,
+            "scenario_count" => length(scenarios)
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end  # module AnalyticsController
 
 

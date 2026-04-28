@@ -75,6 +75,13 @@ route("/ma-risk") do
     page(model, ui_ma_risk) |> html
 end
 
+# A-07: VBC Bayesian Scenario Modeling
+route("/vbc-bayesian") do
+    include("views/vbc_bayesian/VBCBayesianModel.jl")
+    model = vbc_bayesian_model |> init
+    page(model, ui_vbc_bayesian) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Analysis Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -423,6 +430,26 @@ route("/api/optimize/capex-ranking", method=POST) do
         json(result)
     catch e
         _safe_error("CapEx ranking", e)
+    end
+end
+
+route("/api/analytics/vbc-bayesian", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_vbc_bayesian(payload)
+        json(result)
+    catch e
+        _safe_error("VBC Bayesian sampling", e)
+    end
+end
+
+route("/api/analytics/vbc-compare-scenarios", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_vbc_compare_scenarios(payload)
+        json(result)
+    catch e
+        _safe_error("VBC scenario comparison", e)
     end
 end
 

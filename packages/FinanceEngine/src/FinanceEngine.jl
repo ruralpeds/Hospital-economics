@@ -29,6 +29,7 @@ include("financial_monitoring.jl")
 include("strategic_planning.jl")
 include("value_based_care.jl")
 include("three_statement.jl")
+include("vbc_bayesian.jl")
 
 # ── New healthcare economics domains ──────────────────────────────────────
 include("cost_accounting.jl")
@@ -79,7 +80,8 @@ export initialize_kalman, kalman_filter_step, margin_tracker, early_warning_sign
 export cost_trajectory, merger_integration_plan, restructuring_plan, revenue_enhancement_plan
 
 # Value-Based Care (Ch. 7) — now exports ALL functions
-export value_score, qalys, quality_score, efficiency_score, readmission_penalty
+export value_score, qalys, quality_score, efficiency_score, readmission_penalty,
+       VBCScenario, BayesianVBCPost, fit_vbc_prior, sample_vbc_posterior, compare_scenarios
 
 # Cost Accounting (Ch. 8)
 export cost_to_charge_ratio, estimate_cost_from_charges, step_down_allocation,
