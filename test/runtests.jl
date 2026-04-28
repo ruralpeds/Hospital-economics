@@ -82,4 +82,7 @@ using Test
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
+
+    # Phase 2.4: Comprehensive Validation & Integration Tests
+    include("test_phase2_validation_integration.jl")
 end
