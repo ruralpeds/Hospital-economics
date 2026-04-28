@@ -25,6 +25,23 @@ function load_config()
 end
 
 # ---------------------------------------------------------------------------
+# Reusable component library  (app/components/)
+# Loaded BEFORE views so view files can call form_grid(...), plot_panel(...), etc.
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "common.jl"))
+include(joinpath(APP_ROOT, "components", "page_template.jl"))
+include(joinpath(APP_ROOT, "components", "form_grid.jl"))
+include(joinpath(APP_ROOT, "components", "result_table.jl"))
+include(joinpath(APP_ROOT, "components", "plot_panel.jl"))
+include(joinpath(APP_ROOT, "components", "export_bar.jl"))
+include(joinpath(APP_ROOT, "components", "cohort_picker.jl"))
+include(joinpath(APP_ROOT, "components", "scenario_picker.jl"))
+include(joinpath(APP_ROOT, "components", "audit_log_viewer.jl"))
+include(joinpath(APP_ROOT, "components", "upload.jl"))
+include(joinpath(APP_ROOT, "components", "bug_report_redaction.jl"))
+include(joinpath(APP_ROOT, "components", "bug_report.jl"))
+
+# ---------------------------------------------------------------------------
 # Include shared layout
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "layouts", "app_layout.jl"))
@@ -150,6 +167,14 @@ include(joinpath(APP_ROOT, "views", "disaster_resilience", "disaster_resilience.
 include(joinpath(APP_ROOT, "views", "capital_scoring", "capital_scoring.jl"))
 
 # ---------------------------------------------------------------------------
+# Include reactive models + view functions — Dev component gallery (dev only)
+# ---------------------------------------------------------------------------
+if get(ENV, "GENIE_ENV", "dev") != "prod"
+    include(joinpath(APP_ROOT, "views", "dev", "DevComponentsModel.jl"))
+    include(joinpath(APP_ROOT, "views", "dev", "dev_components.jl"))
+end
+
+# ---------------------------------------------------------------------------
 # Include API controllers
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
@@ -157,6 +182,7 @@ include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
 include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
 include(joinpath(APP_ROOT, "controllers", "AnalyticsController.jl"))
+include(joinpath(APP_ROOT, "controllers", "BugReportController.jl"))
 
 # ---------------------------------------------------------------------------
 # Include routes

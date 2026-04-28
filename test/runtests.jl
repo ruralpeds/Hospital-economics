@@ -82,4 +82,16 @@ using Test
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
+
+    # Phase 0 — Reusable component library
+    include("app/components_test.jl")
+    include("components/bug_report_redaction_test.jl")
+    include("components/upload_test.jl")
+    include("views/test_form_grid.jl")
+    include("views/test_result_table.jl")
+    include("views/test_plot_panel.jl")
+    include("views/test_export_bar.jl")
+    include("views/test_cohort_picker.jl")
+    include("views/test_scenario_picker.jl")
+    include("views/test_audit_log_viewer.jl")
 end
