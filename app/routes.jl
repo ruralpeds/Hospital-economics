@@ -271,6 +271,12 @@ route("/capital-scoring") do
     page(model, ui_capital_scoring) |> html
 end
 
+route("/drug-program-340b") do
+    include("views/program_340b/Program340BModel.jl")
+    model = program_340b_model |> init
+    page(model, ui_program_340b) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Simulation (delegated to SimulationController)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -477,6 +483,16 @@ route("/api/import/hcris-auto", method=POST) do
         json(result)
     catch e
         _safe_error("HCRIS import", e)
+    end
+end
+
+route("/api/analytics/340b-savings", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_340b_savings(payload)
+        json(result)
+    catch e
+        _safe_error("340B savings estimation", e)
     end
 end
 

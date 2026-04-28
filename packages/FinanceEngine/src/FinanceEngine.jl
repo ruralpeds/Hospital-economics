@@ -37,6 +37,7 @@ include("risk_contracting.jl")
 include("ma_risk.jl")
 include("capital_structure.jl")
 include("rhc_cah.jl")
+include("program_340b.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -102,6 +103,10 @@ export debt_service_coverage_ratio, days_cash_on_hand, current_ratio,
        CapexProject, CapexMetrics, calculate_capex_metrics, rank_projects,
        RHCReimbursement, CAHReimbursement, ReimburseComparison,
        load_rhc_schedule, load_cah_schedule, project_rhc_revenue, project_cah_revenue, compare_reimbursement
+
+# Drug Economics (Ch. 10a) — 340B Program
+export Drug340B, DrugProgramMetrics, DrugOptimizationResult,
+       load_340b_formulary, estimate_340b_savings, optimize_drug_mix
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,

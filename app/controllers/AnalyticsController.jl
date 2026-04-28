@@ -753,6 +753,81 @@ function handle_vbc_compare_scenarios(payload::Dict)::Dict
     end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 340B Drug Program Savings (A-09)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_340b_savings(payload::Dict)::Dict
+
+API handler for 340B drug program savings estimation.
+
+Expected payload keys:
+  - drugs: Vector{Dict} with keys [ndc, description, avg_wholesale_price, ceiling_price, hospital_acquisition_cost, estimated_monthly_usage]
+  - managed_care_cap: Float64 (default 0.15)
+  - optimize: Bool (if true, also compute drug mix optimization)
+  - budget: Float64 (for optimization, default 500000.0)
+
+Returns a Dict with savings metrics and optional optimization results.
+"""
+function handle_340b_savings(payload::Dict)::Dict
+    try
+        drugs_data = get(payload, "drugs", [])
+        managed_care_cap = Float64(get(payload, "managed_care_cap", 0.15))
+        should_optimize = get(payload, "optimize", false)
+        budget = Float64(get(payload, "budget", 500_000.0))
+
+        if isempty(drugs_data)
+            return Dict("error" => "No drugs provided")
+        end
+
+        # Build Drug340B structs
+        drugs = [
+            Drug340B(
+                String(get(d, "ndc", "")),
+                String(get(d, "description", "")),
+                Float64(get(d, "avg_wholesale_price", 0.0)),
+                Float64(get(d, "ceiling_price", 0.0)),
+                Float64(get(d, "hospital_acquisition_cost", 0.0)),
+                Float64(get(d, "estimated_monthly_usage", 0.0))
+            )
+            for d in drugs_data
+        ]
+
+        # Estimate savings
+        metrics = estimate_340b_savings(drugs, managed_care_cap=managed_care_cap)
+
+        result = Dict(
+            "status" => "ok",
+            "total_annual_usage" => metrics.total_annual_usage_units,
+            "avg_discount_pct" => metrics.avg_discount_pct,
+            "estimated_annual_savings" => metrics.estimated_annual_savings,
+            "ceiling_vs_mac_ratio" => metrics.ceiling_vs_mac_ratio,
+            "managed_care_applicability" => metrics.managed_care_discount_applicability
+        )
+
+        # Optimize drug mix if requested
+        if should_optimize && budget > 0
+            opt_result = optimize_drug_mix(drugs, budget, managed_care_cap=managed_care_cap)
+            result["optimization"] = Dict(
+                "optimized_drug_count" => length(opt_result.optimized_drugs),
+                "total_annual_savings" => opt_result.total_annual_savings,
+                "budget_remaining" => opt_result.budget_remaining,
+                "annual_units_used" => opt_result.annual_units_used,
+                "average_discount_pct" => opt_result.average_discount_pct,
+                "optimized_ndcs" => opt_result.optimized_drugs
+            )
+        end
+
+        return result
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end  # module AnalyticsController
 
 
