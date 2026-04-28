@@ -29,14 +29,29 @@ include("financial_monitoring.jl")
 include("strategic_planning.jl")
 include("value_based_care.jl")
 include("three_statement.jl")
+include("vbc_bayesian.jl")
 
 # ── New healthcare economics domains ──────────────────────────────────────
 include("cost_accounting.jl")
 include("risk_contracting.jl")
+include("ma_risk.jl")
 include("capital_structure.jl")
+include("rhc_cah.jl")
+include("program_340b.jl")
+include("telehealth.jl")
+include("medicaid_dsh.jl")
+include("rhc_optimization.jl")
+include("network_economics.jl")
+include("physician_compensation.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
+include("budgeting.jl")
+include("accounting.jl")
+include("actuarial.jl")
+include("reimbursement.jl")
+include("forecasting.jl")
+include("cost_effectiveness.jl")
 
 # ── Infrastructure ────────────────────────────────────────────────────────
 include("performance_optimization.jl")
@@ -78,7 +93,8 @@ export initialize_kalman, kalman_filter_step, margin_tracker, early_warning_sign
 export cost_trajectory, merger_integration_plan, restructuring_plan, revenue_enhancement_plan
 
 # Value-Based Care (Ch. 7) — now exports ALL functions
-export value_score, qalys, quality_score, efficiency_score, readmission_penalty
+export value_score, qalys, quality_score, efficiency_score, readmission_penalty,
+       VBCScenario, BayesianVBCPost, fit_vbc_prior, sample_vbc_posterior, compare_scenarios
 
 # Cost Accounting (Ch. 8)
 export cost_to_charge_ratio, estimate_cost_from_charges, step_down_allocation,
@@ -86,12 +102,51 @@ export cost_to_charge_ratio, estimate_cost_from_charges, step_down_allocation,
 
 # Risk Contracting (Ch. 9)
 export pmpm, shared_savings, shared_risk, risk_corridor,
-       hcc_risk_score, case_mix_index, capitation_rate, medical_loss_ratio
+       hcc_risk_score, case_mix_index, capitation_rate, medical_loss_ratio,
+       HCCDiagnosis, MARAFScore, parse_hcc_coefficients, calculate_member_raf,
+       aggregate_cohort_raf
 
 # Capital Structure (Ch. 10)
 export debt_service_coverage_ratio, days_cash_on_hand, current_ratio,
        debt_to_capitalization, wacc, bond_price, bond_yield_to_maturity,
-       capital_budget_ranking, financial_health_scorecard
+       capital_budget_ranking, financial_health_scorecard,
+       irr, mirr, discounted_payback_period, interest_coverage_ratio,
+       profitability_index, modified_duration, lease_vs_buy,
+       WACCCalibration, calculate_wacc,
+       CapexProject, CapexMetrics, calculate_capex_metrics, rank_projects,
+       RHCReimbursement, CAHReimbursement, ReimburseComparison,
+       load_rhc_schedule, load_cah_schedule, project_rhc_revenue, project_cah_revenue, compare_reimbursement
+
+# Drug Economics (Ch. 10a) — 340B Program
+export Drug340B, DrugProgramMetrics, DrugOptimizationResult,
+       load_340b_formulary, estimate_340b_savings, optimize_drug_mix
+
+# Telehealth & RPM (Ch. 10b)
+export TelehealthService, RPMDevice, TelehealthMetrics, RPMFinancialImpact,
+       calculate_telehealth_metrics, calculate_rpm_financial_impact, compare_telehealth_scenarios
+
+# Medicaid DSH & Supplemental Payments (Ch. 10c)
+export HospitalCharacteristics, DSHCalculation, SupplementalPaymentImpact,
+       calculate_medicaid_caseload_percentage, calculate_low_income_percentage,
+       calculate_dsh_index, calculate_dsh_payment, calculate_supplemental_impacts
+
+# RHC Service Line Optimization (Ch. 10d)
+export RHCServiceLine, RHCServiceMetrics, RHCPortfolioOptimization,
+       calculate_rhc_service_metrics, optimize_rhc_portfolio, compare_service_line_scenarios
+
+# Network Economics (Ch. 10e)
+export HospitalNode, NetworkTransfer, NetworkEconomics, NetworkAnalysisResult,
+       calculate_network_margin_impact, analyze_network_system
+
+# Physician Compensation (Ch. 10f)
+export PhysicianProfile, CompensationModel, PhysicianCompensation, SpecialtyBenchmarks,
+       calculate_physician_compensation, benchmark_specialty, identify_outliers
+
+# Budgeting (Ch. 10b)
+export operating_budget, flex_budget, volume_variance, price_variance,
+       efficiency_variance, mix_variance, rate_volume_variance,
+       budget_to_actual_variance, capital_budget_rank,
+       zero_based_budget_score, rolling_forecast_update
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,
@@ -104,6 +159,43 @@ export preventive_care_roi, telehealth_cost_effectiveness,
 # Supply Chain (Ch. 13)
 export economic_order_quantity, safety_stock, inventory_turnover,
        pharmaceutical_cost_analysis, stockout_cost, vendor_scorecard
+
+# Accounting (Ch. 11)
+export income_statement, ebitda, ebitda_margin, total_margin,
+       operating_margin_hfma, operating_leverage, balance_sheet_ratios,
+       quick_ratio, debt_to_equity, equity_multiplier, cash_flow_indirect,
+       straight_line_depreciation, macrs_depreciation_schedule,
+       net_assets_change, fund_accounting_summary, charitable_community_benefit_rate
+
+# Actuarial (Ch. 12)
+export loss_development_factors, claims_triangle_development, ibnr_reserve,
+       hcc_prospective_score, pmpm_by_category, admin_expense_ratio,
+       premium_rate_development, community_rating_premium,
+       utilization_rate, admissions_per_thousand, ed_visits_per_thousand,
+       claim_frequency, claim_severity, pure_premium,
+       credibility_weight, blended_rate
+
+# Reimbursement (Ch. 13)
+export drg_payment, ms_drg_payment, apr_drg_payment, opps_apc_payment,
+       rvu_to_payment, rbrvs_payment, capitation_pmpm, pmpm_trend,
+       payer_contract_net, days_in_ar, denial_rate, clean_claim_rate,
+       gross_collection_rate, cash_collection_efficiency,
+       bad_debt_rate, charity_care_rate, uncompensated_care_rate,
+       revenue_cycle_scorecard
+
+# Forecasting (Ch. 14)
+export simple_exponential_smoothing, holt_double_exponential,
+       holt_winters_additive, weighted_moving_average,
+       seasonal_indices, deseasonalize, reseasonalize,
+       budget_variance, budget_variance_pct, flexible_budget_variance,
+       forecast_rmse, forecast_mape, forecast_bias
+
+# Cost-Effectiveness Analysis (Ch. 15)
+export markov_cohort, markov_cycle_traces, icer, cea_dominant,
+       net_monetary_benefit, willingness_to_pay_threshold,
+       daly, life_years_gained, qaly_adjusted_life_years,
+       budget_impact_analysis, decision_tree_ev,
+       probabilistic_sensitivity_analysis, tornado_diagram_inputs
 
 # Performance Optimization
 export ProfileResult, CacheLayer, parallelize_sweep, benchmark_abm, setup_worker_pool,

@@ -3,7 +3,6 @@
 
 using Test
 using Statistics
-using DataFrames
 using Dates
 
 include("../src/validation/PolicyValidation.jl")
@@ -79,16 +78,14 @@ using .PolicyValidation
 
     # ==================== Validation Metrics ====================
     @testset "Calculate Metrics - Perfect Agreement" begin
-        actual = DataFrame(
-            outcome = ["margin_change", "margin_change"],
-            outcome_value = [0.05, 0.03],
-            outcome_change = [1.0, 1.0]
-        )
-        simulated = DataFrame(
-            outcome = ["margin_change", "margin_change"],
-            outcome_value = [0.05, 0.03],
-            outcome_change = [1.0, 1.0]
-        )
+        actual = [
+            OutcomeRow("margin_change", 0.05, 1.0),
+            OutcomeRow("margin_change", 0.03, 1.0),
+        ]
+        simulated = [
+            OutcomeRow("margin_change", 0.05, 1.0),
+            OutcomeRow("margin_change", 0.03, 1.0),
+        ]
 
         metrics = calculate_metrics(actual, simulated)
 
@@ -98,16 +95,14 @@ using .PolicyValidation
     end
 
     @testset "Calculate Metrics - Known Errors" begin
-        actual = DataFrame(
-            outcome = ["margin_1", "margin_2"],
-            outcome_value = [0.10, 0.20],
-            outcome_change = [1.0, 1.0]
-        )
-        simulated = DataFrame(
-            outcome = ["margin_1", "margin_2"],
-            outcome_value = [0.11, 0.19],
-            outcome_change = [1.0, 1.0]
-        )
+        actual = [
+            OutcomeRow("margin_1", 0.10, 1.0),
+            OutcomeRow("margin_2", 0.20, 1.0),
+        ]
+        simulated = [
+            OutcomeRow("margin_1", 0.11, 1.0),
+            OutcomeRow("margin_2", 0.19, 1.0),
+        ]
 
         metrics = calculate_metrics(actual, simulated)
 
@@ -117,38 +112,30 @@ using .PolicyValidation
     end
 
     @testset "Calculate Metrics - Directional Errors" begin
-        actual = DataFrame(
-            outcome = ["change_1", "change_2", "change_3"],
-            outcome_value = [0.05, 0.03, -0.02],
-            outcome_change = [1.0, 1.0, -1.0]
-        )
-        simulated = DataFrame(
-            outcome = ["change_1", "change_2", "change_3"],
-            outcome_value = [0.05, -0.01, -0.02],  # change_2 has wrong direction
-            outcome_change = [1.0, -1.0, -1.0]
-        )
+        actual = [
+            OutcomeRow("change_1",  0.05, 1.0),
+            OutcomeRow("change_2",  0.03, 1.0),
+            OutcomeRow("change_3", -0.02, -1.0),
+        ]
+        simulated = [
+            OutcomeRow("change_1",  0.05, 1.0),
+            OutcomeRow("change_2", -0.01, -1.0),  # wrong direction
+            OutcomeRow("change_3", -0.02, -1.0),
+        ]
 
         metrics = calculate_metrics(actual, simulated)
 
-        # 2 out of 3 directions correct = 2/3 = 0.667
+        # 2 out of 3 directions correct = 2/3 ≈ 0.667
         @test metrics.directional_accuracy ≈ 2.0/3.0
     end
 
     @testset "Calculate Metrics - Zero Values" begin
-        actual = DataFrame(
-            outcome = ["change"],
-            outcome_value = [0.0],
-            outcome_change = [0.0]
-        )
-        simulated = DataFrame(
-            outcome = ["change"],
-            outcome_value = [0.01],
-            outcome_change = [0.0]
-        )
+        actual    = [OutcomeRow("change", 0.0,  0.0)]
+        simulated = [OutcomeRow("change", 0.01, 1.0)]
 
         metrics = calculate_metrics(actual, simulated)
 
-        # MAPE should handle zero baseline gracefully
+        # MAPE should handle zero baseline gracefully (skipped when actual is zero)
         @test metrics.mape >= 0.0
     end
 
@@ -159,10 +146,10 @@ using .PolicyValidation
         )
 
         simulated = Dict(
-            "avg_margin_change" => -0.04,
+            "avg_margin_change"       => -0.04,
             "margin_change_direction" => -1.0,
-            "hospital_H1" => -0.048,
-            "hospital_H2" => -0.032
+            "hospital_H1"             => -0.048,
+            "hospital_H2"             => -0.032
         )
 
         result = validate_simulation(case, simulated)
@@ -193,8 +180,8 @@ using .PolicyValidation
     # ==================== Outcome Comparison ====================
     @testset "Compare Outcomes" begin
         actual = Dict(
-            "H1" => 0.05,
-            "H2" => 0.03,
+            "H1" =>  0.05,
+            "H2" =>  0.03,
             "H3" => -0.01
         )
 
@@ -206,25 +193,25 @@ using .PolicyValidation
 
         comparison = compare_outcomes(actual, simulated)
 
-        @test nrow(comparison) == 3
-        @test all(names(comparison) .== ["hospital_id", "actual_margin", "simulated_margin", "error", "error_pct"])
+        @test length(comparison) == 3
+        @test all(r.hospital_id in ["H1", "H2", "H3"] for r in comparison)
 
         # Check specific comparisons
-        h1_row = filter(row -> row.hospital_id == "H1", comparison)[1, :]
-        @test h1_row.actual_margin == 0.05
-        @test h1_row.simulated_margin == 0.048
-        @test h1_row.error ≈ -0.002
+        h1 = filter(r -> r.hospital_id == "H1", comparison)[1]
+        @test h1.actual_margin    == 0.05
+        @test h1.simulated_margin == 0.048
+        @test h1.error ≈ -0.002
     end
 
     @testset "Compare Outcomes - Mismatched Hospitals" begin
-        actual = Dict("H1" => 0.05, "H2" => 0.03)
+        actual    = Dict("H1" => 0.05, "H2" => 0.03)
         simulated = Dict("H2" => 0.031, "H3" => 0.01)
 
         comparison = compare_outcomes(actual, simulated)
 
-        @test nrow(comparison) == 3  # Union of H1, H2, H3
-        @test "H1" in comparison.hospital_id
-        @test "H3" in comparison.hospital_id
+        @test length(comparison) == 3  # Union of H1, H2, H3
+        @test any(r.hospital_id == "H1" for r in comparison)
+        @test any(r.hospital_id == "H3" for r in comparison)
     end
 
     # ==================== Report Generation ====================
@@ -267,16 +254,8 @@ using .PolicyValidation
     end
 
     @testset "Large Errors" begin
-        actual = DataFrame(
-            outcome = ["change"],
-            outcome_value = [0.10],
-            outcome_change = [1.0]
-        )
-        simulated = DataFrame(
-            outcome = ["change"],
-            outcome_value = [-0.10],  # Opposite sign
-            outcome_change = [-1.0]
-        )
+        actual    = [OutcomeRow("change",  0.10, 1.0)]
+        simulated = [OutcomeRow("change", -0.10, -1.0)]  # Opposite sign
 
         metrics = calculate_metrics(actual, simulated)
 
@@ -291,7 +270,7 @@ using .PolicyValidation
 
         # Simulate outcomes (simplified)
         simulated = Dict(
-            "avg_margin_change" => -0.048,
+            "avg_margin_change"       => -0.048,
             "margin_change_direction" => -1.0
         )
 
@@ -322,17 +301,17 @@ using .PolicyValidation
     end
 
     @testset "Validation Metrics Consistency" begin
-        actual = DataFrame(
-            outcome = ["m1", "m2", "m3"],
-            outcome_value = [0.05, 0.10, 0.03],
-            outcome_change = [1.0, 1.0, 1.0]
-        )
+        actual = [
+            OutcomeRow("m1", 0.05, 1.0),
+            OutcomeRow("m2", 0.10, 1.0),
+            OutcomeRow("m3", 0.03, 1.0),
+        ]
 
-        simulated = DataFrame(
-            outcome = ["m1", "m2", "m3"],
-            outcome_value = [0.051, 0.099, 0.031],
-            outcome_change = [1.0, 1.0, 1.0]
-        )
+        simulated = [
+            OutcomeRow("m1", 0.051, 1.0),
+            OutcomeRow("m2", 0.099, 1.0),
+            OutcomeRow("m3", 0.031, 1.0),
+        ]
 
         metrics = calculate_metrics(actual, simulated)
 

@@ -1,0 +1,6 @@
+patient_id,first_name,last_name,dob,ssn,admission_date,discharge_date,primary_diagnosis,total_charges,payer
+P001,John,Smith,1960-05-15,123-45-6789,2024-01-10,2024-01-13,E11.9,15000.00,Medicare
+P002,Jane,Doe,1975-08-22,987-65-4321,2024-01-11,2024-01-14,J44.0,9800.00,Commercial
+P003,Robert,Johnson,1955-03-07,555-44-3333,2024-01-12,2024-01-18,I10,22500.00,Medicaid
+P004,Mary,Williams,1980-11-30,111-22-3344,2024-01-15,2024-01-16,Z23,4200.00,Commercial
+P005,James,Brown,1945-07-04,999-88-7766,2024-01-16,2024-01-25,K92.1,38000.00,Medicare

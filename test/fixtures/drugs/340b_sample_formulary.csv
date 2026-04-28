@@ -1,0 +1,81 @@
+ndc,description,avg_wholesale_price,ceiling_price,hospital_acquisition_cost,estimated_monthly_usage
+00069-1940-10,Lisinopril 10mg tablet,15.50,12.40,10.95,2500
+00069-1941-10,Lisinopril 20mg tablet,18.75,15.00,13.25,1800
+00409-1665-01,Metformin 500mg tablet,8.95,7.16,6.30,3000
+00409-1666-01,Metformin 1000mg tablet,12.50,10.00,8.75,2200
+00781-1010-10,Simvastatin 20mg tablet,22.80,18.24,16.00,1500
+00781-1011-10,Simvastatin 40mg tablet,28.50,22.80,20.00,1200
+54868-5658-00,Omeprazole 20mg capsule,19.95,15.96,14.00,2800
+54868-5659-00,Omeprazole 40mg capsule,24.50,19.60,17.20,1600
+00378-0035-01,Atorvastatin 10mg tablet,25.00,20.00,17.50,1400
+00378-0036-01,Atorvastatin 20mg tablet,28.80,23.04,20.16,1100
+00173-0743-38,Levothyroxine 50mcg tablet,11.25,9.00,7.88,3500
+00173-0744-38,Levothyroxine 100mcg tablet,13.50,10.80,9.45,2900
+57237-0280-10,Amlodipine 5mg tablet,16.80,13.44,11.76,2000
+57237-0281-10,Amlodipine 10mg tablet,20.50,16.40,14.35,1500
+54569-0333-00,Furosemide 20mg tablet,10.95,8.76,7.68,2200
+54569-0334-00,Furosemide 40mg tablet,12.50,10.00,8.75,1800
+00555-0152-10,Metoprolol 25mg tablet,14.25,11.40,10.00,2100
+00555-0153-10,Metoprolol 50mg tablet,16.80,13.44,11.76,1600
+49884-0254-01,Sertraline 25mg tablet,17.50,14.00,12.25,900
+49884-0255-01,Sertraline 50mg tablet,21.00,16.80,14.70,800
+52959-0500-01,Clopidogrel 75mg tablet,32.50,26.00,22.75,700
+52959-0501-01,Clopidogrel 300mg tablet,45.00,36.00,31.50,200
+00172-0625-05,Albuterol inhaler 90mcg,28.75,23.00,20.13,650
+12496-0415-60,Fluticasone/Salmeterol disk,65.00,52.00,45.50,450
+45802-0120-01,Warfarin 2mg tablet,18.50,14.80,12.95,1100
+45802-0121-01,Warfarin 5mg tablet,22.00,17.60,15.40,800
+42806-0275-01,Prednisone 5mg tablet,9.75,7.80,6.83,2800
+42806-0276-01,Prednisone 10mg tablet,11.25,9.00,7.88,1900
+68788-9080-01,Ibuprofen 200mg tablet,7.50,6.00,5.25,3200
+68788-9081-01,Ibuprofen 400mg tablet,9.25,7.40,6.48,2400
+55111-0705-01,Acetaminophen 325mg tablet,6.85,5.48,4.80,3800
+55111-0706-01,Acetaminophen 500mg tablet,8.50,6.80,5.95,3000
+62175-0155-05,Naproxen 250mg tablet,13.80,11.04,9.66,1400
+62175-0156-05,Naproxen 500mg tablet,16.50,13.20,11.55,1000
+00172-0570-05,Glyburide 2.5mg tablet,10.50,8.40,7.35,1200
+00172-0571-05,Glyburide 5mg tablet,12.75,10.20,8.93,900
+50474-0185-01,Ranitidine 75mg tablet,14.20,11.36,9.94,1600
+50474-0186-01,Ranitidine 150mg tablet,16.50,13.20,11.55,1200
+15584-0450-01,Cetirizine 5mg tablet,11.50,9.20,8.05,1800
+15584-0451-01,Cetirizine 10mg tablet,13.75,11.00,9.63,1400
+51079-0619-01,Loratadine 10mg tablet,12.00,9.60,8.40,1300
+51079-0620-01,Loratadine 5mg tablet,10.50,8.40,7.35,1100
+68788-0044-10,Diphenhydramine 25mg capsule,8.95,7.16,6.27,2200
+68788-0045-10,Diphenhydramine 50mg capsule,10.50,8.40,7.35,1600
+49899-0918-01,Ranitidine 300mg tablet,19.25,15.40,13.48,800
+13811-0732-10,Cimetidine 200mg tablet,12.50,10.00,8.75,900
+52951-0480-01,Pantoprazole 20mg tablet,21.50,17.20,15.05,1500
+52951-0481-01,Pantoprazole 40mg tablet,25.50,20.40,17.85,1100
+50090-0601-10,Lansoprazole 15mg capsule,19.75,15.80,13.83,1400
+50090-0602-10,Lansoprazole 30mg capsule,23.50,18.80,16.45,1000
+23155-0159-01,Famotidine 20mg tablet,13.50,10.80,9.45,1100
+23155-0160-01,Famotidine 40mg tablet,16.00,12.80,11.20,800
+55513-0182-10,Esomeprazole 20mg capsule,24.75,19.80,17.33,1200
+55513-0183-10,Esomeprazole 40mg capsule,29.50,23.60,20.68,900
+12496-0410-10,Fluticasone 50mcg nasal spray,22.50,18.00,15.75,750
+12496-0411-10,Fluticasone 110mcg nasal spray,28.00,22.40,19.60,550
+00187-7017-10,Dextromethorphan 10mg tablet,7.50,6.00,5.25,800
+00187-7018-10,Dextromethorphan 20mg tablet,9.50,7.60,6.65,600
+50458-0380-01,Guaifenesin 200mg tablet,8.25,6.60,5.78,1200
+50458-0381-01,Guaifenesin 400mg tablet,10.50,8.40,7.35,900
+51406-0010-01,Phenylephrine 10mg tablet,10.75,8.60,7.53,850
+51406-0011-01,Phenylephrine 20mg tablet,13.00,10.40,9.10,600
+52817-0310-01,Pseudoephedrine 30mg tablet,9.50,7.60,6.65,1100
+52817-0311-01,Pseudoephedrine 60mg tablet,11.50,9.20,8.05,800
+50742-0346-01,Benzonatate 100mg capsule,15.50,12.40,10.85,1000
+50742-0347-01,Benzonatate 200mg capsule,18.75,15.00,13.13,700
+00591-3295-01,Dextrose 5% in water IV,12.50,10.00,8.75,500
+00591-3296-01,Normal saline 0.9% IV,11.75,9.40,8.23,600
+00395-2125-01,Potassium chloride 20 mEq tablet,16.50,13.20,11.55,400
+00395-2126-01,Potassium chloride 40 mEq tablet,22.00,17.60,15.40,250
+43742-0200-01,Calcium citrate 200mg tablet,13.50,10.80,9.45,1400
+43742-0201-01,Calcium citrate 500mg tablet,17.25,13.80,12.08,1000
+00406-0150-01,Magnesium oxide 400mg tablet,9.75,7.80,6.83,1600
+00406-0151-01,Magnesium oxide 500mg tablet,11.50,9.20,8.05,1200
+51991-0800-01,Zinc sulfate 220mg tablet,8.50,6.80,5.95,900
+51991-0801-01,Zinc sulfate 110mg tablet,7.00,5.60,4.90,1100
+13811-0733-01,Iron sulfate 325mg tablet,7.50,6.00,5.25,1300
+13811-0734-01,Iron sulfate 65mg tablet,6.25,5.00,4.38,1500
+42806-0850-01,Vitamin B complex tablet,5.50,4.40,3.85,2000
+42806-0851-01,Vitamin D3 1000 IU tablet,8.75,7.00,6.13,1800

@@ -1,6 +1,185 @@
 # ── Capital structure and debt analysis ────────────────────────────────────
 #
-# DSCR, WACC, leverage ratios, bond analysis, and capital budgeting.
+# DSCR, WACC, leverage ratios, bond analysis, capital budgeting, and nonprofit financial engineering.
+
+using Roots: find_zero
+
+# ═══════════════════════════════════════════════════════════════════════════
+# A-04: Nonprofit WACC Calculator
+# ═══════════════════════════════════════════════════════════════════════════
+
+@kwdef struct WACCCalibration
+    cost_of_equity::Float64
+    cost_of_debt::Float64
+    target_debt_ratio::Float64
+    wacc::Float64
+end
+
+"""
+    calculate_wacc(financials::NamedTuple, balance_sheet::BalanceSheetSnapshot;
+                   cost_of_equity_model::Symbol=:capm,
+                   tax_exempt::Bool=true,
+                   risk_free_rate::Float64=0.04,
+                   market_risk_premium::Float64=0.06,
+                   beta::Float64=1.0,
+                   rating::String="B") -> WACCCalibration
+
+Calculate Weighted Average Cost of Capital for nonprofit hospitals.
+
+Supports :capm, :conservative, :aggressive models for cost_of_equity.
+For nonprofits, tax_exempt=true forces no tax shield on debt.
+"""
+function calculate_wacc(financials::NamedTuple, balance_sheet;
+                       cost_of_equity_model::Symbol=:capm,
+                       tax_exempt::Bool=true,
+                       risk_free_rate::Float64=0.04,
+                       market_risk_premium::Float64=0.06,
+                       beta::Float64=1.0,
+                       rating::String="B")::WACCCalibration
+
+    # Cost of equity via CAPM or variants
+    coe = if cost_of_equity_model == :capm
+        risk_free_rate + beta * market_risk_premium
+    elseif cost_of_equity_model == :conservative
+        risk_free_rate + (beta + 0.2) * market_risk_premium
+    elseif cost_of_equity_model == :aggressive
+        max(risk_free_rate, (risk_free_rate + (beta - 0.2) * market_risk_premium))
+    else
+        throw(ArgumentError("Unknown cost_of_equity_model: $cost_of_equity_model"))
+    end
+
+    # Cost of debt: S&P rating → spread
+    rating_spreads = Dict(
+        "AAA" => 0.010, "AA" => 0.015, "A" => 0.020, "BBB" => 0.030,
+        "BB" => 0.045, "B" => 0.065, "CCC" => 0.100, "CC" => 0.150
+    )
+    spread = get(rating_spreads, rating, 0.065)  # Default to B if unrecognized
+    cod = risk_free_rate + spread
+
+    # Target debt/capitalization
+    total_cap = balance_sheet.long_term_debt + balance_sheet.net_assets_unrestricted
+    target_debt_ratio = total_cap > 0 ? balance_sheet.long_term_debt / total_cap : 0.3
+
+    # WACC = (E/V) * CoE + (D/V) * CoD * (1 - tax_rate)
+    equity_ratio = 1.0 - target_debt_ratio
+    tax_rate = tax_exempt ? 0.0 : 0.21
+    wacc_val = equity_ratio * coe + target_debt_ratio * cod * (1.0 - tax_rate)
+
+    return WACCCalibration(
+        cost_of_equity = coe,
+        cost_of_debt = cod,
+        target_debt_ratio = target_debt_ratio,
+        wacc = wacc_val
+    )
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# A-05: Capital Budgeting (IRR, NPV, Payback)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@kwdef struct CapexProject
+    name::String
+    initial_outlay::Float64
+    useful_life::Int
+    annual_cf::Vector{Float64}
+    salvage_value::Float64 = 0.0
+    tax_rate::Float64 = 0.0
+end
+
+@kwdef struct CapexMetrics
+    npv::Float64
+    irr::Float64
+    payback_years::Float64
+    profitability_index::Float64
+    pi_rank::Int = 0
+end
+
+"""
+    calculate_capex_metrics(project::CapexProject, wacc::Float64) -> CapexMetrics
+
+Calculate NPV, IRR, payback period, and profitability index for a capital project.
+"""
+function calculate_capex_metrics(project::CapexProject, wacc::Float64)::CapexMetrics
+    initial = project.initial_outlay
+    cfs = project.annual_cf
+
+    # NPV = Σ CF_t / (1 + WACC)^t - Initial_Outlay + Salvage / (1 + WACC)^n
+    npv_val = -initial + sum(cfs[t] / (1.0 + wacc)^t for t in 1:length(cfs))
+    if !isnan(project.salvage_value) && project.salvage_value > 0.0
+        npv_val += project.salvage_value / (1.0 + wacc)^length(cfs)
+    end
+
+    # IRR: find rate where NPV = 0
+    irr_val = 0.0
+    try
+        irr_fn(r) = -initial + sum(cfs[t] / (1.0 + r)^t for t in 1:length(cfs)) +
+                    (project.salvage_value > 0.0 ? project.salvage_value / (1.0 + r)^length(cfs) : 0.0)
+        irr_val = find_zero(irr_fn, (0.0, 1.0); xatol=1e-6)
+    catch
+        irr_val = NaN
+    end
+
+    # Payback period: years until cumsum(CF) ≥ initial_outlay
+    cumsum_cf = cumsum(cfs)
+    payback = Inf
+    for (t, cum) in enumerate(cumsum_cf)
+        if cum ≥ initial
+            payback = t - 1 + (initial - (t > 1 ? cumsum_cf[t-1] : 0.0)) / cfs[t]
+            break
+        end
+    end
+    payback = isfinite(payback) ? payback : length(cfs) + 1.0
+
+    # Profitability Index = (NPV + Initial) / Initial = (PV of inflows) / Initial
+    pi = initial > 0 ? (npv_val + initial) / initial : 0.0
+
+    return CapexMetrics(
+        npv = npv_val,
+        irr = isnan(irr_val) ? 0.0 : irr_val,
+        payback_years = payback,
+        profitability_index = pi
+    )
+end
+
+"""
+    rank_projects(projects::Vector{CapexProject}, wacc::Float64;
+                  budget_constraint::Union{Float64,Nothing}=nothing) -> DataFrame
+
+Rank capital projects by profitability index; optionally solve knapsack within budget.
+"""
+function rank_projects(projects::Vector{CapexProject}, wacc::Float64;
+                       budget_constraint::Union{Float64,Nothing}=nothing)::DataFrame
+
+    rows = NamedTuple[]
+    for (idx, p) in enumerate(projects)
+        metrics = calculate_capex_metrics(p, wacc)
+        push!(rows, (
+            name = p.name,
+            initial_outlay = p.initial_outlay,
+            npv = metrics.npv,
+            irr = metrics.irr,
+            payback_years = metrics.payback_years,
+            profitability_index = metrics.profitability_index,
+            pi_rank = 0,
+            selected = true
+        ))
+    end
+
+    df = DataFrame(rows)
+    sort!(df, :profitability_index; rev=true)
+    df[!, :pi_rank] = 1:nrow(df)
+
+    # Apply budget constraint if provided
+    if !isnothing(budget_constraint)
+        cumulative = cumsum(df.initial_outlay)
+        df[!, :selected] = cumulative .<= budget_constraint
+        df[!, :cumulative_investment] = cumulative
+    else
+        df[!, :cumulative_investment] = cumsum(df.initial_outlay)
+    end
+
+    return df
+end
 
 """
     debt_service_coverage_ratio(net_operating_income::Float64,
@@ -128,6 +307,163 @@ function capital_budget_ranking(projects::Vector; budget::Float64=Inf)::DataFram
     df[!, :selected] = cumulative .<= budget
     df[!, :cumulative_investment] = cumulative
     return df
+end
+
+"""
+    irr(cash_flows::Vector{<:Real}; lo=-0.999, hi=10.0, tol=1e-10, max_iter=1000)
+        -> Union{Float64, Missing}
+
+Internal Rate of Return: the discount rate r at which NPV = 0, found by bisection.
+Returns `missing` when no real root exists in [lo, hi].
+
+For nonprofit hospitals this is the unleveraged project yield, compared against
+the tax-exempt bond rate as the hurdle rate.
+"""
+function irr(cash_flows::Vector{<:Real};
+             lo::Real=-0.999, hi::Real=10.0,
+             tol::Real=1e-10, max_iter::Int=1000)::Union{Float64,Missing}
+    length(cash_flows) >= 2 || throw(DomainValidationError("cash_flows",
+        string(length(cash_flows)), "≥ 2", "At least two cash flows required"))
+    # NPV with t-1 exponent: cash_flows[1] is at t=0 (present)
+    f(r) = sum(cf / (1 + r)^(t - 1) for (t, cf) in enumerate(cash_flows))
+    (f(lo) * f(hi) > 0) && return missing
+    for _ in 1:max_iter
+        mid = (lo + hi) / 2
+        fmid = f(mid)
+        abs(fmid) < tol && return mid
+        f(lo) * fmid < 0 ? (hi = mid) : (lo = mid)
+    end
+    return (lo + hi) / 2
+end
+
+"""
+    mirr(cash_flows::Vector{<:Real}, finance_rate::Real, reinvestment_rate::Real)
+        -> Float64
+
+Modified Internal Rate of Return.
+Negative cash flows are discounted to t=0 at `finance_rate` (cost of capital);
+positive cash flows are compounded to the final period at `reinvestment_rate`.
+More reliable than IRR when cash flows change sign multiple times.
+"""
+function mirr(cash_flows::Vector{<:Real},
+              finance_rate::Real,
+              reinvestment_rate::Real)::Float64
+    length(cash_flows) >= 2 || throw(DomainValidationError("cash_flows",
+        string(length(cash_flows)), "≥ 2", "At least two cash flows required"))
+    finance_rate > -1 || throw(DomainValidationError("finance_rate",
+        string(finance_rate), "> -1", "Finance rate must be > -1"))
+    reinvestment_rate > -1 || throw(DomainValidationError("reinvestment_rate",
+        string(reinvestment_rate), "> -1", "Reinvestment rate must be > -1"))
+    n = length(cash_flows)
+    pv_neg = sum(cf / (1 + finance_rate)^(t - 1)
+                 for (t, cf) in enumerate(cash_flows) if cf < 0; init=0.0)
+    fv_pos = sum(cf * (1 + reinvestment_rate)^(n - t)
+                 for (t, cf) in enumerate(cash_flows) if cf > 0; init=0.0)
+    pv_neg == 0 && throw(DataValidationError("No negative cash flows found in mirr"))
+    fv_pos <= 0 && throw(DataValidationError("No positive cash flows found in mirr"))
+    return (fv_pos / abs(pv_neg))^(1 / (n - 1)) - 1
+end
+
+"""
+    discounted_payback_period(cash_flows::Vector{<:Real}, discount_rate::Real) -> Float64
+
+How many periods until cumulative *discounted* cash flows turn non-negative.
+Uses linear interpolation within the crossover period.
+Returns `Inf` if cash flows never recover the initial outlay.
+
+`cash_flows[1]` is the period-0 cash flow (typically the negative initial investment).
+"""
+function discounted_payback_period(cash_flows::Vector{<:Real},
+                                   discount_rate::Real)::Float64
+    isempty(cash_flows) && throw(DataValidationError("cash_flows must not be empty"))
+    discount_rate > -1 || throw(DomainValidationError("discount_rate",
+        string(discount_rate), "> -1", "Discount rate must be > -1"))
+    cumulative = 0.0
+    for (t, cf) in enumerate(cash_flows)
+        prev = cumulative
+        dcf = cf / (1 + discount_rate)^(t - 1)
+        cumulative += dcf
+        if cumulative >= 0 && t > 1
+            return (t - 1) - 1 + (-prev / dcf)
+        end
+    end
+    return Inf
+end
+
+"""
+    interest_coverage_ratio(ebit::Float64, interest_expense::Float64) -> Float64
+
+Times Interest Earned = EBIT / interest expense.
+Benchmarks: lenders typically require ≥ 2.5; A-rated hospitals ≥ 4.0.
+"""
+function interest_coverage_ratio(ebit::Float64,
+                                  interest_expense::Float64)::Float64
+    interest_expense > 0 || throw(DomainValidationError("interest_expense",
+        string(interest_expense), "> 0", "Interest expense must be positive"))
+    return ebit / interest_expense
+end
+
+"""
+    profitability_index(npv_value::Float64, initial_investment::Float64) -> Float64
+
+Profitability Index = (NPV + initial_investment) / initial_investment.
+PI > 1.0 creates value; used to rank projects under capital rationing.
+"""
+function profitability_index(npv_value::Float64,
+                              initial_investment::Float64)::Float64
+    initial_investment > 0 || throw(DomainValidationError("initial_investment",
+        string(initial_investment), "> 0", "Initial investment must be positive"))
+    return (npv_value + initial_investment) / initial_investment
+end
+
+"""
+    modified_duration(cash_flows::Vector{<:Real}, yield::Real) -> Float64
+
+Modified duration = Macaulay duration / (1 + yield).
+Measures bond price sensitivity to a 1 pp change in yield.
+Relevant for hospital tax-exempt bond portfolio management.
+"""
+function modified_duration(cash_flows::Vector{<:Real}, yield::Real)::Float64
+    isempty(cash_flows) && throw(DataValidationError("cash_flows must not be empty"))
+    yield > -1 || throw(DomainValidationError("yield", string(yield), "> -1",
+        "Yield must be > -1"))
+    price = sum(cf / (1 + yield)^t for (t, cf) in enumerate(cash_flows))
+    abs(price) < 1e-12 && throw(DataValidationError(
+        "Present value of cash flows is zero; modified_duration is undefined"))
+    macaulay = sum(t * cf / (1 + yield)^t
+                   for (t, cf) in enumerate(cash_flows)) / price
+    return macaulay / (1 + yield)
+end
+
+"""
+    lease_vs_buy(asset_cost, lease_payments, salvage_value, discount_rate,
+                 useful_life; tax_rate=0.0) -> NamedTuple
+
+Compare present value of leasing versus purchasing an asset.
+For nonprofit hospitals set `tax_rate = 0.0` (no depreciation tax shield).
+
+Returns `(buy_pv, lease_pv, preferred)` where `preferred` is `:lease` or `:buy`.
+"""
+function lease_vs_buy(asset_cost::Float64,
+                      lease_payments::Vector{<:Real},
+                      salvage_value::Float64,
+                      discount_rate::Float64,
+                      useful_life::Int;
+                      tax_rate::Float64=0.0)
+    asset_cost > 0 || throw(DomainValidationError("asset_cost",
+        string(asset_cost), "> 0", "Asset cost must be positive"))
+    discount_rate > 0 || throw(DomainValidationError("discount_rate",
+        string(discount_rate), "> 0", "Discount rate must be positive"))
+    useful_life > 0 || throw(DomainValidationError("useful_life",
+        string(useful_life), "> 0", "Useful life must be positive"))
+    0.0 <= tax_rate < 1.0 || throw(DomainValidationError("tax_rate",
+        string(tax_rate), "0 ≤ tax_rate < 1", "Tax rate must be in [0, 1)"))
+    pv_salvage = salvage_value / (1 + discount_rate)^useful_life
+    buy_pv = asset_cost - pv_salvage
+    lease_pv = sum(pmt * (1 - tax_rate) / (1 + discount_rate)^t
+                   for (t, pmt) in enumerate(lease_payments))
+    preferred = lease_pv <= buy_pv ? :lease : :buy
+    return (buy_pv=buy_pv, lease_pv=lease_pv, preferred=preferred)
 end
 
 """
