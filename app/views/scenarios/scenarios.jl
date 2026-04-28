@@ -223,5 +223,6 @@ function ui_scenarios(model)
         quasar(:banner, var"v-if"="save_status !== ''", class="q-mb-md bg-green-1", dense=true, rounded=true, [
             span("{{ save_status }}")
         ]),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

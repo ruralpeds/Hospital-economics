@@ -1,5 +1,24 @@
 # Hospital Economics Platform - CHANGELOG
 
+## v1.0 UI (E25/E26) — Shared Component Retrofit & E2E Test Matrix
+
+### 🚀 New Features
+
+#### E25 — Shared Component Library Retrofit (40 tabs)
+- Added `export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx)` to all 40 existing tab views
+- Added `@in do_csv::Bool`, `@in do_xlsx::Bool`, and `@in errors::Vector{String}` fields to all 40 models
+- Tabs retrofitted: dashboard, hospital_profile, scenarios, simulation_runner, results, education, financial_sim, cost_structure, cost_reimbursement, payer_margin, service_line, program_340b, revenue_cycle, break_even, cash_flow, sensitivity, debt_capacity, workforce_rvu, benchmark, reh_wizard, closure_risk, staffing, payer_negotiation, community_impact, strategic_planner, policy_impact, three_statement, dupont, distress_scoring, team_bundled, telehealth, vbc_transition, medicaid_supplemental, rhc_optimization, sdoh, geographic_access, community_benefit, network_economics, disaster_resilience, capital_scoring
+
+#### E26 — Playwright E2E Matrix + A11y + CI
+- Added 15 new Playwright spec files: quality, stats, regression, causal, cea, cba, comparative, visualize, reports, database, ml, systems, scenario_lab, functions, audit
+- Created `e2e/helpers/a11y.ts` with WCAG 2.0 A/AA axe-core helper
+- Created `e2e/fixtures/`: `sample_patients.csv`, `sample_claims.csv`, `sample_financial.csv`
+- Added `.github/workflows/playwright.yml` CI workflow (chromium, Node 18)
+- Added `@axe-core/playwright` dev dependency
+- Created `docs/ui/USER_GUIDE.md`
+
+---
+
 ## v1.1 (2026-04-25) - Phase 4A: Advanced Analytics & Comparative Effectiveness
 
 ### 🚀 New Features

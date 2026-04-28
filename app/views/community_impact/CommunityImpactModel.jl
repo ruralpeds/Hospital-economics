@@ -22,6 +22,11 @@ using ...RuralHospitalSim: calculate_community_impact, closure_impact_projection
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_economic_impact::Float64 = 20_736_000.0
     @out direct_impact::Float64 = 12_960_000.0
     @out indirect_impact::Float64 = 7_776_000.0

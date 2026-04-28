@@ -10,6 +10,11 @@
     @in is_calculating::Bool = false
     @in error_message::String = ""
 
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out annual_visits::Int = 0
     @out annual_revenue::Float64 = 0.0
     @out annual_costs::Float64 = 0.0

@@ -22,6 +22,11 @@ using ...RuralHospitalSim: compute_all_ratios, default_cah_benchmarks, compare_t
     @in selected_kpi_detail::String = ""
 
     # ── KPI Reactive Outputs ─────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out hospital_name::String = "Prairie View Community Hospital"
     @out hospital_type::String = "Critical Access Hospital (CAH)"
     @out hospital_beds::Int = 25

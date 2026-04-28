@@ -13,6 +13,11 @@ using Stipple, StippleUI
     @in glossary_search::String = ""
 
     # ── Topic Library ────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out topics::Vector{Dict{String,Any}} = [
         Dict("id"=>"cah_basics", "title"=>"Critical Access Hospital (CAH) Basics",
              "category"=>"Hospital Types", "difficulty"=>"beginner",

@@ -34,6 +34,11 @@ using ...RuralHospitalSim: optimize_service_portfolio, PortfolioParams, Portfoli
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out sl_names::Vector{String} = ["ED", "Inpatient", "Outpatient", "Surgical", "Imaging", "Lab", "Pharmacy", "Rehab"]
     @out sl_margins::Vector{Float64} = [300_000.0, -400_000.0, 500_000.0, 300_000.0, 300_000.0, 250_000.0, 50_000.0, 100_000.0]
     @out sl_margin_pcts::Vector{Float64} = [7.1, -6.9, 16.1, 12.5, 16.7, 20.8, 5.6, 16.7]

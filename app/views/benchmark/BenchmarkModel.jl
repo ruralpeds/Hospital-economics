@@ -20,6 +20,11 @@ using ...RuralHospitalSim: default_cah_benchmarks, compare_to_benchmarks, Benchm
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out composite_score::Float64 = 38.0
     @out metrics_above_median::Int = 1
     @out metrics_below_median::Int = 5

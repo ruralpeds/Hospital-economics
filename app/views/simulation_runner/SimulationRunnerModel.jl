@@ -15,6 +15,11 @@ using ...RuralHospitalSim: run_monte_carlo, project_financials, run_sensitivity_
     # ── Methodology Selection ────────────────────────────────────────────
     @in methodology::String = "monte_carlo"
     @in selected_scenario_id::Int = 1
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out methodology_options::Vector{Dict{String,String}} = [
         Dict("label" => "Monte Carlo Simulation", "value" => "monte_carlo"),
         Dict("label" => "Deterministic Projection", "value" => "deterministic"),

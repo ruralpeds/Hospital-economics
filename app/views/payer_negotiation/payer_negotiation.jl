@@ -108,5 +108,6 @@ function ui_payer_negotiation(model)
                 ])])
             ]),
         ]),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

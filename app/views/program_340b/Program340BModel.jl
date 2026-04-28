@@ -9,6 +9,11 @@
     @in is_calculating::Bool = false
     @in error_message::String = ""
 
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_annual_usage::Float64 = 0.0
     @out avg_discount_pct::Float64 = 0.0
     @out estimated_savings::Float64 = 0.0

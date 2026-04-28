@@ -14,6 +14,11 @@ using ...RuralHospitalSim: assess_closure_risk, estimate_distress_timeline, Mark
     @in left_drawer_open::Bool = true
     # ── Selection ────────────────────────────────────────────────────────
     @in selected_hospital_id::Int = 1
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out hospital_options::Vector{Dict{String,Any}} = [
         Dict("label"=>"Prairie View Community Hospital", "value"=>1),
         Dict("label"=>"Mountain Valley Medical Center", "value"=>2),

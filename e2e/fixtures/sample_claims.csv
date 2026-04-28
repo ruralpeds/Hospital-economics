@@ -1,0 +1,11 @@
+claim_id,patient_id,date,payer,amount,denied
+C001,P001,2025-01-05,Medicare,14200.00,false
+C002,P002,2025-01-08,Medicaid,8750.00,false
+C003,P003,2025-01-12,Medicare,11300.00,false
+C004,P004,2025-01-15,Commercial,9100.00,true
+C005,P005,2025-01-20,Medicare,22400.00,false
+C006,P006,2025-02-01,Medicaid,6800.00,false
+C007,P007,2025-02-05,Medicare,7600.00,true
+C008,P008,2025-02-10,Commercial,3200.00,false
+C009,P009,2025-02-14,Medicare,28900.00,false
+C010,P010,2025-02-18,Commercial,10500.00,false

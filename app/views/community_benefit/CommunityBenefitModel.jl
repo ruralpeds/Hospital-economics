@@ -28,6 +28,11 @@ using ...RuralHospitalSim: calculate_community_benefit, community_benefit_compar
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_community_benefit::Float64 = 8_250_000.0
     @out benefit_as_pct::Float64 = 0.103
     @out estimated_tax_exemption::Float64 = 1_879_000.0

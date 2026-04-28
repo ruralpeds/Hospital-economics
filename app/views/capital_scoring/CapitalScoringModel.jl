@@ -50,6 +50,11 @@ using ...RuralHospitalSim: score_capital_projects, select_within_budget,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out project_names::Vector{String} = ["HVAC Replacement", "CT Scanner Upgrade", "Roof Repair", "EHR Module"]
     @out project_scores::Vector{Float64} = [0.0, 0.0, 0.0, 0.0]
     @out project_ranks::Vector{Int} = [1, 2, 3, 4]

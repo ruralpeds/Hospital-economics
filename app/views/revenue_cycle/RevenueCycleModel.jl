@@ -31,6 +31,11 @@ using ...RuralHospitalSim: compute_all_ratios
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_dollar_impact::Float64 = 1_245_000.0
     @out improved_days_in_ar::Float64 = 42.0
     @out improved_collection_rate::Float64 = 0.97

@@ -307,5 +307,6 @@ function ui_three_statement(model::M) where {M}
                 ])]),
             ]
         end
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

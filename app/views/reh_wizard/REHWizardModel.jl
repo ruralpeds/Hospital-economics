@@ -14,6 +14,11 @@ using ...RuralHospitalSim: analyze_reh_conversion, ConversionParams,
     @in left_drawer_open::Bool = true
     # ── Wizard State ─────────────────────────────────────────────────────
     @in wizard_step::Int = 1
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_steps::Int = 4
 
     # ── Step 1: Hospital Selection ───────────────────────────────────────

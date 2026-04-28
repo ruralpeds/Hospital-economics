@@ -39,6 +39,11 @@ using ...RuralHospitalSim: run_sensitivity_analysis, build_tornado_data, Sensiti
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out base_net_income::Float64 = -700_000.0
     @out most_sensitive_variable::String = "Patient Volume"
     @out max_swing::Float64 = 3_700_000.0

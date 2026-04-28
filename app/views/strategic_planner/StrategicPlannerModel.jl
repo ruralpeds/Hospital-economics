@@ -45,6 +45,11 @@ using ...RuralHospitalSim: run_scenario_set, compare_scenario_set,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out year_labels::Vector{String} = ["Year 0", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
     @out projected_revenue::Vector{Float64} = [18.5, 20.3, 21.9, 22.7, 23.2, 23.6]
     @out projected_expenses::Vector{Float64} = [19.2, 18.8, 19.2, 19.9, 20.6, 21.3]

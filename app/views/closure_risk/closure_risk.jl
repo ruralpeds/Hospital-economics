@@ -165,5 +165,6 @@ function ui_closure_risk(model)
                 ])
             ])
         ]),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end
