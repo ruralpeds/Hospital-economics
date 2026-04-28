@@ -2,7 +2,6 @@
 # Patient agent definition with economic tracking and clinical outcomes
 
 using Dates
-using Distributions
 using Random
 
 include("ClinicalPathway.jl")
@@ -342,7 +341,8 @@ function simulate_patient_outcomes!(patient::PatientAgent, pathway::ClinicalPath
             "K91.6" => "Intra-abdominal complication"
         )
         complication_codes = collect(keys(complication_map))
-        patient.complication_codes = sample(complication_codes, min(num_complications, length(complication_codes)), replace=false)
+        n = min(num_complications, length(complication_codes))
+        patient.complication_codes = shuffle(complication_codes)[1:n]
     else
         patient.complication_codes = String[]
     end
