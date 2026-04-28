@@ -104,4 +104,14 @@ using Test
     # E27 — BugReport component tests
     include("components/bug_report_redaction_test.jl")
     include("controllers/bug_report_controller_test.jl")
+
+    # Phase 0 — Upload + widget component tests
+    include("components/upload_test.jl")
+    include("views/test_form_grid.jl")
+    include("views/test_result_table.jl")
+    include("views/test_plot_panel.jl")
+    include("views/test_export_bar.jl")
+    include("views/test_cohort_picker.jl")
+    include("views/test_scenario_picker.jl")
+    include("views/test_audit_log_viewer.jl")
 end

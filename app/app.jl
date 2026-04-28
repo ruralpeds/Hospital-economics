@@ -34,6 +34,7 @@ include(joinpath(APP_ROOT, "components", "export_bar.jl"))
 include(joinpath(APP_ROOT, "components", "cohort_picker.jl"))
 include(joinpath(APP_ROOT, "components", "scenario_picker.jl"))
 include(joinpath(APP_ROOT, "components", "audit_log_viewer.jl"))
+include(joinpath(APP_ROOT, "components", "upload.jl"))
 
 # ---------------------------------------------------------------------------
 # Include shared layout

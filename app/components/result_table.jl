@@ -144,9 +144,8 @@ function result_table(
 
     card(class="q-mb-md " * class, [
         card_section([
-            [title_html...,
-             quasar(:table, all_slots; tbl_attrs...),
-            ]
+            title_html...,
+            quasar(:table, all_slots; tbl_attrs...),
         ]),
     ])
 end

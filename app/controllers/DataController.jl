@@ -348,7 +348,10 @@ function handle_universal_upload(payload::Dict)
     actually_deidentified = false
     deidentify_log        = String[]
     if deidentify && phi_detected
-        # Apply de-identification to PHI columns via the domain layer
+        # Apply de-identification to PHI columns via the domain layer.
+        # Track real changes so we don't claim de-identification when none ran
+        # (e.g. PHI was sniffed in cell values but no recognised PHI columns).
+        deidentify_changes = 0
         for (i, row) in enumerate(rows)
             for col in phi_columns
                 if haskey(row, col)
@@ -356,13 +359,24 @@ function handle_universal_upload(payload::Dict)
                     v = row[col]
                     if v isa String && !isempty(v)
                         row[col] = _pseudonymise_value(v, org_salt)
+                        deidentify_changes += 1
                     end
                 end
             end
         end
-        actually_deidentified = true
-        push!(deidentify_log, "De-identified $(length(phi_columns)) PHI column(s): " *
-              join(phi_columns, ", "))
+        if deidentify_changes > 0
+            actually_deidentified = true
+            push!(deidentify_log, "De-identified $(length(phi_columns)) PHI column(s): " *
+                  join(phi_columns, ", "))
+        elseif phi_in_values
+            # PHI patterns matched cell values but no recognised PHI column
+            # name was detected, so the loop made no changes. Be honest about
+            # it rather than reporting a false positive.
+            push!(deidentify_log,
+                  "WARNING: PHI patterns detected in cell values but no recognised " *
+                  "PHI column names matched; no de-identification ran. Review and " *
+                  "de-identify manually before sharing.")
+        end
     elseif phi_detected && !deidentify
         push!(deidentify_log, "WARNING: PHI columns present but de-identification was skipped by user.")
     end

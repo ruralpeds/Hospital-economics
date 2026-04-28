@@ -35,10 +35,21 @@ Bool reactive field that the model `@onchange` handler can act upon.
 # ---------------------------------------------------------------------------
 # Helper: build a tooltip icon when help text is provided
 # ---------------------------------------------------------------------------
+# Robust JS string-literal escape: handles backslash, quotes, newlines, and
+# the </script> sequence that would otherwise break out of a script context.
+function _js_str(s::String)::String
+    s = replace(s, "\\" => "\\\\")
+    s = replace(s, "'"  => "\\'")
+    s = replace(s, "\n" => "\\n")
+    s = replace(s, "\r" => "\\r")
+    s = replace(s, "</" => "<\\/")
+    return "'" * s * "'"
+end
+
 function _field_hint(help::String)
     isempty(help) && return []
     [quasar(:icon, name="help_outline", class="q-ml-xs text-grey-6",
-        var"v-tooltip.top"="""'$(replace(help, "'" => "\\'"))'""")]
+        var"v-tooltip.top"=_js_str(help))]
 end
 
 # ---------------------------------------------------------------------------
@@ -126,7 +137,7 @@ function _render_field(f::NamedTuple)
                     ]),
                     Html.tbody([
                         Html.tr(var"v-for"="(row, idx) in $(nm)", var":key"="idx", [
-                            Html.td(var"v-for"="col in $(repr(dyn_cols))",
+                            Html.td(var"v-for"="col in [$(join([_js_str(string(c)) for c in dyn_cols], ","))]",
                                 var":key"="col", [
                                 quasar(:input, var"v-model"="$(nm)[idx][col]",
                                     dense=true, borderless=true),
@@ -213,8 +224,6 @@ function form_grid(
     rows_html = row(class="q-gutter-md", [_render_field(f) for f in fields])
 
     card(class="q-mb-md " * class, [
-        card_section([
-            [header_row..., rows_html, upload_btn_below...]
-        ]),
+        card_section([header_row..., rows_html, upload_btn_below...]),
     ])
 end
