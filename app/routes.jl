@@ -55,6 +55,26 @@ route("/education") do
     page(model, ui_education) |> html
 end
 
+# A-04 & A-05: Nonprofit WACC and Capital Budgeting
+route("/wacc") do
+    include("views/wacc/WACCModel.jl")
+    model = wacc_model |> init
+    page(model, ui_wacc) |> html
+end
+
+route("/capex") do
+    include("views/capex/CapexModel.jl")
+    model = capex_model |> init
+    page(model, ui_capex) |> html
+end
+
+# A-06: Medicare Advantage Risk Adjustment
+route("/ma-risk") do
+    include("views/ma_risk/MARiskModel.jl")
+    model = ma_risk_model |> init
+    page(model, ui_ma_risk) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Analysis Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -464,6 +484,83 @@ route("/api/conversion", method=POST) do
         json(result)
     catch e
         _safe_error("REH conversion analysis", e)
+    end
+end
+
+# A-06: Medicare Advantage Risk Adjustment
+route("/api/risk/ma-risk", method=POST) do
+    try
+        payload = jsonpayload()
+        result = RiskController.handle_ma_risk(payload)
+        json(result)
+    catch e
+        _safe_error("MA risk adjustment", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — MBA Analytics (delegated to AnalyticsController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/analytics/three-statement", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_three_statement(payload)
+        json(result)
+    catch e
+        _safe_error("Three-statement projection", e)
+    end
+end
+
+route("/api/analytics/dupont", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_dupont(payload)
+        json(result)
+    catch e
+        _safe_error("DuPont decomposition", e)
+    end
+end
+
+route("/api/analytics/distress-scoring", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_distress_scoring(payload)
+        json(result)
+    catch e
+        _safe_error("Distress scoring", e)
+    end
+end
+
+# A-04: Nonprofit WACC Calculator
+route("/api/analytics/wacc", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_wacc(payload)
+        json(result)
+    catch e
+        _safe_error("WACC calculation", e)
+    end
+end
+
+# A-05: Capital Budgeting
+route("/api/optimize/capex-ranking", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_capex_ranking(payload)
+        json(result)
+    catch e
+        _safe_error("CapEx ranking", e)
+    end
+end
+
+route("/api/import/hcris-auto", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_hcris_import(payload)
+        json(result)
+    catch e
+        _safe_error("HCRIS import", e)
     end
 end
 

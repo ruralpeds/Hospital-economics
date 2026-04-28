@@ -33,6 +33,7 @@ include("three_statement.jl")
 # ── New healthcare economics domains ──────────────────────────────────────
 include("cost_accounting.jl")
 include("risk_contracting.jl")
+include("ma_risk.jl")
 include("capital_structure.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
@@ -92,14 +93,18 @@ export cost_to_charge_ratio, estimate_cost_from_charges, step_down_allocation,
 
 # Risk Contracting (Ch. 9)
 export pmpm, shared_savings, shared_risk, risk_corridor,
-       hcc_risk_score, case_mix_index, capitation_rate, medical_loss_ratio
+       hcc_risk_score, case_mix_index, capitation_rate, medical_loss_ratio,
+       HCCDiagnosis, MARAFScore, parse_hcc_coefficients, calculate_member_raf,
+       aggregate_cohort_raf
 
 # Capital Structure (Ch. 10)
 export debt_service_coverage_ratio, days_cash_on_hand, current_ratio,
        debt_to_capitalization, wacc, bond_price, bond_yield_to_maturity,
        capital_budget_ranking, financial_health_scorecard,
        irr, mirr, discounted_payback_period, interest_coverage_ratio,
-       profitability_index, modified_duration, lease_vs_buy
+       profitability_index, modified_duration, lease_vs_buy,
+       WACCCalibration, calculate_wacc,
+       CapexProject, CapexMetrics, calculate_capex_metrics, rank_projects
 
 # Budgeting (Ch. 10b)
 export operating_budget, flex_budget, volume_variance, price_variance,

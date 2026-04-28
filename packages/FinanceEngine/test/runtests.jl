@@ -924,5 +924,9 @@ include("test_three_statement.jl")
 include("test_dupont.jl")
 include("test_distress_scoring.jl")
 
+include("test_three_statement.jl")
+include("test_dupont.jl")
+include("test_distress_scoring.jl")
+
 include("aqua_tests.jl")
 include("jet_tests.jl")

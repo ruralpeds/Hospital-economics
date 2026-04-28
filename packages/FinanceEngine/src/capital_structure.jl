@@ -1,6 +1,185 @@
 # ── Capital structure and debt analysis ────────────────────────────────────
 #
-# DSCR, WACC, leverage ratios, bond analysis, and capital budgeting.
+# DSCR, WACC, leverage ratios, bond analysis, capital budgeting, and nonprofit financial engineering.
+
+using Roots: find_zero
+
+# ═══════════════════════════════════════════════════════════════════════════
+# A-04: Nonprofit WACC Calculator
+# ═══════════════════════════════════════════════════════════════════════════
+
+@kwdef struct WACCCalibration
+    cost_of_equity::Float64
+    cost_of_debt::Float64
+    target_debt_ratio::Float64
+    wacc::Float64
+end
+
+"""
+    calculate_wacc(financials::NamedTuple, balance_sheet::BalanceSheetSnapshot;
+                   cost_of_equity_model::Symbol=:capm,
+                   tax_exempt::Bool=true,
+                   risk_free_rate::Float64=0.04,
+                   market_risk_premium::Float64=0.06,
+                   beta::Float64=1.0,
+                   rating::String="B") -> WACCCalibration
+
+Calculate Weighted Average Cost of Capital for nonprofit hospitals.
+
+Supports :capm, :conservative, :aggressive models for cost_of_equity.
+For nonprofits, tax_exempt=true forces no tax shield on debt.
+"""
+function calculate_wacc(financials::NamedTuple, balance_sheet;
+                       cost_of_equity_model::Symbol=:capm,
+                       tax_exempt::Bool=true,
+                       risk_free_rate::Float64=0.04,
+                       market_risk_premium::Float64=0.06,
+                       beta::Float64=1.0,
+                       rating::String="B")::WACCCalibration
+
+    # Cost of equity via CAPM or variants
+    coe = if cost_of_equity_model == :capm
+        risk_free_rate + beta * market_risk_premium
+    elseif cost_of_equity_model == :conservative
+        risk_free_rate + (beta + 0.2) * market_risk_premium
+    elseif cost_of_equity_model == :aggressive
+        max(risk_free_rate, (risk_free_rate + (beta - 0.2) * market_risk_premium))
+    else
+        throw(ArgumentError("Unknown cost_of_equity_model: $cost_of_equity_model"))
+    end
+
+    # Cost of debt: S&P rating → spread
+    rating_spreads = Dict(
+        "AAA" => 0.010, "AA" => 0.015, "A" => 0.020, "BBB" => 0.030,
+        "BB" => 0.045, "B" => 0.065, "CCC" => 0.100, "CC" => 0.150
+    )
+    spread = get(rating_spreads, rating, 0.065)  # Default to B if unrecognized
+    cod = risk_free_rate + spread
+
+    # Target debt/capitalization
+    total_cap = balance_sheet.long_term_debt + balance_sheet.net_assets_unrestricted
+    target_debt_ratio = total_cap > 0 ? balance_sheet.long_term_debt / total_cap : 0.3
+
+    # WACC = (E/V) * CoE + (D/V) * CoD * (1 - tax_rate)
+    equity_ratio = 1.0 - target_debt_ratio
+    tax_rate = tax_exempt ? 0.0 : 0.21
+    wacc_val = equity_ratio * coe + target_debt_ratio * cod * (1.0 - tax_rate)
+
+    return WACCCalibration(
+        cost_of_equity = coe,
+        cost_of_debt = cod,
+        target_debt_ratio = target_debt_ratio,
+        wacc = wacc_val
+    )
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# A-05: Capital Budgeting (IRR, NPV, Payback)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@kwdef struct CapexProject
+    name::String
+    initial_outlay::Float64
+    useful_life::Int
+    annual_cf::Vector{Float64}
+    salvage_value::Float64 = 0.0
+    tax_rate::Float64 = 0.0
+end
+
+@kwdef struct CapexMetrics
+    npv::Float64
+    irr::Float64
+    payback_years::Float64
+    profitability_index::Float64
+    pi_rank::Int = 0
+end
+
+"""
+    calculate_capex_metrics(project::CapexProject, wacc::Float64) -> CapexMetrics
+
+Calculate NPV, IRR, payback period, and profitability index for a capital project.
+"""
+function calculate_capex_metrics(project::CapexProject, wacc::Float64)::CapexMetrics
+    initial = project.initial_outlay
+    cfs = project.annual_cf
+
+    # NPV = Σ CF_t / (1 + WACC)^t - Initial_Outlay + Salvage / (1 + WACC)^n
+    npv_val = -initial + sum(cfs[t] / (1.0 + wacc)^t for t in 1:length(cfs))
+    if !isnan(project.salvage_value) && project.salvage_value > 0.0
+        npv_val += project.salvage_value / (1.0 + wacc)^length(cfs)
+    end
+
+    # IRR: find rate where NPV = 0
+    irr_val = 0.0
+    try
+        irr_fn(r) = -initial + sum(cfs[t] / (1.0 + r)^t for t in 1:length(cfs)) +
+                    (project.salvage_value > 0.0 ? project.salvage_value / (1.0 + r)^length(cfs) : 0.0)
+        irr_val = find_zero(irr_fn, (0.0, 1.0); xatol=1e-6)
+    catch
+        irr_val = NaN
+    end
+
+    # Payback period: years until cumsum(CF) ≥ initial_outlay
+    cumsum_cf = cumsum(cfs)
+    payback = Inf
+    for (t, cum) in enumerate(cumsum_cf)
+        if cum ≥ initial
+            payback = t - 1 + (initial - (t > 1 ? cumsum_cf[t-1] : 0.0)) / cfs[t]
+            break
+        end
+    end
+    payback = isfinite(payback) ? payback : length(cfs) + 1.0
+
+    # Profitability Index = (NPV + Initial) / Initial = (PV of inflows) / Initial
+    pi = initial > 0 ? (npv_val + initial) / initial : 0.0
+
+    return CapexMetrics(
+        npv = npv_val,
+        irr = isnan(irr_val) ? 0.0 : irr_val,
+        payback_years = payback,
+        profitability_index = pi
+    )
+end
+
+"""
+    rank_projects(projects::Vector{CapexProject}, wacc::Float64;
+                  budget_constraint::Union{Float64,Nothing}=nothing) -> DataFrame
+
+Rank capital projects by profitability index; optionally solve knapsack within budget.
+"""
+function rank_projects(projects::Vector{CapexProject}, wacc::Float64;
+                       budget_constraint::Union{Float64,Nothing}=nothing)::DataFrame
+
+    rows = NamedTuple[]
+    for (idx, p) in enumerate(projects)
+        metrics = calculate_capex_metrics(p, wacc)
+        push!(rows, (
+            name = p.name,
+            initial_outlay = p.initial_outlay,
+            npv = metrics.npv,
+            irr = metrics.irr,
+            payback_years = metrics.payback_years,
+            profitability_index = metrics.profitability_index,
+            pi_rank = 0,
+            selected = true
+        ))
+    end
+
+    df = DataFrame(rows)
+    sort!(df, :profitability_index; rev=true)
+    df[!, :pi_rank] = 1:nrow(df)
+
+    # Apply budget constraint if provided
+    if !isnothing(budget_constraint)
+        cumulative = cumsum(df.initial_outlay)
+        df[!, :selected] = cumulative .<= budget_constraint
+        df[!, :cumulative_investment] = cumulative
+    else
+        df[!, :cumulative_investment] = cumsum(df.initial_outlay)
+    end
+
+    return df
+end
 
 """
     debt_service_coverage_ratio(net_operating_income::Float64,
