@@ -25,7 +25,8 @@ include("../src/network/HospitalNetworkSimulation.jl")
             Set(["General Ward", "ED", "ICU"]),
             Set(["Trauma", "NICU"]),
             0.7, 0.85,
-            Dict("Medicare" => 0.45, "Medicaid" => 0.25, "Commercial" => 0.20, "Uninsured" => 0.10)
+            Dict("Medicare" => 0.45, "Medicaid" => 0.25, "Commercial" => 0.20, "Uninsured" => 0.10),
+            1800.0
         )
 
         @test hospital.hospital_id == "H1"
@@ -38,6 +39,7 @@ include("../src/network/HospitalNetworkSimulation.jl")
         @test hospital.bed_utilization == 0.7
         @test hospital.quality_score == 0.85
         @test hospital.payer_mix["Medicare"] == 0.45
+        @test hospital.base_cost_per_day == 1800.0
     end
 
     # ================== HospitalNetwork Initialization Tests ==================
@@ -51,6 +53,12 @@ include("../src/network/HospitalNetworkSimulation.jl")
         @test network.patient_choice_model == "hybrid"
         @test isempty(network.patients)
         @test network.time_now == 0.0
+
+        # New fields
+        @test length(network.service_availability) == 5
+        @test !isempty(network.shared_service_lines)
+        @test length(network.capacity_state) == 5
+        @test all(v == 0 for v in values(network.capacity_state))
 
         # Custom network
         network2 = HospitalNetwork(
@@ -508,6 +516,245 @@ include("../src/network/HospitalNetworkSimulation.jl")
 
         @test all(v >= 0 for v in values(results["hospital_volumes"]))
         @test all(c >= 0.0 for c in values(results["hospital_costs"]))
+    end
+
+    # ================== Population Struct Tests ==================
+    @testset "Population Struct" begin
+        # Default population
+        pop = Population()
+        @test pop.size == 50_000
+        @test pop.annual_admission_rate == 120.0
+        @test pop.region_radius_miles == 50.0
+        @test pop.chronic_disease_prevalence == 0.35
+        @test sum(values(pop.age_distribution)) ≈ 1.0 atol=0.01
+        @test sum(values(pop.payer_mix)) ≈ 1.0 atol=0.01
+
+        # Custom population
+        pop2 = Population(
+            size=10_000,
+            annual_admission_rate=150.0,
+            region_center=(40.0, -80.0),
+            region_radius_miles=30.0,
+            chronic_disease_prevalence=0.40
+        )
+        @test pop2.size == 10_000
+        @test pop2.annual_admission_rate == 150.0
+        @test pop2.region_center == (40.0, -80.0)
+        @test pop2.chronic_disease_prevalence == 0.40
+
+        # daily_admission_rate helper
+        rate = daily_admission_rate(pop)
+        expected = (50_000 * 120.0 / 1000.0) / 365.0
+        @test rate ≈ expected atol=0.001
+    end
+
+    # ================== Service Availability & Shared Service Lines ==================
+    @testset "Service Availability and Shared Service Lines" begin
+        network = HospitalNetwork(num_hospitals=5)
+
+        # service_availability mirrors each hospital's service_lines
+        for (hosp_id, hosp) in network.hospitals
+            @test haskey(network.service_availability, hosp_id)
+            @test network.service_availability[hosp_id] == hosp.service_lines
+        end
+
+        # shared_service_lines: every service listed in a hospital's service_lines
+        # must appear in shared_service_lines with that hospital listed
+        for (hosp_id, hosp) in network.hospitals
+            for svc in hosp.service_lines
+                @test haskey(network.shared_service_lines, svc)
+                @test hosp_id in network.shared_service_lines[svc]
+            end
+        end
+
+        # General Ward and ED are in every hospital
+        @test length(network.shared_service_lines["General Ward"]) == 5
+        @test length(network.shared_service_lines["ED"]) == 5
+    end
+
+    # ================== Capacity State & Overflow Tests ==================
+    @testset "Capacity State Tracking" begin
+        network = HospitalNetwork(num_hospitals=3, num_days=5)
+        @test all(v == 0 for v in values(network.capacity_state))
+
+        simulate_network_flow!(network, 30, 2.0)
+
+        # After simulation, capacity state should be >= 0 for all hospitals
+        @test all(v >= 0 for v in values(network.capacity_state))
+    end
+
+    @testset "has_capacity Function" begin
+        network = HospitalNetwork(num_hospitals=2)
+
+        # Initially all hospitals have capacity
+        @test has_capacity(network, "H1")
+        @test has_capacity(network, "H2")
+
+        # Artificially fill H1 to capacity
+        network.capacity_state["H1"] = network.hospitals["H1"].total_beds
+        @test !has_capacity(network, "H1")
+        @test has_capacity(network, "H2")
+    end
+
+    @testset "Overflow Handling: At-Capacity Routing" begin
+        # Create a tiny network so overflow is likely
+        network = HospitalNetwork(num_hospitals=2, num_days=5, patient_choice_model="distance")
+
+        # Fill H1 to capacity so patients overflow to H2
+        network.capacity_state["H1"] = network.hospitals["H1"].total_beds
+
+        patient = PatientAgent(
+            id="PX", arrival_time=0.0, admission_date=Date(2026, 4, 1),
+            primary_diagnosis="I10", secondary_diagnoses=String[], drg_code="39900",
+            assigned_service_line="General Ward", location="waiting", los_target=3,
+            cumulative_cost=0.0, cost_by_day=Float64[],
+            daily_costs=Dict{String, Float64}("labor" => 0.0, "supplies" => 0.0, "overhead" => 0.0),
+            procedures=String[], payer="Medicare", comorbidity_count=0,
+            discharge_date=nothing, metadata=Dict{String, Any}()
+        )
+
+        patient_location = (38.5, -84.0)
+        route_patient_to_hospital!(network, patient, patient_location)
+
+        # Patient should be routed to H2 (H1 is full) or marked overflowed
+        assigned = patient.metadata["assigned_hospital"]
+        @test assigned in keys(network.hospitals)
+    end
+
+    @testset "Overflow Stats in Results" begin
+        network = HospitalNetwork(num_hospitals=3, num_days=7)
+        simulate_network_flow!(network, 100, 3.0)
+
+        results = network.network_results
+        @test haskey(results, "hospital_overflow")
+        @test haskey(results, "regional")
+        regional = results["regional"]
+        @test haskey(regional, "total_overflow_events")
+        @test haskey(regional, "overflow_rate")
+        @test regional["overflow_rate"] >= 0.0
+        @test regional["overflow_rate"] <= 1.0
+    end
+
+    # ================== Cost Choice Model Tests ==================
+    @testset "Hospital Choice - Cost Model" begin
+        network = HospitalNetwork(
+            num_hospitals=3,
+            patient_choice_model="cost"
+        )
+
+        patient = PatientAgent(
+            id="P_COST", arrival_time=0.0, admission_date=Date(2026, 4, 1),
+            primary_diagnosis="I10", secondary_diagnoses=String[], drg_code="28340",
+            assigned_service_line="General Ward", location="waiting", los_target=3,
+            cumulative_cost=0.0, cost_by_day=Float64[],
+            daily_costs=Dict{String, Float64}("labor" => 0.0, "supplies" => 0.0, "overhead" => 0.0),
+            procedures=String[], payer="Commercial", comorbidity_count=0,
+            discharge_date=nothing, metadata=Dict{String, Any}()
+        )
+
+        patient_location = (38.5, -84.0)
+        chosen = choose_hospital(network, patient, patient_location)
+
+        @test chosen in keys(network.hospitals)
+        # The chosen hospital should have the lowest base_cost_per_day among
+        # those offering General Ward
+        min_cost = minimum(
+            network.hospitals[id].base_cost_per_day
+            for id in keys(network.hospitals)
+            if "General Ward" in network.hospitals[id].service_lines
+        )
+        @test network.hospitals[chosen].base_cost_per_day == min_cost
+    end
+
+    @testset "All Four Choice Models Produce Valid Results" begin
+        for model in ["distance", "quality", "cost", "hybrid"]
+            network = HospitalNetwork(num_hospitals=3, num_days=5, patient_choice_model=model)
+            simulate_network_flow!(network, 50, 2.0)
+            @test network.network_results["total_patients"] > 0
+            @test network.patient_choice_model == model
+        end
+    end
+
+    # ================== simulate_network! (Population API) Tests ==================
+    @testset "simulate_network! with Population" begin
+        network = HospitalNetwork(
+            network_name="Population Test Network",
+            num_hospitals=4,
+            num_days=14
+        )
+
+        pop = Population(
+            size=20_000,
+            annual_admission_rate=100.0,
+            region_center=(38.5, -84.0),
+            region_radius_miles=40.0
+        )
+
+        simulate_network!(network, pop, 14)
+
+        @test !isempty(network.network_results)
+        @test network.network_results["total_patients"] > 0
+        @test network.network_results["avg_cost_per_patient"] > 0.0
+        @test haskey(network.network_results, "regional")
+    end
+
+    @testset "simulate_network! extends time window if needed" begin
+        network = HospitalNetwork(num_hospitals=3, num_days=7)
+        pop = Population(size=5_000, annual_admission_rate=80.0)
+
+        # Request 30 days even though network was built for 7
+        simulate_network!(network, pop, 30)
+
+        @test network.time_end >= 30 * 24.0
+        @test network.network_results["total_patients"] >= 0
+    end
+
+    # ================== Regional Financial Outcome Aggregation ==================
+    @testset "Regional Outcome Aggregation" begin
+        network = HospitalNetwork(num_hospitals=5, num_days=14)
+        simulate_network_flow!(network, 200, 4.0)
+
+        results = network.network_results
+        regional = results["regional"]
+
+        @test regional["num_hospitals_active"] >= 1
+        @test regional["avg_patient_distance"] >= 0.0
+        @test haskey(regional, "total_overflow_events")
+    end
+
+    # ================== 10-Hospital × 90-Day Scale Test ==================
+    @testset "Scale: 10 hospitals × 90 days" begin
+        network = HospitalNetwork(
+            network_name="Regional Scale Test",
+            num_hospitals=10,
+            num_days=90,
+            patient_choice_model="hybrid"
+        )
+
+        pop = Population(
+            size=100_000,
+            annual_admission_rate=100.0,
+            region_radius_miles=75.0
+        )
+
+        t_start = time()
+        simulate_network!(network, pop, 90)
+        elapsed = time() - t_start
+
+        @test network.network_results["total_patients"] > 0
+        @test length(network.hospitals) == 10
+        @test size(network.referral_matrix) == (10, 10)
+
+        # Performance requirement: < 30 seconds
+        @test elapsed < 30.0
+
+        # All 10 hospitals should be tracked in results
+        @test length(network.network_results["hospital_volumes"]) == 10
+        @test length(network.network_results["hospital_costs"]) == 10
+
+        # Regional aggregation should cover all hospitals
+        regional = network.network_results["regional"]
+        @test regional["num_hospitals_active"] >= 1
     end
 
 end  # End of main testset
