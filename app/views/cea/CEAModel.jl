@@ -11,6 +11,10 @@ using Stipple, StippleUI, StipplePlotly
         Dict("name"=>"Standard Care","cost"=>50000.0,"effect"=>0.8),
         Dict("name"=>"New Intervention","cost"=>75000.0,"effect"=>0.95),
     ]
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out icer_rows::Vector{Dict{String,Any}} = Dict{String,Any}[]
     @out inb::Float64 = 0.0
     @out nmb::Float64 = 0.0

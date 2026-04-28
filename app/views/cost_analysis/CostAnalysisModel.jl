@@ -14,6 +14,10 @@ using Stipple, StippleUI, StipplePlotly
     @in discount_rate::Float64 = 0.03
     @in high_cost_pct::Float64 = 0.05
     @in categories::Vector{String} = ["inpatient", "outpatient", "pharmacy", "imaging", "lab", "dme"]
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out total_cost::Float64 = 0.0
     @out total_cost_ci_low::Float64 = 0.0
     @out total_cost_ci_high::Float64 = 0.0

@@ -104,6 +104,7 @@ using Stipple, StippleUI, Dates
     # Export
     @in do_csv::Bool = false
     @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
 
     @out save_status::String = ""
     @out validation_errors::Vector{String} = String[]

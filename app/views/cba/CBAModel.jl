@@ -16,6 +16,10 @@ using Stipple, StippleUI, StipplePlotly
     @in adoption_rate_max::Float64 = 0.80
     @in cost_per_patient::Float64 = 500.0
     @in population_growth::Float64 = 0.02
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out npv::Float64 = 0.0
     @out roi::Float64 = 0.0
     @out bcr::Float64 = 0.0

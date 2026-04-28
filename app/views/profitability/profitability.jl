@@ -99,7 +99,6 @@ function ui_profitability(model)
         ),
 
         # Export bar
-        export_bar(csv_field=nothing, xlsx_field=nothing, json_field=nothing,
-                   label="Export profitability analysis"),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

@@ -13,6 +13,10 @@ using Stipple, StippleUI, StipplePlotly
     @in account_code::String = ""
     @in query_name::String = ""
     @in version_name::String = ""
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out result_rows::Vector{Dict{String,Any}} = Dict{String,Any}[]
     @out result_count::Int = 0
     @out saved_queries::Vector{Dict{String,Any}} = Dict{String,Any}[]

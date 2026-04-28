@@ -14,6 +14,10 @@ using Stipple, StippleUI, StipplePlotly
     @in variable_costs::Float64 = 0.0
     @in fixed_costs::Float64 = 0.0
     @in operating_income::Float64 = 0.0
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out contribution_margin::Float64 = 0.0
     @out break_even_volume::Float64 = 0.0
     @out operating_margin::Float64 = 0.0

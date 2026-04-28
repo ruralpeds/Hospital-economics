@@ -16,6 +16,10 @@ using Stipple, StippleUI, StipplePlotly
     @in pre_period::String = ""
     @in post_period::String = ""
     @in treated_group::String = ""
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out treatment_effect::Float64 = 0.0
     @out effect_ci_low::Float64 = 0.0
     @out effect_ci_high::Float64 = 0.0

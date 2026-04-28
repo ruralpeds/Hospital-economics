@@ -96,7 +96,6 @@ function ui_database(model)
             title="Saved Queries",
         ),
 
-        export_bar(csv_field=nothing, xlsx_field=nothing, json_field=nothing,
-                   label="Export query results"),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

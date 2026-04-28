@@ -14,6 +14,10 @@ using Stipple, StippleUI, StipplePlotly
     @in measure_col::String = ""
     @in subgroup_col::String = ""
     @in modifier_col::String = ""
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out forest_data::Vector{PlotData} = PlotData[]
     @out forest_layout::PlotLayout = PlotLayout()
     @out funnel_data::Vector{PlotData} = PlotData[]

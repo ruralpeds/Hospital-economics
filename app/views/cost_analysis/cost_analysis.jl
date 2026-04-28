@@ -118,7 +118,6 @@ function ui_cost_analysis(model)
         ),
 
         # Export bar
-        export_bar(csv_field=nothing, xlsx_field=nothing, json_field=nothing,
-                   label="Export cost analysis"),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

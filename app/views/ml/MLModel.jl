@@ -14,6 +14,10 @@ using Stipple, StippleUI, StipplePlotly
     @in n_folds::Int = 5
     @in selected_model_id::String = ""
     @in batch_asset_id::String = ""
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out model_metrics::Dict{String,Any} = Dict{String,Any}()
     @out roc_data::Vector{PlotData} = PlotData[]
     @out roc_layout::PlotLayout = PlotLayout()
