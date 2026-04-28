@@ -1,0 +1,108 @@
+name: Coverage Report
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  coverage:
+    name: Code Coverage Analysis
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: julia-actions/setup-julia@v1
+      with:
+        version: '1.11'
+        arch: x64
+
+    - uses: julia-actions/cache@v1
+
+    - name: Install dependencies
+      run: julia --project=. -e "using Pkg; Pkg.instantiate()"
+
+    - name: Run tests with coverage
+      run: julia --project=. -e "
+        using Pkg, Coverage, JSON
+        Pkg.test(coverage=true)
+
+        # Generate coverage data
+        coverage = process_folder()
+
+        # Calculate coverage percentage
+        total_lines = 0
+        covered_lines = 0
+        for (file, lines) in coverage
+          for line_coverage in lines
+            if line_coverage > 0
+              total_lines += 1
+              covered_lines += line_coverage > 0 ? 1 : 0
+            end
+          end
+        end
+
+        coverage_pct = total_lines > 0 ? (covered_lines / total_lines) * 100 : 0
+
+        println(\"Total Coverage: \$(coverage_pct)%\")
+
+        # Write coverage summary
+        open(\"coverage-summary.json\", \"w\") do f
+          JSON.print(f, Dict(
+            \"coverage_percent\" => coverage_pct,
+            \"total_lines\" => total_lines,
+            \"covered_lines\" => covered_lines
+          ))
+        end
+      "
+
+    - name: Parse coverage results
+      id: coverage
+      run: |
+        coverage_pct=$(julia -e "using JSON; data = JSON.parsefile(\"coverage-summary.json\"); println(data[\"coverage_percent\"])")
+        echo "coverage_pct=\${coverage_pct}" >> $GITHUB_OUTPUT
+        echo "Coverage: \${coverage_pct}%"
+
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.lcov
+        verbose: true
+        fail_ci_if_error: false
+
+    - name: Comment PR with coverage
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('coverage-summary.json', 'utf8'));
+          const coverage = data.coverage_percent.toFixed(2);
+          const status = coverage >= 80 ? '✅' : coverage >= 70 ? '⚠️' : '❌';
+
+          const comment = `## Code Coverage Report
+
+          ${status} **Coverage: ${coverage}%**
+
+          - Total Lines: ${data.total_lines}
+          - Covered Lines: ${data.covered_lines}
+
+          > Target: ≥80% coverage for Phase implementations
+          `;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+    - name: Check coverage threshold
+      run: |
+        coverage=${{ steps.coverage.outputs.coverage_pct }}
+        if (( $(echo "$coverage < 70" | bc -l) )); then
+          echo "⚠️  Coverage below 70%"
+        fi

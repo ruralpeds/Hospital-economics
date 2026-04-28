@@ -1,0 +1,47 @@
+{
+  "model_year": 2024,
+  "source": "CMS Physician Fee Schedule",
+  "note": "RHC RVU schedule - sample values for testing",
+  "schedule": [
+    {
+      "visit_type": "initial_visit",
+      "cpt_code": "99201",
+      "rvu": 0.75,
+      "conversion_factor": 33.45,
+      "payment": 25.09,
+      "mileage_adjustment": 0.10
+    },
+    {
+      "visit_type": "established_visit",
+      "cpt_code": "99211",
+      "rvu": 0.39,
+      "conversion_factor": 33.45,
+      "payment": 13.04,
+      "mileage_adjustment": 0.10
+    },
+    {
+      "visit_type": "brief_visit",
+      "cpt_code": "99212",
+      "rvu": 0.60,
+      "conversion_factor": 33.45,
+      "payment": 20.07,
+      "mileage_adjustment": 0.10
+    },
+    {
+      "visit_type": "office_visit_high",
+      "cpt_code": "99213",
+      "rvu": 0.93,
+      "conversion_factor": 33.45,
+      "payment": 31.11,
+      "mileage_adjustment": 0.10
+    },
+    {
+      "visit_type": "complex_visit",
+      "cpt_code": "99214",
+      "rvu": 1.50,
+      "conversion_factor": 33.45,
+      "payment": 50.18,
+      "mileage_adjustment": 0.10
+    }
+  ]
+}

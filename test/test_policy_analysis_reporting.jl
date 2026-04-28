@@ -284,21 +284,23 @@ using .PolicyAnalysisReporting
 
     # ==================== Data Exports ====================
     @testset "Data Export to CSV" begin
-        using DataFrames
-
         results = Dict(
-            :dataframe => DataFrame(
-                Scenario = ["A", "B"],
-                Cost = [100, 200],
-                QALY = [1.0, 1.2]
+            :summary_table => generate_summary_table(
+                ["A", "B"],
+                Dict("total_cost" => 100.0, "total_qalys" => 1.0)
             )
         )
 
-        tempfile = "test_export.csv"
+        tempfile = joinpath(tempdir(), "test_export_$(rand(UInt32)).csv")
         output_path = export_analysis_data(results, tempfile, format="csv")
 
         @test isfile(output_path)
         @test endswith(output_path, ".csv")
+
+        # Verify CSV content has header and two data rows
+        lines = readlines(output_path)
+        @test length(lines) == 3  # header + 2 data rows
+        @test startswith(lines[1], "Scenario")
 
         # Clean up
         rm(tempfile, force=true)

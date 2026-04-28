@@ -20,17 +20,29 @@ using LinearAlgebra
 
 # ── Core engines ──────────────────────────────────────────────────────────
 include("financial.jl")
+include("dupont.jl")
+include("distress_scoring.jl")
 include("econometrics.jl")
 include("simulation.jl")
 include("optimization.jl")
 include("financial_monitoring.jl")
 include("strategic_planning.jl")
 include("value_based_care.jl")
+include("three_statement.jl")
+include("vbc_bayesian.jl")
 
 # ── New healthcare economics domains ──────────────────────────────────────
 include("cost_accounting.jl")
 include("risk_contracting.jl")
+include("ma_risk.jl")
 include("capital_structure.jl")
+include("rhc_cah.jl")
+include("program_340b.jl")
+include("telehealth.jl")
+include("medicaid_dsh.jl")
+include("rhc_optimization.jl")
+include("network_economics.jl")
+include("physician_compensation.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -54,6 +66,16 @@ include("undo_redo.jl")
 export npv, roi, operating_margin, cost_per_patient, break_even_units,
        payback_period, drg_revenue, weighted_payer_rate, net_collection_rate
 
+# DuPont Decomposition (Ch. 1a)
+export DuPont3Factor, DuPont5Factor, dupont_3factor, dupont_5factor
+
+# Distress Scoring (Ch. 1c)
+export AltmanZScore, BeneishMScore, altman_z_double_prime, beneish_m_score
+
+# Three-Statement Projection (Ch. 1b)
+export BalanceSheetSnapshot, ProjectionAssumptions, ThreeStatementProjection,
+       project_three_statement, bs_balances
+
 # Econometrics (Ch. 2)
 export simple_linear_regression, predict_linear, r_squared, mean_absolute_error
 
@@ -71,7 +93,8 @@ export initialize_kalman, kalman_filter_step, margin_tracker, early_warning_sign
 export cost_trajectory, merger_integration_plan, restructuring_plan, revenue_enhancement_plan
 
 # Value-Based Care (Ch. 7) — now exports ALL functions
-export value_score, qalys, quality_score, efficiency_score, readmission_penalty
+export value_score, qalys, quality_score, efficiency_score, readmission_penalty,
+       VBCScenario, BayesianVBCPost, fit_vbc_prior, sample_vbc_posterior, compare_scenarios
 
 # Cost Accounting (Ch. 8)
 export cost_to_charge_ratio, estimate_cost_from_charges, step_down_allocation,
@@ -79,14 +102,45 @@ export cost_to_charge_ratio, estimate_cost_from_charges, step_down_allocation,
 
 # Risk Contracting (Ch. 9)
 export pmpm, shared_savings, shared_risk, risk_corridor,
-       hcc_risk_score, case_mix_index, capitation_rate, medical_loss_ratio
+       hcc_risk_score, case_mix_index, capitation_rate, medical_loss_ratio,
+       HCCDiagnosis, MARAFScore, parse_hcc_coefficients, calculate_member_raf,
+       aggregate_cohort_raf
 
 # Capital Structure (Ch. 10)
 export debt_service_coverage_ratio, days_cash_on_hand, current_ratio,
        debt_to_capitalization, wacc, bond_price, bond_yield_to_maturity,
        capital_budget_ranking, financial_health_scorecard,
        irr, mirr, discounted_payback_period, interest_coverage_ratio,
-       profitability_index, modified_duration, lease_vs_buy
+       profitability_index, modified_duration, lease_vs_buy,
+       WACCCalibration, calculate_wacc,
+       CapexProject, CapexMetrics, calculate_capex_metrics, rank_projects,
+       RHCReimbursement, CAHReimbursement, ReimburseComparison,
+       load_rhc_schedule, load_cah_schedule, project_rhc_revenue, project_cah_revenue, compare_reimbursement
+
+# Drug Economics (Ch. 10a) — 340B Program
+export Drug340B, DrugProgramMetrics, DrugOptimizationResult,
+       load_340b_formulary, estimate_340b_savings, optimize_drug_mix
+
+# Telehealth & RPM (Ch. 10b)
+export TelehealthService, RPMDevice, TelehealthMetrics, RPMFinancialImpact,
+       calculate_telehealth_metrics, calculate_rpm_financial_impact, compare_telehealth_scenarios
+
+# Medicaid DSH & Supplemental Payments (Ch. 10c)
+export HospitalCharacteristics, DSHCalculation, SupplementalPaymentImpact,
+       calculate_medicaid_caseload_percentage, calculate_low_income_percentage,
+       calculate_dsh_index, calculate_dsh_payment, calculate_supplemental_impacts
+
+# RHC Service Line Optimization (Ch. 10d)
+export RHCServiceLine, RHCServiceMetrics, RHCPortfolioOptimization,
+       calculate_rhc_service_metrics, optimize_rhc_portfolio, compare_service_line_scenarios
+
+# Network Economics (Ch. 10e)
+export HospitalNode, NetworkTransfer, NetworkEconomics, NetworkAnalysisResult,
+       calculate_network_margin_impact, analyze_network_system
+
+# Physician Compensation (Ch. 10f)
+export PhysicianProfile, CompensationModel, PhysicianCompensation, SpecialtyBenchmarks,
+       calculate_physician_compensation, benchmark_specialty, identify_outliers
 
 # Budgeting (Ch. 10b)
 export operating_budget, flex_budget, volume_variance, price_variance,

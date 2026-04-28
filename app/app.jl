@@ -25,9 +25,33 @@ function load_config()
 end
 
 # ---------------------------------------------------------------------------
+# Reusable component library  (app/components/)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "form_grid.jl"))
+include(joinpath(APP_ROOT, "components", "result_table.jl"))
+include(joinpath(APP_ROOT, "components", "plot_panel.jl"))
+include(joinpath(APP_ROOT, "components", "export_bar.jl"))
+include(joinpath(APP_ROOT, "components", "cohort_picker.jl"))
+include(joinpath(APP_ROOT, "components", "scenario_picker.jl"))
+include(joinpath(APP_ROOT, "components", "audit_log_viewer.jl"))
+
+# ---------------------------------------------------------------------------
 # Include shared layout
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "layouts", "app_layout.jl"))
+
+# ---------------------------------------------------------------------------
+# Include shared component library (must come before view files)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "common.jl"))
+include(joinpath(APP_ROOT, "components", "page_template.jl"))
+
+# ---------------------------------------------------------------------------
+# Include BugReport component + controller (E27)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "bug_report_redaction.jl"))
+include(joinpath(APP_ROOT, "components", "bug_report.jl"))
+include(joinpath(APP_ROOT, "controllers", "BugReportController.jl"))
 
 # ---------------------------------------------------------------------------
 # Include reactive models — Core views
@@ -66,6 +90,13 @@ include(joinpath(APP_ROOT, "views", "payer_negotiation", "PayerNegotiationModel.
 include(joinpath(APP_ROOT, "views", "community_impact", "CommunityImpactModel.jl"))
 include(joinpath(APP_ROOT, "views", "strategic_planner", "StrategicPlannerModel.jl"))
 include(joinpath(APP_ROOT, "views", "policy_impact", "PolicyImpactModel.jl"))
+
+# ---------------------------------------------------------------------------
+# Include reactive models — MBA Analytics (M1 Starter)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "three_statement", "ThreeStatementModel.jl"))
+include(joinpath(APP_ROOT, "views", "dupont", "DuPontModel.jl"))
+include(joinpath(APP_ROOT, "views", "distress_scoring", "DistressScoringModel.jl"))
 
 # ---------------------------------------------------------------------------
 # Include reactive models — V3.1 modules
@@ -121,6 +152,13 @@ include(joinpath(APP_ROOT, "views", "strategic_planner", "strategic_planner.jl")
 include(joinpath(APP_ROOT, "views", "policy_impact", "policy_impact.jl"))
 
 # ---------------------------------------------------------------------------
+# Include view functions — MBA Analytics (M1 Starter)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "three_statement", "three_statement.jl"))
+include(joinpath(APP_ROOT, "views", "dupont", "dupont.jl"))
+include(joinpath(APP_ROOT, "views", "distress_scoring", "distress_scoring.jl"))
+
+# ---------------------------------------------------------------------------
 # Include view functions — V3.1 modules
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "team_bundled", "team_bundled.jl"))
@@ -142,6 +180,15 @@ include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
 include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
+include(joinpath(APP_ROOT, "controllers", "AnalyticsController.jl"))
+
+# ---------------------------------------------------------------------------
+# Dev-only component library demo (disabled in production)
+# ---------------------------------------------------------------------------
+if get(ENV, "GENIE_ENV", "dev") != "prod"
+    include(joinpath(APP_ROOT, "views", "dev", "DevComponentsModel.jl"))
+    include(joinpath(APP_ROOT, "views", "dev", "dev_components.jl"))
+end
 
 # ---------------------------------------------------------------------------
 # Include routes

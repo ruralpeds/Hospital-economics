@@ -217,4 +217,91 @@ function handle_reh_conversion(payload::Dict)
     )
 end
 
+# ═══════════════════════════════════════════════════════════════════════════
+# A-06: Medicare Advantage Risk Adjustment (HCC v28)
+# ═══════════════════════════════════════════════════════════════════════════
+
+"""
+    handle_ma_risk(payload::Dict) -> Dict
+
+API handler for MA RAF calculation and cohort analysis.
+
+Expected payload:
+  - members: Vector of member dicts with member_id, age, sex, diagnoses
+  - annual_capitation: Float64 (default 10,000)
+
+Returns member-level RAFs and cohort statistics.
+"""
+function handle_ma_risk(payload::Dict)::Dict
+    try
+        members_data = get(payload, "members", [])
+        annual_capitation = Float64(get(payload, "annual_capitation", 10_000.0))
+
+        if isempty(members_data)
+            return Dict(
+                "status" => "error",
+                "message" => "No member data provided"
+            )
+        end
+
+        # Load HCC coefficients
+        fixture_path = joinpath(@__DIR__, "..", "..", "test", "fixtures", "cms", "hcc_v28_coefficients.json")
+        hcc_coefficients = parse_hcc_coefficients(fixture_path)
+
+        # Calculate member-level RAFs
+        member_rafs = []
+        for member in members_data
+            member_id = String(get(member, "member_id", "UNKNOWN"))
+            age = Int(get(member, "age", 65))
+            sex = String(get(member, "sex", "M"))
+            diagnoses = String.(get(member, "diagnoses", []))
+
+            # Calculate RAF
+            raf_score = calculate_member_raf(
+                member_id, age, sex, diagnoses;
+                hcc_coefficients = hcc_coefficients
+            )
+
+            push!(member_rafs, Dict(
+                "member_id" => raf_score.member_id,
+                "age" => raf_score.age,
+                "sex" => raf_score.sex,
+                "hcc_count" => raf_score.hcc_count,
+                "diagnoses" => raf_score.diagnoses,
+                "combined_raf" => raf_score.combined_raf,
+                "risk_band" => raf_score.risk_band
+            ))
+        end
+
+        # Aggregate cohort statistics
+        raf_objects = [
+            calculate_member_raf(
+                String(m["member_id"]), Int(m["age"]), String(m["sex"]),
+                String.(get(m, "diagnoses", []));
+                hcc_coefficients = hcc_coefficients
+            )
+            for m in members_data
+        ]
+        cohort_agg = aggregate_cohort_raf(raf_objects; annual_capitation = annual_capitation)
+
+        return Dict(
+            "status" => "ok",
+            "member_rafs" => member_rafs,
+            "cohort_stats" => Dict(
+                "member_count" => length(member_rafs),
+                "mean_raf" => cohort_agg["mean_raf"],
+                "std_raf" => cohort_agg["std_raf"],
+                "percentiles" => get(cohort_agg, "percentiles", Dict()),
+                "risk_band_distribution" => get(cohort_agg, "risk_band_distribution", Dict()),
+                "capitation_impact" => get(cohort_agg, "capitation_impact", Dict())
+            )
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end # module RiskController

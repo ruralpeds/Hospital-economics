@@ -1,95 +1,46 @@
-"""
-Medicaid Supplemental Payments UI - DSH/UPL/SDP calculator with reform scenarios.
-"""
-
-function ui_medicaid_supplemental(model)
-    app_layout(model, "Medicaid Supplemental", [
-        row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Medicaid Supplemental Payments", class="q-mb-none"),
-                p("DSH, UPL, and State Directed Payment calculations with reform modeling",
-                  class="text-grey-7"),
-            ]),
-            cell(class="col-auto", [
-                btn("Calculate", icon="payments", color="primary", @click(:recalculate)),
-            ]),
-        ]),
-
-        # ── KPI Cards ──────────────────────────────────────────────────
-        row(class="q-mb-lg q-gutter-md", [
-            cell(class="col-md-2 col-sm-4 col-xs-6", [
-                card([card_section(class="text-center", [
-                    p("DSH", class="text-overline q-mb-none"),
-                    h5("\${{ (dsh_payment / 1e6).toFixed(2) }}M", class="q-mb-none text-blue"),
-                ])])
-            ]),
-            cell(class="col-md-2 col-sm-4 col-xs-6", [
-                card([card_section(class="text-center", [
-                    p("UPL", class="text-overline q-mb-none"),
-                    h5("\${{ (upl_payment / 1e6).toFixed(2) }}M", class="q-mb-none text-teal"),
-                ])])
-            ]),
-            cell(class="col-md-2 col-sm-4 col-xs-6", [
-                card([card_section(class="text-center", [
-                    p("SDP", class="text-overline q-mb-none"),
-                    h5("\${{ (sdp_payment / 1e6).toFixed(2) }}M", class="q-mb-none text-purple"),
-                ])])
-            ]),
-            cell(class="col-md-2 col-sm-4 col-xs-6", [
-                card([card_section(class="text-center", [
-                    p("Total", class="text-overline q-mb-none"),
-                    h5("\${{ (total_supplemental / 1e6).toFixed(2) }}M", class="q-mb-none text-green"),
-                ])])
-            ]),
-            cell(class="col-md-2 col-sm-4 col-xs-6", [
-                card([card_section(class="text-center", [
-                    p("Shortfall", class="text-overline q-mb-none"),
-                    h5("\${{ (net_medicaid_shortfall / 1e6).toFixed(2) }}M", class="q-mb-none text-red"),
-                ])])
-            ]),
-            cell(class="col-md-2 col-sm-4 col-xs-6", [
-                card([card_section(class="text-center", [
-                    p("Provider Tax", class="text-overline q-mb-none"),
-                    h5("\${{ (provider_tax_cost / 1e6).toFixed(2) }}M", class="q-mb-none text-orange"),
-                ])])
-            ]),
-        ]),
-
-        # ── Inputs ─────────────────────────────────────────────────────
-        row(class="q-mb-lg q-gutter-md", [
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    h6("Hospital Financials", class="q-mb-md"),
-                    textfield(:medicaid_costs, label="Medicaid Costs (\$)", type="number", filled=true, dense=true, class="q-mb-sm"),
-                    textfield(:medicaid_payments, label="Medicaid Payments (\$)", type="number", filled=true, dense=true, class="q-mb-sm"),
-                    textfield(:uncompensated_care_costs, label="Uncompensated Care (\$)", type="number", filled=true, dense=true, class="q-mb-sm"),
-                    textfield(:gross_patient_revenue, label="Gross Patient Revenue (\$)", type="number", filled=true, dense=true, class="q-mb-sm"),
-                    textfield(:total_operating_expenses, label="Total Operating Expenses (\$)", type="number", filled=true, dense=true),
-                ])])
-            ]),
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    h6("Provider Settings", class="q-mb-md"),
-                    q__select(:provider_class, options=:provider_class_options, label="Provider Class",
-                              filled=true, dense=true, var"emit-value"=true, var"map-options"=true, class="q-mb-sm"),
-                    toggle(:state_has_expansion, label="State Has Medicaid Expansion", class="q-mb-sm"),
-                    textfield(:provider_tax_rate, label="Provider Tax Rate", type="number", filled=true, dense=true),
-                ])])
-            ]),
-        ]),
-
-        # ── Charts ─────────────────────────────────────────────────────
-        row(class="q-mb-lg q-gutter-md", [
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    plot(:payment_chart_data, layout=:payment_chart_layout, config="{ responsive: true }")
-                ])])
-            ]),
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    plot(:reform_chart_data, layout=:reform_chart_layout, config="{ responsive: true }")
-                ])])
-            ]),
-        ]),
-    ])
+"""Medicaid DSH & Supplemental Payment Analyzer UI"""
+function ui_medicaid_supplemental()
+    page(@current, partial=true, [
+        heading("Medicaid DSH & Supplemental Payment Analyzer", class="text-h4 q-mb-md")
+        row(cell(class="col-xs-12 col-sm-6", card(card_section([
+            heading("Hospital Characteristics", class="text-h6 q-mb-md")
+            textfield(:hospital_name, label="Hospital name", class="full-width q-mb-md")
+            textfield(:medicare_cases, label="Annual Medicare cases", type="number", class="full-width q-mb-md")
+            textfield(:medicaid_cases, label="Annual Medicaid cases", type="number", class="full-width q-mb-md")
+            textfield(:uninsured_cases, label="Annual uninsured cases", type="number", class="full-width")
+        ]))))
+        row(cell(class="col-xs-12 col-sm-6", card(card_section([
+            heading("Low-Income & Volume Metrics", class="text-h6 q-mb-md")
+            textfield(:low_income_pct, label="Low-income % of uninsured", type="number", class="full-width q-mb-md")
+            textfield(:medicaid_bed_days, label="Annual Medicaid bed days", type="number", class="full-width q-mb-md")
+            textfield(:total_bed_days, label="Total annual bed days", type="number", class="full-width q-mb-md")
+            textfield(:base_medicaid_payment, label="Base Medicaid payment ($)", type="number", class="full-width")
+        ]))))
+        row(cell(class="col-xs-12", card(card_section([
+            heading("Program Options", class="text-h6 q-mb-md")
+            toggle(:include_dsh, label="Include DSH adjustment")
+            toggle(:include_upl, label="Include UPL adjustment")
+        ]))))
+        row(cell(class="col-xs-12 col-sm-3 q-offset-sm-9", button("Calculate", @click("calculate_btn"), color="primary", class="full-width q-mb-lg")))
+        @if(!isempty(:error_message))
+            row(cell(class="col-xs-12", card(card_section(class="bg-red-2", text(:error_message)))))
+        @end
+        @if(:dsh_index > 0)
+            row(
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("Medicaid %"), heading(@text(:medicaid_caseload_pct, format(x)=Printf.@sprintf("%.1f%%", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("Low-Income %"), heading(@text(:low_income_utilization_pct, format(x)=Printf.@sprintf("%.1f%%", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("DSH Index"), heading(@text(:dsh_index, format(x)=Printf.@sprintf("%.2f", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("Est. DSH Payment"), heading(@text(:estimated_dsh_payment, format(x)=Printf.@sprintf("$%.0f", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("DSH Range"), heading(@text(:dsh_floor, format(x)=Printf.@sprintf("$%.0f", x)), class="text-body2 q-my-md"), text(" - "), @text(:dsh_ceiling, format(x)=Printf.@sprintf("$%.0f", x)), class="text-body2")])))
+            )
+        @end
+        @if(:total_supplemental > 0)
+            row(
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Total Supplemental"), heading(@text(:total_supplemental, format(x)=Printf.@sprintf("$%.0f", x)), class="text-h5 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Supplemental %"), heading(@text(:supplemental_as_pct, format(x)=Printf.@sprintf("%.2f%%", x)), class="text-h5 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-6", card(card_section(class="text-center", [text("Total Medicaid Revenue"), heading(@text(:total_medicaid_revenue, format(x)=Printf.@sprintf("$%.0f", x)), class="text-h5 q-my-md")])))
+            )
+            row(cell(class="col-xs-12", card(card_section([text(:supplemental_detail, class="text-body2")]))))
+        @end
+    ]) |> html
 end

@@ -1,91 +1,37 @@
-"""
-340B Drug Pricing Impact UI - savings analysis, policy risk scenarios.
-"""
-
-function ui_program_340b(model)
-    app_layout(model, "340B Drug Pricing Impact", [
-        row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("340B Drug Pricing Impact", class="q-mb-none"),
-                p("Model drug savings, contract pharmacy economics, and legislative risk",
-                  class="text-grey-7"),
-            ]),
-            cell(class="col-auto", [
-                btn("Calculate Impact", icon="calculate", color="primary",
-                    @click(:recalculate)),
-            ]),
-        ]),
-
-        # ── Impact KPIs ─────────────────────────────────────────────────
-        row(class="q-mb-lg q-gutter-md", [
-            cell(class="col-md-3 col-sm-6 col-xs-12", [
-                card([card_section(class="text-center", [
-                    p("Net 340B Benefit", class="text-overline q-mb-none"),
-                    h4("\${{ (net_benefit / 1e3).toFixed(0) }}K", class="q-mb-none text-green"),
-                ])])
-            ]),
-            cell(class="col-md-3 col-sm-6 col-xs-12", [
-                card([card_section(class="text-center", [
-                    p("Margin Impact", class="text-overline q-mb-none"),
-                    h4("+{{ margin_impact_pct.toFixed(1) }}%", class="q-mb-none text-green"),
-                ])])
-            ]),
-            cell(class="col-md-3 col-sm-6 col-xs-12", [
-                card([card_section(class="text-center", [
-                    p("Contract Pharmacy Savings", class="text-overline q-mb-none"),
-                    h4("\${{ (contract_pharmacy_savings / 1e3).toFixed(0) }}K", class="q-mb-none"),
-                ])])
-            ]),
-            cell(class="col-md-3 col-sm-6 col-xs-12", [
-                card([card_section(class="text-center", [
-                    p("Savings/Rx", class="text-overline q-mb-none"),
-                    h4("\${{ savings_per_prescription.toFixed(2) }}", class="q-mb-none"),
-                ])])
-            ]),
-        ]),
-
-        # ── Input Sliders ───────────────────────────────────────────────
-        row(class="q-mb-lg q-gutter-md", [
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    h6("340B Parameters", class="q-mb-md"),
-                    textfield(:drug_spend, label="Total Drug Spend (\$)", type="number", filled=true, dense=true, class="q-mb-md"),
-                    p("Discount Rate: {{ (discount_rate * 100).toFixed(0) }}%", class="q-mb-none"),
-                    slider(:discount_rate, min=0.10, max=0.60, step=0.01, label=true, class="q-mb-md"),
-                    p("Contract Pharmacy %: {{ (contract_pharmacy_pct * 100).toFixed(0) }}%", class="q-mb-none"),
-                    slider(:contract_pharmacy_pct, min=0.0, max=1.0, step=0.05, label=true, class="q-mb-md"),
-                    textfield(:admin_cost, label="Admin Cost (\$)", type="number", filled=true, dense=true, class="q-mb-md"),
-                    toggle(:manufacturer_restrictions, label="Manufacturer Restrictions Active"),
-                ])])
-            ]),
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    plot(:impact_chart_data, layout=:impact_chart_layout, config="{ responsive: true }")
-                ])])
-            ]),
-        ]),
-
-        # ── Scenario Comparison ─────────────────────────────────────────
-        row(class="q-mb-lg q-gutter-md", [
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    plot(:scenario_chart_data, layout=:scenario_chart_layout, config="{ responsive: true }")
-                ])])
-            ]),
-            cell(class="col-md-6 col-xs-12", [
-                card([card_section([
-                    h6("Policy Risk Scenarios", class="q-mb-md"),
-                    card(var"v-for"="(s, idx) in policy_risk_scenarios", key!="idx",
-                        class="q-mb-sm", flat=true, bordered=true, [
-                        card_section(class="q-pa-sm", [
-                            strong("{{ s.scenario }}"),
-                            badge("{{ s.probability }}", color="primary", class="q-ml-sm"),
-                            p("\${{ (s.net_benefit / 1000).toFixed(0) }}K -- {{ s.description }}",
-                              class="q-mb-none text-caption"),
-                        ])
-                    ]),
-                ])])
-            ]),
-        ]),
-    ])
+"""340B Drug Program Savings Estimator DSL UI"""
+function ui_program_340b()
+    page(@current, partial=true, [
+        heading("340B Drug Program Savings Estimator", class="text-h4 q-mb-md")
+        row(cell(class="col-xs-12 col-sm-6", card(card_section([
+            heading("Formulary Control", class="text-h6 q-mb-md")
+            button("Load Sample Formulary", @click("load_sample_btn"), color="primary", class="full-width q-mb-md")
+            textfield(:upload_csv, label="Or upload CSV", class="full-width")
+        ]))))
+        row(cell(class="col-xs-12 col-sm-6", card(card_section([
+            heading("Program Parameters", class="text-h6 q-mb-md")
+            textfield(:managed_care_cap, label="Managed care discount cap", type="number", class="full-width q-mb-md")
+            textfield(:budget_constraint, label="Annual budget constraint ($)", type="number", class="full-width")
+        ]))))
+        @if(!isempty(:error_message))
+            row(cell(class="col-xs-12", card(card_section(class="bg-red-2", text(:error_message)))))
+        @end
+        @if(:total_annual_usage > 0)
+            row(
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("Annual Units"), heading(@text(:total_annual_usage, format(x)=Printf.@sprintf("%.0f", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("Avg Discount %"), heading(@text(:avg_discount_pct, format(x)=Printf.@sprintf("%.1f%%", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Est. Annual Savings"), heading(@text(:estimated_savings, format(x)=Printf.@sprintf("$%.0f", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-2", card(card_section(class="text-center", [text("Ceiling/AWP Ratio"), heading(@text(:ceiling_ratio, format(x)=Printf.@sprintf("%.2f", x)), class="text-h6 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("MAC Applicable"), heading(@text(:managed_care_applicability, format(x)=Printf.@sprintf("%.1f%%", x)), class="text-h6 q-my-md")])))
+            )
+        @end
+        row(cell(class="col-xs-12 col-sm-3 q-offset-sm-9", button("Optimize Drug Mix", @click("optimize_mix_btn"), color="accent", class="full-width q-mb-lg")))
+        @if(:optimized_drug_count > 0)
+            row(
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Selected Drugs"), heading(@text(:optimized_drug_count, format(x)=Printf.@sprintf("%d", x)), class="text-h5 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Optimization Savings"), heading(@text(:optimization_savings, format(x)=Printf.@sprintf("$%.0f", x)), class="text-h5 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Budget Remaining"), heading(@text(:budget_remaining, format(x)=Printf.@sprintf("$%.0f", x)), class="text-h5 q-my-md")]))),
+                cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Optimized Units"), heading(@text(:optimization_units, format(x)=Printf.@sprintf("%.0f", x)), class="text-h5 q-my-md")])))
+            )
+        @end
+    ]) |> html
 end
