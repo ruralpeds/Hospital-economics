@@ -1,103 +1,74 @@
-"""
-Stipple reactive model for Medicaid DSH/UPL/SDP Supplemental Payment Calculator.
-Models DSH, UPL, and State Directed Payment programs for rural hospitals.
-Delegates to RuralHospitalSim.calculate_medicaid_supplemental() for computation.
-"""
-using Stipple, StippleUI, StipplePlotly
-
-# Import domain layer
-using ...RuralHospitalSim: calculate_medicaid_supplemental, medicaid_reform_scenarios,
-    MedicaidSupplementalParams, MedicaidSupplementalResult
-
-
+"""Medicaid DSH & Supplemental Payment Analyzer Stipple model"""
 @app begin
-    @in left_drawer_open::Bool = true
-    # ── Inputs ──────────────────────────────────────────────────────────
-    @in medicaid_costs::Float64 = 8_000_000.0
-    @in medicaid_payments::Float64 = 5_500_000.0
-    @in uncompensated_care_costs::Float64 = 2_000_000.0
-    @in gross_patient_revenue::Float64 = 45_000_000.0
-    @in total_operating_expenses::Float64 = 40_000_000.0
-    @in provider_class::String = "private"
-    @in state_has_expansion::Bool = true
-    @in provider_tax_rate::Float64 = 0.04
-    @in recalculate::Bool = false
+    @in hospital_name::String = "Sample Hospital"
+    @in medicare_cases::Int = 1000
+    @in medicaid_cases::Int = 1500
+    @in uninsured_cases::Int = 800
+    @in low_income_pct::Float64 = 0.45
+    @in medicaid_bed_days::Float64 = 547500.0
+    @in total_bed_days::Float64 = 1204500.0
+    @in base_medicaid_payment::Float64 = 10_000_000.0
+    @in include_dsh::Bool = true
+    @in include_upl::Bool = true
+    @in calculate_btn::Bool = false
 
-    @out provider_class_options::Vector{Dict{String,Any}} = [
-        Dict("label" => "State Owned", "value" => "state_owned"),
-        Dict("label" => "Non-State Government", "value" => "non_state_govt"),
-        Dict("label" => "Private", "value" => "private"),
-    ]
+    @in is_calculating::Bool = false
+    @in error_message::String = ""
 
-    # ── Outputs ─────────────────────────────────────────────────────────
-    @out dsh_payment::Float64 = 1_800_000.0
-    @out upl_payment::Float64 = 900_000.0
-    @out sdp_payment::Float64 = 640_000.0
-    @out total_supplemental::Float64 = 3_340_000.0
-    @out net_medicaid_shortfall::Float64 = 0.0
-    @out provider_tax_cost::Float64 = 1_800_000.0
+    @out medicaid_caseload_pct::Float64 = 0.0
+    @out low_income_utilization_pct::Float64 = 0.0
+    @out dsh_index::Float64 = 0.0
+    @out estimated_dsh_payment::Float64 = 0.0
+    @out dsh_floor::Float64 = 0.0
+    @out dsh_ceiling::Float64 = 0.0
 
-    @out payment_chart_data::Vector{PlotData} = [
-        PlotData(labels=["DSH", "UPL", "SDP"],
-                 values=[1_800_000, 900_000, 640_000],
-                 plot=StipplePlotly.Charts.PLOT_TYPE_PIE,
-                 hole=0.4, name="Supplemental Payments")
-    ]
-    @out payment_chart_layout::PlotLayout = PlotLayout(
-        title=PlotLayoutTitle(text="Supplemental Payment Breakdown"),
-    )
+    @out total_supplemental::Float64 = 0.0
+    @out supplemental_as_pct::Float64 = 0.0
+    @out total_medicaid_revenue::Float64 = 0.0
+    @out supplemental_detail::String = ""
 
-    @out reform_chart_data::Vector{PlotData} = [
-        PlotData(x=["Current Law", "Moderate Reform", "Significant Reform"],
-                 y=[3_340_000, 2_500_000, 1_200_000],
-                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
-                 name="Total Supplemental", marker=Dict("color" => "#2196F3"))
-    ]
-    @out reform_chart_layout::PlotLayout = PlotLayout(
-        title=PlotLayoutTitle(text="Reform Scenario Impact"),
-        yaxis=[PlotLayoutAxis(title="Total Supplemental (\$)")],
-    )
-
-    @onchange recalculate begin
-        if recalculate
-            recalculate = false
-
-            # Call domain engine
-            params = MedicaidSupplementalParams(;
-                medicaid_costs=medicaid_costs,
-                medicaid_payments=medicaid_payments,
-                uncompensated_care_costs=uncompensated_care_costs,
-                gross_patient_revenue=gross_patient_revenue,
-                total_operating_expenses=total_operating_expenses,
-                provider_class=provider_class,
-                state_has_expansion=state_has_expansion,
-                provider_tax_rate=provider_tax_rate,
+    @onbutton calculate_btn begin
+        is_calculating = true
+        error_message = ""
+        try
+            hosp = FinanceEngine.HospitalCharacteristics(
+                hospital_name,
+                medicare_cases,
+                medicaid_cases,
+                uninsured_cases,
+                low_income_pct,
+                medicaid_bed_days,
+                total_bed_days
             )
-            result = calculate_medicaid_supplemental(params)
 
-            # Map domain results
-            dsh_payment = result.dsh_payment
-            upl_payment = result.upl_payment
-            sdp_payment = result.sdp_payment
-            total_supplemental = result.total_supplemental
-            net_medicaid_shortfall = result.net_medicaid_shortfall
-            provider_tax_cost = result.provider_tax_cost
+            medicaid_caseload_pct = FinanceEngine.calculate_medicaid_caseload_percentage(hosp)
+            low_income_utilization_pct = FinanceEngine.calculate_low_income_percentage(hosp)
 
-            payment_chart_data = [PlotData(labels=["DSH", "UPL", "SDP"],
-                values=[dsh_payment, upl_payment, sdp_payment],
-                plot=StipplePlotly.Charts.PLOT_TYPE_PIE, hole=0.4, name="Payments")]
+            dsh = FinanceEngine.calculate_dsh_payment(hosp)
+            dsh_index = dsh.dsh_index
+            estimated_dsh_payment = dsh.estimated_dsh_payment
+            dsh_floor = dsh.dsh_payment_floor
+            dsh_ceiling = dsh.dsh_payment_ceiling
 
-            # Reform scenarios from domain
-            reforms = medicaid_reform_scenarios(params)
-            reform_names = [r.scenario_name for r in reforms]
-            reform_totals = [r.total_supplemental for r in reforms]
-            reform_chart_data = [PlotData(
-                x=reform_names, y=reform_totals,
-                plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Total Supplemental",
-                marker=Dict("color" => "#2196F3"))]
-            @info "Medicaid supplemental (domain): total \$$(round(Int, total_supplemental))"
+            impact = FinanceEngine.calculate_supplemental_impacts(
+                hosp, base_medicaid_payment,
+                include_dsh=include_dsh,
+                include_upl=include_upl
+            )
+
+            total_supplemental = impact.total_supplemental
+            supplemental_as_pct = impact.supplemental_as_pct_base
+            total_medicaid_revenue = impact.total_medicaid_revenue
+
+            detail_lines = String[]
+            for (prog, amt) in impact.supplemental_programs
+                push!(detail_lines, "$(prog): \$$(round(Int, amt))")
+            end
+            supplemental_detail = join(detail_lines, " | ")
+        catch e
+            error_message = "Error: $(sprint(showerror, e))"
+        finally
+            is_calculating = false
         end
     end
 end
-
-const medicaid_supplemental_model = @init

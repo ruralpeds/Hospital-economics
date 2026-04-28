@@ -39,6 +39,7 @@ include("capital_structure.jl")
 include("rhc_cah.jl")
 include("program_340b.jl")
 include("telehealth.jl")
+include("medicaid_dsh.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -112,6 +113,11 @@ export Drug340B, DrugProgramMetrics, DrugOptimizationResult,
 # Telehealth & RPM (Ch. 10b)
 export TelehealthService, RPMDevice, TelehealthMetrics, RPMFinancialImpact,
        calculate_telehealth_metrics, calculate_rpm_financial_impact, compare_telehealth_scenarios
+
+# Medicaid DSH & Supplemental Payments (Ch. 10c)
+export HospitalCharacteristics, DSHCalculation, SupplementalPaymentImpact,
+       calculate_medicaid_caseload_percentage, calculate_low_income_percentage,
+       calculate_dsh_index, calculate_dsh_payment, calculate_supplemental_impacts
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,

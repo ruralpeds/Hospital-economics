@@ -283,6 +283,12 @@ route("/telehealth") do
     page(model, ui_telehealth) |> html
 end
 
+route("/medicaid-supplemental") do
+    include("views/medicaid_supplemental/MedicaidSupplementalModel.jl")
+    model = medicaid_supplemental_model |> init
+    page(model, ui_medicaid_supplemental) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Simulation (delegated to SimulationController)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -519,6 +525,16 @@ route("/api/analytics/rpm-impact", method=POST) do
         json(result)
     catch e
         _safe_error("RPM impact assessment", e)
+    end
+end
+
+route("/api/analytics/medicaid-dsh", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_medicaid_dsh_analysis(payload)
+        json(result)
+    catch e
+        _safe_error("Medicaid DSH analysis", e)
     end
 end
 

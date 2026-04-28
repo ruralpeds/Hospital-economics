@@ -754,6 +754,76 @@ function handle_vbc_compare_scenarios(payload::Dict)::Dict
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Medicaid DSH & Supplemental Payments (A-11)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_medicaid_dsh_analysis(payload::Dict)::Dict
+
+API handler for Medicaid DSH and supplemental payment analysis.
+
+Expected payload keys:
+  - hospital_name: String
+  - medicare_cases: Int
+  - medicaid_cases: Int
+  - uninsured_cases: Int
+  - low_income_pct: Float64
+  - medicaid_bed_days: Float64
+  - total_bed_days: Float64
+  - base_medicaid_payment: Float64
+  - include_dsh: Bool
+  - include_upl: Bool
+
+Returns DSH calculations and supplemental payment impacts.
+"""
+function handle_medicaid_dsh_analysis(payload::Dict)::Dict
+    try
+        hosp = HospitalCharacteristics(
+            String(get(payload, "hospital_name", "")),
+            Int(get(payload, "medicare_cases", 0)),
+            Int(get(payload, "medicaid_cases", 0)),
+            Int(get(payload, "uninsured_cases", 0)),
+            Float64(get(payload, "low_income_pct", 0.0)),
+            Float64(get(payload, "medicaid_bed_days", 0.0)),
+            Float64(get(payload, "total_bed_days", 0.0))
+        )
+
+        medicaid_pct = calculate_medicaid_caseload_percentage(hosp)
+        low_income_pct = calculate_low_income_percentage(hosp)
+
+        dsh = calculate_dsh_payment(hosp)
+        base_medicaid = Float64(get(payload, "base_medicaid_payment", 10_000_000.0))
+        include_dsh = get(payload, "include_dsh", true)
+        include_upl = get(payload, "include_upl", true)
+
+        impact = calculate_supplemental_impacts(
+            hosp, base_medicaid,
+            include_dsh=include_dsh,
+            include_upl=include_upl
+        )
+
+        return Dict(
+            "status" => "ok",
+            "medicaid_caseload_pct" => medicaid_pct,
+            "low_income_utilization_pct" => low_income_pct,
+            "dsh_index" => dsh.dsh_index,
+            "estimated_dsh_payment" => dsh.estimated_dsh_payment,
+            "dsh_payment_floor" => dsh.dsh_payment_floor,
+            "dsh_payment_ceiling" => dsh.dsh_payment_ceiling,
+            "total_supplemental" => impact.total_supplemental,
+            "supplemental_as_pct" => impact.supplemental_as_pct_base,
+            "total_medicaid_revenue" => impact.total_medicaid_revenue,
+            "supplemental_programs" => impact.supplemental_programs
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Telehealth & RPM Financial Valuation (A-10)
 # ─────────────────────────────────────────────────────────────────────────────
 
