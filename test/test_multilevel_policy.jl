@@ -322,4 +322,276 @@ using .MultiLevelPolicyCoupling
         @test length(outcomes_strict.hospital_closures) >= 0  # All close likely
     end
 
+    # ==================== ACA Repeal & Replace ====================
+    @testset "ACARepealPolicy Type" begin
+        repeal = ACARepealPolicy()
+        @test repeal.medicaid_expansion_repealed == true
+        @test repeal.individual_mandate_eliminated == true
+        @test repeal.community_rating_modification == 1.5
+        @test repeal.rural_impact_multiplier == 1.2
+        @test repeal.implementation_year == 1
+
+        repeal_custom = ACARepealPolicy(
+            medicaid_expansion_repealed=false,
+            individual_mandate_eliminated=true,
+            community_rating_modification=1.3,
+            rural_impact_multiplier=1.1,
+            implementation_year=2
+        )
+        @test repeal_custom.medicaid_expansion_repealed == false
+        @test repeal_custom.community_rating_modification == 1.3
+        @test repeal_custom.implementation_year == 2
+    end
+
+    @testset "ACA Repeal Federal Impact" begin
+        # Full repeal: Medicaid expansion + mandate both eliminated
+        repeal = ACARepealPolicy(implementation_year=1)
+        impact = calculate_federal_impact(FederalPolicy[repeal], 1)
+        @test impact < 0.0  # net negative on hospital revenue
+
+        # Before implementation year
+        repeal_future = ACARepealPolicy(implementation_year=3)
+        impact_before = calculate_federal_impact(FederalPolicy[repeal_future], 1)
+        @test impact_before == 0.0
+
+        # Partial repeal (mandate only)
+        partial = ACARepealPolicy(
+            medicaid_expansion_repealed=false,
+            individual_mandate_eliminated=true,
+            community_rating_modification=1.0,
+            implementation_year=1
+        )
+        partial_impact = calculate_federal_impact(FederalPolicy[partial], 1)
+        @test partial_impact < 0.0
+    end
+
+    @testset "ACA Repeal Scenario Builder" begin
+        hospitals = Dict(
+            "rural_1" => (margin=0.03, volume=300.0, payer_mix_medicare=0.60, quality_score=0.80),
+            "urban_1" => (margin=0.08, volume=2000.0, payer_mix_medicare=0.45, quality_score=0.88)
+        )
+        state = (enrollment=2_000_000, cost_per_case=100.0)
+
+        scenario = build_aca_repeal_scenario(
+            hospital_strategies=Dict(
+                "rural_1" => ConservativeStrategy(),
+                "urban_1" => AggressiveExpansionStrategy()
+            )
+        )
+        @test scenario.scenario_name == "ACA Repeal & Replace"
+        @test any(p isa ACARepealPolicy for p in scenario.federal_policies)
+        @test any(p isa MedicaidExpansion for p in scenario.state_policies)
+
+        outcomes = simulate_policy_coupling!(scenario, hospitals, state, 3)
+        @test outcomes.years == 3
+        @test haskey(outcomes.hospital_margins, "rural_1")
+        @test haskey(outcomes.hospital_margins, "urban_1")
+
+        analysis = analyze_policy_interactions(scenario, outcomes)
+        @test get(analysis, "aca_repeal_detected", false) == true
+        @test get(analysis, "coverage_risk", "") == "high"
+    end
+
+    # ==================== Medicare Advantage Transformation ====================
+    @testset "MedicareAdvantageTransformation Type" begin
+        ma = MedicareAdvantageTransformation()
+        @test ma.capitation_rate_change == 0.0
+        @test ma.rural_rate_adjustment == -0.05
+        @test ma.urban_rate_adjustment == 0.02
+        @test ma.traditional_medicare_shift == 0.10
+        @test ma.implementation_year == 1
+
+        ma_custom = MedicareAdvantageTransformation(
+            capitation_rate_change=-0.03,
+            rural_rate_adjustment=-0.08,
+            traditional_medicare_shift=0.20,
+            implementation_year=2
+        )
+        @test ma_custom.capitation_rate_change == -0.03
+        @test ma_custom.traditional_medicare_shift == 0.20
+        @test ma_custom.implementation_year == 2
+    end
+
+    @testset "Medicare Advantage Federal Impact" begin
+        ma = MedicareAdvantageTransformation(
+            capitation_rate_change=-0.05,
+            traditional_medicare_shift=0.10,
+            implementation_year=1
+        )
+        impact = calculate_federal_impact(FederalPolicy[ma], 1)
+        @test impact < 0.0  # negative shift from FFS + capitation cut
+
+        # Before implementation
+        ma_future = MedicareAdvantageTransformation(implementation_year=5)
+        impact_before = calculate_federal_impact(FederalPolicy[ma_future], 1)
+        @test impact_before == 0.0
+    end
+
+    @testset "Medicare Advantage Scenario Builder" begin
+        hospitals = Dict(
+            "rural_1" => (margin=0.02, volume=400.0, payer_mix_medicare=0.65, quality_score=0.78),
+            "urban_1" => (margin=0.07, volume=1800.0, payer_mix_medicare=0.42, quality_score=0.90)
+        )
+        state = (enrollment=1_500_000, cost_per_case=100.0)
+
+        scenario = build_medicare_advantage_scenario(traditional_medicare_shift=0.15)
+        @test scenario.scenario_name == "Medicare Advantage Transformation"
+        @test any(p isa MedicareAdvantageTransformation for p in scenario.federal_policies)
+
+        ma_policy = first(scenario.federal_policies)
+        @test ma_policy isa MedicareAdvantageTransformation
+        @test ma_policy.traditional_medicare_shift == 0.15
+
+        outcomes = simulate_policy_coupling!(scenario, hospitals, state, 3)
+        @test outcomes.years == 3
+
+        analysis = analyze_policy_interactions(scenario, outcomes)
+        @test get(analysis, "medicare_advantage_transformation_detected", false) == true
+    end
+
+    # ==================== Consolidated Delivery Systems ====================
+    @testset "VerticalIntegrationPolicy Type" begin
+        vi = VerticalIntegrationPolicy()
+        @test vi.integration_requirement == 0.5
+        @test vi.competition_reduction == 0.20
+        @test vi.efficiency_gain == 0.05
+        @test vi.implementation_year == 1
+
+        vi_custom = VerticalIntegrationPolicy(
+            integration_requirement=0.7,
+            competition_reduction=0.30,
+            efficiency_gain=0.08,
+            implementation_year=2
+        )
+        @test vi_custom.integration_requirement == 0.7
+        @test vi_custom.efficiency_gain == 0.08
+    end
+
+    @testset "Vertical Integration State Impact" begin
+        vi = VerticalIntegrationPolicy(efficiency_gain=0.05, competition_reduction=0.20,
+                                       implementation_year=1)
+        impact = calculate_state_impact(StatePolicy[vi], 1)
+        # efficiency_gain - competition_reduction * 0.02
+        @test impact ≈ 0.05 - 0.20 * 0.02
+
+        # Before implementation
+        vi_future = VerticalIntegrationPolicy(implementation_year=4)
+        impact_before = calculate_state_impact(StatePolicy[vi_future], 1)
+        @test impact_before == 0.0
+    end
+
+    @testset "Consolidation Scenario Builder" begin
+        hospitals = Dict(
+            "hospital_1" => (margin=0.04, volume=800.0, payer_mix_medicare=0.50, quality_score=0.83),
+            "hospital_2" => (margin=0.06, volume=1200.0, payer_mix_medicare=0.47, quality_score=0.87)
+        )
+        state = (enrollment=1_000_000, cost_per_case=100.0)
+
+        scenario = build_consolidation_scenario(efficiency_gain=0.06)
+        @test scenario.scenario_name == "Consolidated Delivery Systems"
+        @test any(p isa VerticalIntegrationPolicy for p in scenario.state_policies)
+
+        vi_policy = first(scenario.state_policies)
+        @test vi_policy isa VerticalIntegrationPolicy
+        @test vi_policy.efficiency_gain == 0.06
+
+        outcomes = simulate_policy_coupling!(scenario, hospitals, state, 3)
+        @test outcomes.years == 3
+        @test length(outcomes.hospital_margins) == 2
+
+        analysis = analyze_policy_interactions(scenario, outcomes)
+        @test get(analysis, "vertical_integration_detected", false) == true
+    end
+
+    # ==================== Price Regulation Models ====================
+    @testset "PriceRegulationPolicy Type" begin
+        pr = PriceRegulationPolicy()
+        @test pr.model_type == "all_payer"
+        @test pr.rate_cap_multiplier == 1.1
+        @test pr.negotiation_discount == 0.10
+        @test "Commercial" in pr.applies_to_payers
+        @test pr.implementation_year == 1
+
+        pr_german = PriceRegulationPolicy(model_type="german_dutch", negotiation_discount=0.12)
+        @test pr_german.model_type == "german_dutch"
+        @test pr_german.negotiation_discount == 0.12
+
+        pr_aus = PriceRegulationPolicy(model_type="australian_achs", rate_cap_multiplier=1.05)
+        @test pr_aus.model_type == "australian_achs"
+        @test pr_aus.rate_cap_multiplier == 1.05
+    end
+
+    @testset "Price Regulation State Impact" begin
+        pr = PriceRegulationPolicy(negotiation_discount=0.10, rate_cap_multiplier=1.1,
+                                    implementation_year=1)
+        impact = calculate_state_impact(StatePolicy[pr], 1)
+        @test impact ≈ -0.10  # only negotiation discount applies when cap ≥ 1.0
+
+        pr_tight = PriceRegulationPolicy(negotiation_discount=0.10, rate_cap_multiplier=0.95,
+                                          implementation_year=1)
+        impact_tight = calculate_state_impact(StatePolicy[pr_tight], 1)
+        @test impact_tight < impact  # tighter cap makes impact more negative
+
+        # Before implementation
+        pr_future = PriceRegulationPolicy(implementation_year=3)
+        impact_before = calculate_state_impact(StatePolicy[pr_future], 1)
+        @test impact_before == 0.0
+    end
+
+    @testset "Price Regulation Scenario Builder - All-Payer" begin
+        hospitals = Dict(
+            "hospital_1" => (margin=0.06, volume=1000.0, payer_mix_medicare=0.50, quality_score=0.85)
+        )
+        state = (enrollment=1_000_000, cost_per_case=100.0)
+
+        scenario = build_price_regulation_scenario("all_payer", negotiation_discount=0.08)
+        @test contains(scenario.scenario_name, "all_payer")
+        @test any(p isa PriceRegulationPolicy for p in scenario.state_policies)
+
+        pr_policy = first(scenario.state_policies)
+        @test pr_policy.model_type == "all_payer"
+        @test pr_policy.negotiation_discount == 0.08
+
+        outcomes = simulate_policy_coupling!(scenario, hospitals, state, 3)
+        @test outcomes.years == 3
+
+        analysis = analyze_policy_interactions(scenario, outcomes)
+        @test get(analysis, "price_regulation_detected", false) == true
+    end
+
+    @testset "Price Regulation Scenario Builder - German/Dutch" begin
+        hospitals = Dict(
+            "hospital_1" => (margin=0.06, volume=1000.0, payer_mix_medicare=0.50, quality_score=0.85)
+        )
+        state = (enrollment=1_000_000, cost_per_case=100.0)
+
+        scenario = build_price_regulation_scenario("german_dutch", negotiation_discount=0.12,
+                                                    scenario_name="German-Dutch Model")
+        @test scenario.scenario_name == "German-Dutch Model"
+        pr_policy = first(scenario.state_policies)
+        @test pr_policy.model_type == "german_dutch"
+
+        outcomes = simulate_policy_coupling!(scenario, hospitals, state, 2)
+        @test outcomes.years == 2
+    end
+
+    @testset "Price Regulation Scenario Builder - Australian ACHS" begin
+        hospitals = Dict(
+            "hospital_1" => (margin=0.06, volume=1000.0, payer_mix_medicare=0.50, quality_score=0.85)
+        )
+        state = (enrollment=1_000_000, cost_per_case=100.0)
+
+        scenario = build_price_regulation_scenario("australian_achs", rate_cap_multiplier=1.05)
+        pr_policy = first(scenario.state_policies)
+        @test pr_policy.model_type == "australian_achs"
+        @test pr_policy.rate_cap_multiplier == 1.05
+
+        outcomes = simulate_policy_coupling!(scenario, hospitals, state, 2)
+        @test outcomes.years == 2
+    end
+
+    @testset "Price Regulation Invalid Model Type" begin
+        @test_throws ErrorException build_price_regulation_scenario("invalid_model")
+    end
+
 end
