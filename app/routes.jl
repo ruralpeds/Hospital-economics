@@ -277,6 +277,12 @@ route("/drug-program-340b") do
     page(model, ui_program_340b) |> html
 end
 
+route("/telehealth") do
+    include("views/telehealth/TelehealthModel.jl")
+    model = telehealth_model |> init
+    page(model, ui_telehealth) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Simulation (delegated to SimulationController)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -493,6 +499,26 @@ route("/api/analytics/340b-savings", method=POST) do
         json(result)
     catch e
         _safe_error("340B savings estimation", e)
+    end
+end
+
+route("/api/analytics/telehealth-valuation", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_telehealth_valuation(payload)
+        json(result)
+    catch e
+        _safe_error("Telehealth valuation", e)
+    end
+end
+
+route("/api/analytics/rpm-impact", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rpm_impact(payload)
+        json(result)
+    catch e
+        _safe_error("RPM impact assessment", e)
     end
 end
 

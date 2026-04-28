@@ -1,103 +1,92 @@
-"""
-Stipple reactive model for Telehealth ROI Analysis.
-Models financial return on telehealth investments including direct revenue and avoided transfers.
-Delegates to RuralHospitalSim.calculate_telehealth_roi() for ROI computation.
-"""
-using Stipple, StippleUI, StipplePlotly
-
-# Import domain layer
-using ...RuralHospitalSim: calculate_telehealth_roi, telehealth_service_comparison,
-    TelehealthService, TelehealthInvestment, TelehealthROI
-
-
+"""Telehealth & RPM Financial Valuation Stipple model"""
 @app begin
-    @in left_drawer_open::Bool = true
-    # ── Service Inputs ──────────────────────────────────────────────────
-    @in svc1_name::String = "Telestroke"
-    @in svc1_volume::Int = 120
-    @in svc1_revenue::Float64 = 250.0
-    @in svc1_cost::Float64 = 80.0
-    @in svc1_transfers_avoided::Int = 30
-    @in svc1_transfer_cost::Float64 = 8_000.0
+    @in selected_service::String = "99456"
+    @in patient_volume::Int = 100
+    @in enrolled_rpm_patients::Int = 200
+    @in rpm_monthly_cost::Float64 = 45.00
+    @in rpm_monthly_reimbursement::Float64 = 55.00
+    @in readmission_reduction::Float64 = 0.15
 
-    @in svc2_name::String = "Telepsych"
-    @in svc2_volume::Int = 200
-    @in svc2_revenue::Float64 = 180.0
-    @in svc2_cost::Float64 = 50.0
-    @in svc2_transfers_avoided::Int = 15
-    @in svc2_transfer_cost::Float64 = 5_000.0
+    @in is_calculating::Bool = false
+    @in error_message::String = ""
 
-    # ── Investment Inputs ───────────────────────────────────────────────
-    @in infrastructure_cost::Float64 = 50_000.0
-    @in annual_licensing::Float64 = 24_000.0
-    @in annual_staffing::Float64 = 80_000.0
-    @in broadband_upgrade::Float64 = 0.0
-    @in training_cost::Float64 = 5_000.0
-    @in projection_years::Int = 3
-    @in recalculate::Bool = false
+    @out annual_visits::Int = 0
+    @out annual_revenue::Float64 = 0.0
+    @out annual_costs::Float64 = 0.0
+    @out gross_margin_pct::Float64 = 0.0
+    @out roi_pct::Float64 = 0.0
+    @out payback_months::Float64 = 0.0
+    @out break_even_volume::Int = 0
 
-    # ── Outputs ─────────────────────────────────────────────────────────
-    @out direct_revenue::Float64 = 66_000.0
-    @out direct_costs::Float64 = 19_600.0
-    @out avoided_transfer_savings::Float64 = 315_000.0
-    @out total_investment::Float64 = 159_000.0
-    @out net_benefit_year1::Float64 = 202_400.0
-    @out roi_pct::Float64 = 125.0
-    @out breakeven_months::Int = 6
+    @out rpm_annual_direct_benefit::Float64 = 0.0
+    @out rpm_readmission_avoidance::Float64 = 0.0
+    @out rpm_total_value::Float64 = 0.0
 
-    @out roi_chart_data::Vector{PlotData} = [
-        PlotData(x=["Year 1", "Year 2", "Year 3"],
-                 y=[202_400, 350_000, 510_000],
-                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
-                 name="Cumulative Net Benefit",
-                 marker=Dict("color" => "#4CAF50"))
-    ]
-    @out roi_chart_layout::PlotLayout = PlotLayout(
-        title=PlotLayoutTitle(text="Telehealth ROI Projection"),
-        yaxis=[PlotLayoutAxis(title="Cumulative Benefit (\$)")],
-    )
+    # Loaded services
+    available_services::Vector = []
 
-    @onchange recalculate begin
-        if recalculate
-            recalculate = false
+    @onload begin
+        try
+            fixture_path = joinpath(@__DIR__, "..", "..", "..", "test", "fixtures", "telehealth", "sample_telehealth_services.json")
+            services_data = JSON3.read(read(fixture_path), Vector{Dict})
+            available_services = services_data
+        catch e
+            error_message = "Error loading services: $(sprint(showerror, e))"
+        end
+    end
 
-            # Build domain types
-            services = [
-                TelehealthService(svc1_name, svc1_volume, svc1_revenue, svc1_cost,
-                    svc1_transfers_avoided, svc1_transfer_cost),
-                TelehealthService(svc2_name, svc2_volume, svc2_revenue, svc2_cost,
-                    svc2_transfers_avoided, svc2_transfer_cost),
-            ]
-            investment = TelehealthInvestment(;
-                infrastructure_cost=infrastructure_cost,
-                annual_licensing=annual_licensing,
-                annual_staffing=annual_staffing,
-                broadband_upgrade=broadband_upgrade,
-                training_cost=training_cost,
-                projection_years=projection_years,
+    @onchange selected_service begin
+        is_calculating = true
+        error_message = ""
+        try
+            if !isempty(available_services)
+                service_dict = first(filter(s -> s["service_code"] == selected_service, available_services), Dict())
+                if !isempty(service_dict)
+                    service = FinanceEngine.TelehealthService(
+                        service_dict["service_code"],
+                        service_dict["service_name"],
+                        Symbol(service_dict["service_type"]),
+                        service_dict["avg_reimbursement"],
+                        service_dict["payer_mix"],
+                        service_dict["estimated_monthly_volume"],
+                        service_dict["variable_cost_per_visit"],
+                        service_dict["fixed_monthly_cost"]
+                    )
+
+                    metrics = FinanceEngine.calculate_telehealth_metrics(service, patient_volume)
+                    annual_visits = metrics.annual_visits
+                    annual_revenue = metrics.annual_revenue
+                    annual_costs = metrics.annual_variable_costs + metrics.annual_fixed_costs
+                    gross_margin_pct = metrics.gross_margin_pct
+                    roi_pct = metrics.roi_pct
+                    payback_months = metrics.payback_months
+                    break_even_volume = metrics.break_even_volume
+                end
+            end
+        catch e
+            error_message = "Error calculating telehealth metrics: $(sprint(showerror, e))"
+        finally
+            is_calculating = false
+        end
+    end
+
+    @onchange enrolled_rpm_patients begin
+        is_calculating = true
+        error_message = ""
+        try
+            rpm_impact = FinanceEngine.calculate_rpm_financial_impact(
+                enrolled_rpm_patients,
+                rpm_monthly_cost,
+                rpm_monthly_reimbursement,
+                readmission_reduction_pct=readmission_reduction
             )
-
-            # Call domain engine
-            result = calculate_telehealth_roi(services, investment)
-
-            # Map domain results
-            direct_revenue = result.direct_revenue
-            direct_costs = result.direct_costs
-            avoided_transfer_savings = result.avoided_transfer_savings
-            total_investment = result.total_investment
-            net_benefit_year1 = result.net_benefit_year1
-            roi_pct = result.roi_pct
-            breakeven_months = result.breakeven_months
-
-            years_labels = ["Year $yr" for yr in 1:projection_years]
-            cumulative_vals = result.cumulative_benefits
-
-            roi_chart_data = [PlotData(x=years_labels, y=round.(cumulative_vals, digits=0),
-                plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Cumulative Net Benefit",
-                marker=Dict("color" => "#4CAF50"))]
-            @info "Telehealth ROI (domain): $(roi_pct)%, breakeven $(breakeven_months)mo"
+            rpm_annual_direct_benefit = rpm_impact.annual_net_benefit
+            rpm_readmission_avoidance = rpm_impact.cost_avoidance_from_readmissions
+            rpm_total_value = rpm_impact.total_annual_value
+        catch e
+            error_message = "Error calculating RPM impact: $(sprint(showerror, e))"
+        finally
+            is_calculating = false
         end
     end
 end
-
-const telehealth_model = @init

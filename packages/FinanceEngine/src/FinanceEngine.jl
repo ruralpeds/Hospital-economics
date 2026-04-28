@@ -38,6 +38,7 @@ include("ma_risk.jl")
 include("capital_structure.jl")
 include("rhc_cah.jl")
 include("program_340b.jl")
+include("telehealth.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -107,6 +108,10 @@ export debt_service_coverage_ratio, days_cash_on_hand, current_ratio,
 # Drug Economics (Ch. 10a) — 340B Program
 export Drug340B, DrugProgramMetrics, DrugOptimizationResult,
        load_340b_formulary, estimate_340b_savings, optimize_drug_mix
+
+# Telehealth & RPM (Ch. 10b)
+export TelehealthService, RPMDevice, TelehealthMetrics, RPMFinancialImpact,
+       calculate_telehealth_metrics, calculate_rpm_financial_impact, compare_telehealth_scenarios
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,

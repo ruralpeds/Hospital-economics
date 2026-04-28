@@ -754,6 +754,110 @@ function handle_vbc_compare_scenarios(payload::Dict)::Dict
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Telehealth & RPM Financial Valuation (A-10)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_telehealth_valuation(payload::Dict)::Dict
+
+API handler for telehealth and RPM financial metrics.
+
+Expected payload keys:
+  - service_code: String (CPT code)
+  - service_name: String
+  - service_type: String (telehealth, rpm, hybrid)
+  - avg_reimbursement: Float64
+  - payer_mix: Dict{String, Float64}
+  - estimated_monthly_volume: Int
+  - variable_cost_per_visit: Float64
+  - fixed_monthly_cost: Float64
+  - annual_patients: Int (volume)
+
+Returns metrics for telehealth scenario.
+"""
+function handle_telehealth_valuation(payload::Dict)::Dict
+    try
+        service = TelehealthService(
+            String(get(payload, "service_code", "")),
+            String(get(payload, "service_name", "")),
+            Symbol(lowercase(get(payload, "service_type", "telehealth"))),
+            Float64(get(payload, "avg_reimbursement", 50.0)),
+            get(payload, "payer_mix", Dict("commercial" => 100.0)),
+            Int(get(payload, "estimated_monthly_volume", 100)),
+            Float64(get(payload, "variable_cost_per_visit", 10.0)),
+            Float64(get(payload, "fixed_monthly_cost", 15000.0))
+        )
+
+        annual_patients = Int(get(payload, "annual_patients", 100))
+        metrics = calculate_telehealth_metrics(service, annual_patients)
+
+        return Dict(
+            "status" => "ok",
+            "annual_visits" => metrics.annual_visits,
+            "annual_revenue" => metrics.annual_revenue,
+            "annual_variable_costs" => metrics.annual_variable_costs,
+            "annual_fixed_costs" => metrics.annual_fixed_costs,
+            "gross_margin_pct" => metrics.gross_margin_pct,
+            "roi_pct" => metrics.roi_pct,
+            "payback_months" => metrics.payback_months,
+            "break_even_volume" => metrics.break_even_volume
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+"""
+    handle_rpm_impact(payload::Dict)::Dict
+
+API handler for RPM financial impact assessment.
+
+Expected payload keys:
+  - enrolled_patients: Int
+  - monthly_monitoring_cost: Float64
+  - monthly_reimbursement: Float64
+  - readmission_reduction_pct: Float64 (default 0.15)
+  - avg_readmission_cost: Float64 (default 15000)
+
+Returns RPM financial impact metrics.
+"""
+function handle_rpm_impact(payload::Dict)::Dict
+    try
+        enrolled_patients = Int(get(payload, "enrolled_patients", 100))
+        monthly_cost = Float64(get(payload, "monthly_monitoring_cost", 45.0))
+        monthly_revenue = Float64(get(payload, "monthly_reimbursement", 55.0))
+        readmission_reduction = Float64(get(payload, "readmission_reduction_pct", 0.15))
+        readmission_cost = Float64(get(payload, "avg_readmission_cost", 15_000.0))
+
+        impact = calculate_rpm_financial_impact(
+            enrolled_patients,
+            monthly_cost,
+            monthly_revenue,
+            readmission_reduction_pct=readmission_reduction,
+            avg_readmission_cost=readmission_cost
+        )
+
+        return Dict(
+            "status" => "ok",
+            "enrolled_patients" => impact.enrolled_patients,
+            "monthly_net_benefit" => impact.monthly_net_benefit,
+            "annual_net_benefit" => impact.annual_net_benefit,
+            "cost_avoidance_from_readmissions" => impact.cost_avoidance_from_readmissions,
+            "total_annual_value" => impact.total_annual_value,
+            "patient_lifetime_value" => impact.patient_lifetime_value
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 340B Drug Program Savings (A-09)
 # ─────────────────────────────────────────────────────────────────────────────
 
