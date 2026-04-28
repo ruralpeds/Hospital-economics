@@ -918,15 +918,376 @@ include("audit_tests.jl")
         @test !isempty(result.nmbs)
     end
 
+    # ── Accounting ─────────────────────────────────────────────────────────
+
+    @testset "Income Statement" begin
+        s = income_statement(10_000_000.0, 2_000_000.0, 100_000.0,
+                             50_000.0, 7_000_000.0; other_income=200_000.0)
+        @test s.net_patient_revenue ≈ 7_850_000.0
+        @test s.total_operating_revenue ≈ 8_050_000.0
+        @test s.operating_income ≈ 1_050_000.0
+        @test s.total_margin ≈ 1_050_000.0 / 8_050_000.0 atol=1e-10
+    end
+
+    @testset "Income Statement — zero gross_revenue throws" begin
+        @test_throws ArgumentError income_statement(0.0, 0.0, 0.0, 0.0, 0.0)
+    end
+
+    @testset "EBITDA" begin
+        @test ebitda(500_000.0, 300_000.0, 50_000.0) ≈ 850_000.0
+        @test ebitda(500_000.0, 300_000.0) ≈ 800_000.0  # default amortization=0
+    end
+
+    @testset "EBITDA Margin" begin
+        @test ebitda_margin(800_000.0, 10_000_000.0) ≈ 0.08
+        @test_throws ArgumentError ebitda_margin(100.0, 0.0)
+    end
+
+    @testset "Total Margin (accounting)" begin
+        @test total_margin(200_000.0, 10_000_000.0) ≈ 0.02
+        @test_throws ArgumentError total_margin(100.0, 0.0)
+    end
+
+    @testset "Operating Margin HFMA" begin
+        @test operating_margin_hfma(300_000.0, 10_000_000.0) ≈ 0.03
+    end
+
+    @testset "Operating Leverage" begin
+        @test operating_leverage(1_000_000.0, 500_000.0) ≈ 2.0
+        @test_throws ArgumentError operating_leverage(500_000.0, 0.0)
+    end
+
+    @testset "Quick Ratio" begin
+        @test quick_ratio(1_000_000.0, 2_000_000.0) ≈ 0.5
+        @test_throws ArgumentError quick_ratio(100.0, 0.0)
+    end
+
+    @testset "Debt to Equity" begin
+        @test debt_to_equity(4_000_000.0, 6_000_000.0) ≈ 4/6 atol=1e-10
+        @test_throws ArgumentError debt_to_equity(1.0, 0.0)
+    end
+
+    @testset "Equity Multiplier" begin
+        @test equity_multiplier(10_000_000.0, 6_000_000.0) ≈ 10/6 atol=1e-10
+    end
+
+    @testset "Cash Flow Indirect" begin
+        cf = cash_flow_indirect(500_000.0, 200_000.0, 50_000.0,
+                                100_000.0, 80_000.0, 20_000.0, 300_000.0)
+        @test cf.operating ≈ 500_000 + 200_000 + 50_000 - 100_000 + 80_000 - 20_000
+        @test cf.investing ≈ -300_000.0
+        @test cf.net_change ≈ cf.operating + cf.investing
+    end
+
+    @testset "Straight Line Depreciation" begin
+        @test straight_line_depreciation(100_000.0, 10_000.0, 10) ≈ 9_000.0
+        @test_throws ArgumentError straight_line_depreciation(100.0, 200.0, 5)
+    end
+
+    @testset "MACRS Depreciation — 5-year" begin
+        schedule = macrs_depreciation_schedule(100_000.0, 5)
+        @test length(schedule) == 6
+        @test sum(schedule) ≈ 100_000.0 atol=1.0
+        @test schedule[1] ≈ 20_000.0
+    end
+
+    @testset "MACRS Depreciation — unsupported class throws" begin
+        @test_throws ArgumentError macrs_depreciation_schedule(100_000.0, 3)
+    end
+
+    @testset "Net Assets Change" begin
+        @test net_assets_change(5_000_000.0, 300_000.0, 100_000.0) ≈ 5_400_000.0
+    end
+
+    @testset "Fund Accounting Summary" begin
+        s = fund_accounting_summary(3_000_000.0, 1_000_000.0, 500_000.0)
+        @test s.total_net_assets ≈ 4_500_000.0
+        @test s.unrestricted_fraction ≈ 3/4.5 atol=1e-10
+    end
+
+    @testset "Charitable Community Benefit Rate" begin
+        @test charitable_community_benefit_rate(500_000.0, 10_000_000.0) ≈ 0.05
+        @test_throws ArgumentError charitable_community_benefit_rate(100.0, 0.0)
+    end
+
+    # ── Actuarial ──────────────────────────────────────────────────────────
+
+    @testset "Loss Development Factors — 3×3 triangle" begin
+        tri = Float64[100 150 180;
+                      120 170   0;
+                      130   0   0]
+        ldfs = loss_development_factors(tri)
+        @test length(ldfs) == 2
+        @test ldfs[1] ≈ (150 + 170) / (100 + 120) atol=1e-10
+    end
+
+    @testset "Claims Triangle Development" begin
+        tri = Float64[100 150 180;
+                      120 170   0;
+                      130   0   0]
+        dev = claims_triangle_development(tri)
+        @test dev[2, 3] ≈ 170 * (180/150) atol=0.01
+        @test dev[3, 2] ≈ 130 * ((150+170)/(100+120)) atol=0.01
+    end
+
+    @testset "IBNR Reserve" begin
+        tri = Float64[100 150 180;
+                      120 170   0;
+                      130   0   0]
+        reserves = ibnr_reserve(tri)
+        @test length(reserves) == 3
+        @test reserves[1] ≈ 0.0 atol=0.01  # fully developed
+        @test reserves[2] > 0
+        @test reserves[3] > 0
+    end
+
+    @testset "HCC Risk Score (actuarial numeric)" begin
+        @test hcc_risk_score(0.8, [0.3, 0.2]) ≈ 1.3
+        @test hcc_risk_score(0.8, [0.3, 0.2]; normalization_factor=1.1) ≈ 1.3/1.1 atol=1e-10
+        @test_throws ArgumentError hcc_risk_score(0.8, [0.3]; normalization_factor=0.0)
+    end
+
+    @testset "HCC Prospective Score" begin
+        @test hcc_prospective_score(1.2, 1.05) ≈ 1.26
+    end
+
+    @testset "PMPM by Category" begin
+        cats = pmpm_by_category([12_000.0, 8_000.0], ["IP", "OP"], 100.0)
+        @test length(cats) == 2
+        @test cats[1].pmpm ≈ 120.0
+    end
+
+    @testset "Admin Expense Ratio" begin
+        @test admin_expense_ratio(150_000.0, 1_000_000.0) ≈ 0.15
+    end
+
+    @testset "Premium Rate Development" begin
+        p = premium_rate_development(300.0, 0.15, 0.05)
+        @test p ≈ 300.0 / 0.80 atol=1e-10
+        @test_throws ArgumentError premium_rate_development(300.0, 0.6, 0.5)
+    end
+
+    @testset "Utilization Rate" begin
+        @test utilization_rate(80.0, 1200.0) ≈ 80/1200*1000 atol=1e-10
+    end
+
+    @testset "Admissions per Thousand" begin
+        @test admissions_per_thousand(100.0, 1000.0) ≈ 1200.0
+    end
+
+    @testset "Claim Frequency and Severity" begin
+        @test claim_frequency(500.0, 1000.0) ≈ 0.5
+        @test claim_severity(250_000.0, 500.0) ≈ 500.0
+        @test pure_premium(0.5, 500.0) ≈ 250.0
+    end
+
+    @testset "Credibility Weight" begin
+        @test credibility_weight(1082.0) ≈ 1.0
+        @test credibility_weight(270.5) ≈ 0.5 atol=1e-4
+        @test credibility_weight(0.0) ≈ 0.0
+    end
+
+    @testset "Blended Rate" begin
+        @test blended_rate(100.0, 80.0, 0.75) ≈ 95.0
+        @test_throws ArgumentError blended_rate(100.0, 80.0, 1.5)
+    end
+
+    # ── Reimbursement ──────────────────────────────────────────────────────
+
+    @testset "DRG Payment" begin
+        @test drg_payment(6000.0, 1.5, 10) ≈ 90_000.0
+        @test drg_payment(6000.0, 1.5, 10; outlier_threshold=500.0, outlier_rate=0.8) ≈ 94_000.0
+    end
+
+    @testset "MS-DRG Payment" begin
+        p = ms_drg_payment(6000.0, 1.5, 5, :none; wage_index=0.95)
+        @test p > 0
+        @test_throws ArgumentError ms_drg_payment(6000.0, 1.5, 5, :invalid)
+    end
+
+    @testset "APR-DRG Payment — severity adjustors" begin
+        base = apr_drg_payment(5000.0, 1.0, 2, 1)  # severity 2 = weight 1.0
+        high = apr_drg_payment(5000.0, 1.0, 4, 1)  # severity 4 = weight 2.2
+        @test high > base
+        @test high ≈ 5000.0 * 2.2
+        @test_throws ArgumentError apr_drg_payment(5000.0, 1.0, 5, 1)
+    end
+
+    @testset "OPPS APC Payment" begin
+        @test opps_apc_payment(80.0, 2.5, 100) ≈ 20_000.0
+    end
+
+    @testset "RVU to Payment" begin
+        @test rvu_to_payment(2.0, 1.5, 0.5, 36.0) ≈ (2.0+1.5+0.5)*36.0
+    end
+
+    @testset "RBRVS Payment — multiple units" begin
+        single = rvu_to_payment(2.0, 1.0, 0.5, 36.0)
+        @test rbrvs_payment(2.0, 1.0, 0.5, 36.0, 3) ≈ single * 3
+    end
+
+    @testset "Capitation PMPM" begin
+        @test capitation_pmpm(1_200_000.0, 1000.0) ≈ 1200.0
+    end
+
+    @testset "PMPM Trend" begin
+        @test pmpm_trend(100.0, 0.05, 12) ≈ 100.0 * (1.05)^12 atol=1e-10
+    end
+
+    @testset "Revenue Cycle KPIs" begin
+        @test days_in_ar(2_000_000.0, 50_000.0) ≈ 40.0
+        @test denial_rate(150, 5000) ≈ 0.03
+        @test clean_claim_rate(4900, 5000) ≈ 0.98
+        @test gross_collection_rate(800_000.0, 1_000_000.0) ≈ 0.80
+        @test cash_collection_efficiency(1_020_000.0, 1_000_000.0) ≈ 1.02
+        @test bad_debt_rate(50_000.0, 1_000_000.0) ≈ 0.05
+        @test charity_care_rate(30_000.0, 600_000.0) ≈ 0.05
+        @test uncompensated_care_rate(50_000.0, 30_000.0, 1_000_000.0) ≈ 0.08
+    end
+
+    @testset "Revenue Cycle Scorecard — exceeds" begin
+        s = revenue_cycle_scorecard(days_ar=38.0, denial_rt=0.02,
+                                    clean_claim_rt=0.99, cash_efficiency=1.03)
+        @test s.days_ar == :exceeds
+        @test s.denial_rate == :exceeds
+        @test s.clean_claim_rate == :exceeds
+        @test s.cash_efficiency == :exceeds
+    end
+
+    @testset "Revenue Cycle Scorecard — below" begin
+        s = revenue_cycle_scorecard(days_ar=60.0, denial_rt=0.08,
+                                    clean_claim_rt=0.90, cash_efficiency=0.95)
+        @test s.days_ar == :below
+        @test s.denial_rate == :below
+    end
+
+    # ── Forecasting ────────────────────────────────────────────────────────
+
+    @testset "Simple Exponential Smoothing" begin
+        result = simple_exponential_smoothing([100.0, 110.0, 120.0], 0.3)
+        @test length(result.smoothed) == 3
+        @test length(result.forecast) == 1
+        @test result.smoothed[1] ≈ 100.0
+        @test_throws ArgumentError simple_exponential_smoothing([100.0], 0.0)
+    end
+
+    @testset "Holt Double Exponential" begin
+        result = holt_double_exponential([100.0, 105.0, 110.0, 115.0], 0.4, 0.3; horizon=2)
+        @test length(result.forecast) == 2
+        @test result.forecast[1] > result.level[end]  # trending up
+    end
+
+    @testset "Holt-Winters Additive" begin
+        # 2 seasons of quarterly data
+        data = [100.0, 90.0, 110.0, 105.0, 102.0, 92.0, 112.0, 107.0]
+        result = holt_winters_additive(data, 0.3, 0.1, 0.2, 4; horizon=4)
+        @test length(result.forecast) == 4
+        @test length(result.seasonal) == 8
+    end
+
+    @testset "Weighted Moving Average" begin
+        wma = weighted_moving_average([100.0, 110.0, 120.0], [1.0, 2.0, 3.0])
+        expected = (100*1/6 + 110*2/6 + 120*3/6)
+        @test wma[1] ≈ expected atol=1e-10
+    end
+
+    @testset "Seasonal Indices — round-trip" begin
+        data    = [100.0, 80.0, 120.0, 100.0, 100.0, 80.0, 120.0, 100.0]
+        indices = seasonal_indices(data, 4)
+        @test length(indices) == 4
+        deseas  = deseasonalize(data, indices)
+        reseas  = reseasonalize(deseas, indices)
+        @test reseas ≈ data atol=1e-10
+    end
+
+    @testset "Budget Variance Functions" begin
+        @test budget_variance(105_000.0, 100_000.0) ≈ 5_000.0
+        @test budget_variance_pct(105_000.0, 100_000.0) ≈ 0.05
+        @test flexible_budget_variance(105_000.0, 102_000.0) ≈ 3_000.0
+        @test_throws ArgumentError budget_variance_pct(100.0, 0.0)
+    end
+
+    @testset "Forecast Accuracy Metrics" begin
+        actual   = [100.0, 110.0, 120.0, 130.0]
+        forecast = [102.0, 108.0, 122.0, 128.0]
+        @test forecast_rmse(actual, forecast) > 0
+        @test forecast_mape(actual, forecast) > 0
+        fb = forecast_bias(actual, forecast)
+        @test abs(fb) < 5.0
+        @test_throws ArgumentError forecast_mape([0.0, 100.0], [1.0, 100.0])
+    end
+
+    # ── Cost-Effectiveness Analysis ────────────────────────────────────────
+
+    @testset "Markov Cohort — 2-state model" begin
+        T = [0.9 0.1; 0.0 1.0]  # absorbing death state
+        init = [1.0, 0.0]
+        traces = markov_cohort(T, init, 10)
+        @test size(traces) == (11, 2)
+        @test traces[1, :] ≈ [1.0, 0.0]
+        @test sum(traces[end, :]) ≈ 1.0 atol=1e-10
+    end
+
+    @testset "Markov Cohort — row sum ≠ 1 throws" begin
+        T = [0.9 0.2; 0.0 1.0]
+        @test_throws ArgumentError markov_cohort(T, [1.0, 0.0], 5)
+    end
+
+    @testset "Markov Cycle Traces — QALY sum" begin
+        T      = [0.9 0.1; 0.0 1.0]
+        traces = markov_cohort(T, [1.0, 0.0], 5)
+        qalys  = markov_cycle_traces(traces, [0.8, 0.0])
+        @test length(qalys) == 5
+        @test all(q >= 0 for q in qalys)
+    end
+
+    @testset "ICER" begin
+        @test icer(50_000.0, 1.0) ≈ 50_000.0
+        @test_throws ArgumentError icer(50_000.0, 0.0)
+    end
+
+    @testset "CEA Dominance" begin
+        @test cea_dominant(100.0, 10.0, 200.0, 8.0) == :a_dominates
+        @test cea_dominant(200.0, 8.0, 100.0, 10.0) == :b_dominates
+        @test cea_dominant(100.0, 8.0, 90.0, 10.0) == :neither
+    end
+
+    @testset "Net Monetary Benefit" begin
+        @test net_monetary_benefit(2.0, 80_000.0, 50_000.0) ≈ 20_000.0
+        @test_throws ArgumentError net_monetary_benefit(1.0, 100.0, -1.0)
+    end
+
+    @testset "DALY" begin
+        @test daly(5.0, 10.0, 0.3) ≈ 8.0
+        @test_throws ArgumentError daly(5.0, 10.0, 1.5)
+    end
+
+    @testset "QALY Adjusted Life Years" begin
+        @test qaly_adjusted_life_years(10.0, 0.8) ≈ 8.0
+    end
+
+    @testset "Budget Impact Analysis" begin
+        b = budget_impact_analysis(10_000.0, 0.1, 5000.0, 3000.0, 0.0; horizon_years=3)
+        @test length(b.annual_impacts) == 3
+        @test b.cumulative_impact ≈ sum(b.annual_impacts)
+        @test b.annual_impacts[1] > 0  # new therapy costs more
+    end
+
+    @testset "Decision Tree EV" begin
+        @test decision_tree_ev([100.0, 50.0, 0.0], [0.5, 0.3, 0.2]) ≈ 65.0
+        @test_throws ArgumentError decision_tree_ev([1.0, 2.0], [0.6, 0.6])
+    end
+
+    @testset "PSA — fraction cost effective" begin
+        result = probabilistic_sensitivity_analysis(
+            () -> randn() * 1000 + 5000,
+            () -> randn() * 0.1 + 0.5,
+            500; wtp_threshold=50_000.0)
+        @test 0 <= result.fraction_cost_effective <= 1
+        @test !isempty(result.nmbs)
+    end
+
 end  # @testset "FinanceEngine"
-
-include("test_three_statement.jl")
-include("test_dupont.jl")
-include("test_distress_scoring.jl")
-
-include("test_three_statement.jl")
-include("test_dupont.jl")
-include("test_distress_scoring.jl")
 
 include("aqua_tests.jl")
 include("jet_tests.jl")
