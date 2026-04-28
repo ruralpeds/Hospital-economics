@@ -1,5 +1,33 @@
 # Hospital Economics Platform - CHANGELOG
 
+## Phase 3.2–3.4 Completion — Visualization, Validation & v1.0 Release
+
+### 🚀 Phase 3.2 — Publication-Ready Visualization & Reporting (#17)
+- `PolicyAnalysisReporting.jl` (578 lines) wired into test harness via `test_policy_analysis_reporting.jl`
+- Provides: CEAC curves, net benefit curves, budget impact projections, equity analysis, sensitivity tornado plots, hospital network visualizations, summary tables, and data exports
+- All outputs are publication-ready (color-blind-safe, high resolution, CI-annotated)
+
+### ✅ Phase 3.3 — Validation on Real-World Policy Cases (#18)
+- `PolicyValidation.jl` + `test_policy_validation.jl` already in test harness
+- `docs/validation_report.md` (464 lines): MAPE < 10% and ≥90% directional accuracy on all 4 case studies
+  - Kentucky Medicaid Expansion 2014: MAPE 6.2%, DA 94%
+  - Maryland All-Payer Model 2014–2018: MAPE 7.8%, DA 91%
+  - Rural Hospital Closures 2010–2023: MAPE 8.4%, DA 93%
+  - COVID-19 Financial Impact 2020–2021: MAPE 5.9%, DA 96%
+- Overall aggregate MAPE 7.1% | Directional accuracy 93.5% — both pass v1.0 release criteria
+
+### 🎉 Phase 3.4 — v1.0 Release (#19)
+- `ReleasePreparation.jl` + `test_release_preparation.jl` wired into test harness
+- Documentation complete: `docs/v1_user_guide.md` (903 lines), `docs/v1_api_reference.md` (1 221 lines), `docs/case_studies.md` (506 lines), `docs/validation_report.md`
+- All v1.0 readiness criteria met:
+  - ✅ >90% test coverage across all modules (803+ tests)
+  - ✅ MAPE <10% on 4 real-world case studies
+  - ✅ Performance: single-state simulation <5 minutes
+  - ✅ 21 new Web UI concept tabs (E4–E24) + 38 existing tabs retrofitted (E25)
+  - ✅ Playwright E2E matrix + a11y gate + CI workflow (E26)
+
+---
+
 ## v1.0 UI (E25/E26) — Shared Component Retrofit & E2E Test Matrix
 
 ### 🚀 New Features

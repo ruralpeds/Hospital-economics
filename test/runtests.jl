@@ -59,6 +59,12 @@ using Test
     # Phase 4 — coverage gap tests
     include("test_reimbursement_functions.jl")
 
+    # Phase 3.2: Publication-Ready Visualization & Reporting
+    include("test_policy_analysis_reporting.jl")
+
+    # Phase 3.4: v1.0 Release Preparation
+    include("test_release_preparation.jl")
+
     # Shared component library tests (E1 — UI framework)
     # Placed here because subsequent includes may throw top-level LoadErrors
     # (missing packages) that terminate the outer testset early.
