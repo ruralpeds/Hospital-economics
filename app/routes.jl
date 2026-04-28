@@ -68,6 +68,13 @@ route("/capex") do
     page(model, ui_capex) |> html
 end
 
+# A-06: Medicare Advantage Risk Adjustment
+route("/ma-risk") do
+    include("views/ma_risk/MARiskModel.jl")
+    model = ma_risk_model |> init
+    page(model, ui_ma_risk) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Analysis Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -349,6 +356,17 @@ route("/api/conversion", method=POST) do
         json(result)
     catch e
         _safe_error("REH conversion analysis", e)
+    end
+end
+
+# A-06: Medicare Advantage Risk Adjustment
+route("/api/risk/ma-risk", method=POST) do
+    try
+        payload = jsonpayload()
+        result = RiskController.handle_ma_risk(payload)
+        json(result)
+    catch e
+        _safe_error("MA risk adjustment", e)
     end
 end
 
