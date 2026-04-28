@@ -61,7 +61,9 @@ function _ensure_name_list_loaded()
         if isfile(path)
             for raw in eachline(path)
                 word = strip(raw)
-                isempty(word) || startswith(word, '#') && continue
+                if isempty(word) || startswith(word, '#')
+                    continue
+                end
                 push!(_name_set, lowercase(word))
             end
         end

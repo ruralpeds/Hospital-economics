@@ -175,12 +175,11 @@ function plot_panel(
 
     card(class="q-mb-md " * class, [
         card_section([
-            [header_content...,
-             Html.div(style="height:$(height);", [
-                 plot(data_field, layout=layout_field,
-                      config="{ responsive: true, displayModeBar: false }"),
-             ]),
-            ]
+            header_content...,
+            Html.div(style="height:$(height);", [
+                plot(data_field, layout=layout_field,
+                     config="{ responsive: true, displayModeBar: false }"),
+            ]),
         ]),
     ])
 end
