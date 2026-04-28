@@ -587,6 +587,47 @@ function handle_capex_ranking(payload::Dict)::Dict
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
+# A-08: RHC & CAH Reimbursement Comparison
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_rhc_cah_comparison(payload::Dict) -> Dict
+
+API handler for RHC vs CAH reimbursement analysis.
+"""
+function handle_rhc_cah_comparison(payload::Dict)::Dict
+    try
+        rhc_visits = get(payload, "rhc_visits", Dict())
+        ar_volumes = get(payload, "ar_volumes", Dict())
+        non_ar_volumes = get(payload, "non_ar_volumes", Dict())
+        mileage = Float64(get(payload, "mileage_miles", 0.0))
+        conversion_cost = Float64(get(payload, "conversion_cost", 50_000.0))
+
+        rhc_fixture = joinpath(@__DIR__, "..", "..", "test", "fixtures", "reimbursement", "rhc_rvu_2024.json")
+        cah_fixture = joinpath(@__DIR__, "..", "..", "test", "fixtures", "reimbursement", "cah_ar_2024.json")
+
+        rhc_sch = load_rhc_schedule(rhc_fixture)
+        cah_sch = load_cah_schedule(cah_fixture)
+
+        comp = compare_reimbursement(rhc_visits, ar_volumes, non_ar_volumes, rhc_sch, cah_sch;
+                                    mileage_miles=mileage, conversion_cost_estimate=conversion_cost)
+
+        return Dict(
+            "status" => "ok",
+            "rhc_revenue" => comp.rhc_annual_revenue,
+            "cah_revenue" => comp.cah_annual_revenue,
+            "revenue_difference" => comp.revenue_difference,
+            "revenue_difference_pct" => comp.revenue_difference_pct,
+            "roi_pct" => comp.conversion_roi_pct,
+            "break_even_months" => comp.break_even_months,
+            "recommendation" => comp.recommendation
+        )
+    catch e
+        return Dict("status" => "error", "message" => sprint(showerror, e))
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
 # A-07: VBC Bayesian Scenario Modeling
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -36,6 +36,7 @@ include("cost_accounting.jl")
 include("risk_contracting.jl")
 include("ma_risk.jl")
 include("capital_structure.jl")
+include("rhc_cah.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -98,7 +99,9 @@ export debt_service_coverage_ratio, days_cash_on_hand, current_ratio,
        debt_to_capitalization, wacc, bond_price, bond_yield_to_maturity,
        capital_budget_ranking, financial_health_scorecard,
        WACCCalibration, calculate_wacc,
-       CapexProject, CapexMetrics, calculate_capex_metrics, rank_projects
+       CapexProject, CapexMetrics, calculate_capex_metrics, rank_projects,
+       RHCReimbursement, CAHReimbursement, ReimburseComparison,
+       load_rhc_schedule, load_cah_schedule, project_rhc_revenue, project_cah_revenue, compare_reimbursement
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,

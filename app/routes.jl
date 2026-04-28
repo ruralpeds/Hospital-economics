@@ -75,6 +75,13 @@ route("/ma-risk") do
     page(model, ui_ma_risk) |> html
 end
 
+# A-08: RHC & CAH Reimbursement Comparison
+route("/rhc-cah") do
+    include("views/rhc_cah/RHCCAHModel.jl")
+    model = rhc_cah_model |> init
+    page(model, ui_rhc_cah) |> html
+end
+
 # A-07: VBC Bayesian Scenario Modeling
 route("/vbc-bayesian") do
     include("views/vbc_bayesian/VBCBayesianModel.jl")
@@ -430,6 +437,16 @@ route("/api/optimize/capex-ranking", method=POST) do
         json(result)
     catch e
         _safe_error("CapEx ranking", e)
+    end
+end
+
+route("/api/analytics/rhc-cah", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rhc_cah_comparison(payload)
+        json(result)
+    catch e
+        _safe_error("RHC/CAH comparison", e)
     end
 end
 
