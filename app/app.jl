@@ -30,6 +30,12 @@ end
 include(joinpath(APP_ROOT, "views", "layouts", "app_layout.jl"))
 
 # ---------------------------------------------------------------------------
+# Include shared component library (must come before view files)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "common.jl"))
+include(joinpath(APP_ROOT, "components", "page_template.jl"))
+
+# ---------------------------------------------------------------------------
 # Include reactive models — Core views
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "dashboard", "DashboardModel.jl"))

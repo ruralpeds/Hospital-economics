@@ -58,6 +58,12 @@ using Test
 
     # Phase 4 — coverage gap tests
     include("test_reimbursement_functions.jl")
+
+    # Shared component library tests (E1 — UI framework)
+    # Placed here because subsequent includes may throw top-level LoadErrors
+    # (missing packages) that terminate the outer testset early.
+    include("app/components_test.jl")
+
     include("test_monte_carlo_analytics.jl")
     include("test_data_import_export.jl")
     include("test_optimization_portfolio.jl")
