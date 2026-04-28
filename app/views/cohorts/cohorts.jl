@@ -60,8 +60,8 @@ function ui_cohorts(model)
         form_grid([
             (name=:asset_id, type=:numeric, label="Source Asset ID",
              help="Asset ID containing patient encounter data"),
-            (name=:cohort_name,        type=:numeric, label="Cohort Name"),
-            (name=:cohort_description, type=:numeric, label="Description"),
+            (name=:cohort_name,        type=:text, label="Cohort Name"),
+            (name=:cohort_description, type=:text, label="Description"),
         ], title="Cohort Metadata"),
 
         # Inclusion criteria

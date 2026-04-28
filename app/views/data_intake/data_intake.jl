@@ -68,9 +68,9 @@ function ui_data_intake(model)
                  Dict(:label=>"Other", :value=>"other"),
              ],
              visible_when="source_type === 'clinical'"),
-            (name=:registry_name, type=:numeric, label="Registry Name",
+            (name=:registry_name, type=:text, label="Registry Name",
              visible_when="source_type === 'registry'"),
-            (name=:cohort_filters, type=:numeric, label="Cohort Filters",
+            (name=:cohort_filters, type=:text, label="Cohort Filters",
              visible_when="source_type === 'registry'"),
         ], title="Source Configuration"),
 

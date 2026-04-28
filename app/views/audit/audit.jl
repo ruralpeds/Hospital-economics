@@ -88,8 +88,7 @@ function ui_audit(model)
                     title="Audit Log",
                 ),
 
-                export_bar(csv_field=nothing, xlsx_field=nothing, json_field=nothing,
-                           label="Export audit log"),
+                export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
             ]),
 
             # De-identify tab

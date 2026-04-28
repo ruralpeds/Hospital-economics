@@ -84,9 +84,9 @@ function ui_data_prepare(model)
                  Dict(:label=>"Drop Rows", :value=>"drop"),
              ],
              visible_when="transform === 'impute'"),
-            (name=:ts_date_col,   type=:numeric, label="Date Column",
+            (name=:ts_date_col,   type=:text, label="Date Column",
              visible_when="transform === 'time_series'"),
-            (name=:ts_value_col,  type=:numeric, label="Value Column",
+            (name=:ts_value_col,  type=:text, label="Value Column",
              visible_when="transform === 'time_series'"),
             (name=:ts_interval, type=:select, label="Interval",
              options=[
