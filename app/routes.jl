@@ -566,6 +566,28 @@ route("/api/data/upload", method=POST) do
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Bug Report (public, no auth required)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/bugreport", method=POST) do
+    try
+        payload    = jsonpayload()
+        remote_ip  = string(get(Genie.Requests.header("X-Forwarded-For"), "0.0.0.0"))
+        session_id = let c = Genie.Cookies.get("_session_id")
+            isnothing(c) ? "anonymous" : string(c)
+        end
+        result = BugReportController.handle_submit(
+            payload isa AbstractDict ? payload : Dict{String,Any}();
+            remote_ip  = remote_ip,
+            session_id = session_id,
+        )
+        json(result["body"], status=result["status"])
+    catch e
+        _safe_error("Bug report submission", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Health check
 # ═══════════════════════════════════════════════════════════════════════════
 

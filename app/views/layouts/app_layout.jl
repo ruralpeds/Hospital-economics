@@ -324,5 +324,9 @@ function app_layout(model, page_title::String, content::Vector)
         ]),
 
         script(src="/js/app.js"),
+
+        # ── BugReport floating action button (E27) ──────────────────────────
+        # Rendered once here so every current and future page inherits it.
+        bug_report_button()...,
     ]
 end

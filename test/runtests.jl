@@ -94,4 +94,8 @@ using Test
 
     # Phase 2.4: Comprehensive Validation & Integration Tests
     include("test_phase2_validation_integration.jl")
+
+    # E27 — BugReport component tests
+    include("components/bug_report_redaction_test.jl")
+    include("controllers/bug_report_controller_test.jl")
 end
