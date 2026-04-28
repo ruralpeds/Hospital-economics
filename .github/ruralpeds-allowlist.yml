@@ -1,0 +1,12 @@
+# Ruralpeds Organization Repository Allowlist
+#
+# Repositories under the `ruralpeds` GitHub organization that are recognized
+# as approved peer projects for cross-repository integration with
+# `ruralpeds/hospital-economics` (data sourcing, shared schemas, CI hooks,
+# automation tooling, etc.).
+#
+# Add a repository here before wiring up any cross-repo dependency or
+# automation that targets it.
+
+allowed_repositories:
+  - ruralpeds/data-ingestion
