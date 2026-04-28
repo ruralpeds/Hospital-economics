@@ -42,6 +42,7 @@ include("telehealth.jl")
 include("medicaid_dsh.jl")
 include("rhc_optimization.jl")
 include("network_economics.jl")
+include("physician_compensation.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -128,6 +129,10 @@ export RHCServiceLine, RHCServiceMetrics, RHCPortfolioOptimization,
 # Network Economics (Ch. 10e)
 export HospitalNode, NetworkTransfer, NetworkEconomics, NetworkAnalysisResult,
        calculate_network_margin_impact, analyze_network_system
+
+# Physician Compensation (Ch. 10f)
+export PhysicianProfile, CompensationModel, PhysicianCompensation, SpecialtyBenchmarks,
+       calculate_physician_compensation, benchmark_specialty, identify_outliers
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,
