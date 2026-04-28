@@ -1,0 +1,6 @@
+patient_id	mrn	admission_date	discharge_date	primary_diagnosis	total_charges	payer
+P001	MRN001	2024-01-10	2024-01-13	E11.9	15000.00	Medicare
+P002	MRN002	2024-01-11	2024-01-14	J44.0	9800.00	Commercial
+P003	MRN003	2024-01-12	2024-01-18	I10	22500.00	Medicaid
+P004	MRN004	2024-01-15	2024-01-16	Z23	4200.00	Commercial
+P005	MRN005	2024-01-16	2024-01-25	K92.1	38000.00	Medicare

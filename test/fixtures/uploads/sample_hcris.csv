@@ -1,0 +1,4 @@
+provider_number,fiscal_year_begin,fiscal_year_end,hospital_name,state,total_beds,total_discharges,total_patient_revenue,net_patient_revenue
+171301,2023-01-01,2023-12-31,Prairie View Medical Center,KS,25,500,12000000.00,9500000.00
+281305,2023-01-01,2023-12-31,Community Memorial Hospital,NE,20,380,9800000.00,7800000.00
+351308,2023-01-01,2023-12-31,Plains Regional Medical Center,OK,25,620,14500000.00,11200000.00

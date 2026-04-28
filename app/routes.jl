@@ -555,6 +555,16 @@ route("/api/export/json", method=POST) do
     end
 end
 
+route("/api/data/upload", method=POST) do
+    try
+        payload = jsonpayload()
+        result = DataController.handle_universal_upload(payload)
+        json(result)
+    catch e
+        _safe_error("Universal upload", e)
+    end
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Health check
 # ═══════════════════════════════════════════════════════════════════════════
