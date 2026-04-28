@@ -26,7 +26,10 @@ end
 
 # ---------------------------------------------------------------------------
 # Reusable component library  (app/components/)
+# Loaded BEFORE views so view files can call form_grid(...), plot_panel(...), etc.
 # ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "components", "common.jl"))
+include(joinpath(APP_ROOT, "components", "page_template.jl"))
 include(joinpath(APP_ROOT, "components", "form_grid.jl"))
 include(joinpath(APP_ROOT, "components", "result_table.jl"))
 include(joinpath(APP_ROOT, "components", "plot_panel.jl"))
@@ -40,12 +43,6 @@ include(joinpath(APP_ROOT, "components", "upload.jl"))
 # Include shared layout
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "layouts", "app_layout.jl"))
-
-# ---------------------------------------------------------------------------
-# Include shared component library (must come before view files)
-# ---------------------------------------------------------------------------
-include(joinpath(APP_ROOT, "components", "common.jl"))
-include(joinpath(APP_ROOT, "components", "page_template.jl"))
 
 # ---------------------------------------------------------------------------
 # Include BugReport component + controller (E27)
@@ -232,6 +229,7 @@ include(joinpath(APP_ROOT, "views", "scenario_lab", "scenario_lab.jl"))
 include(joinpath(APP_ROOT, "views", "functions", "functions.jl"))
 include(joinpath(APP_ROOT, "views", "audit", "audit.jl"))
 
+
 # ---------------------------------------------------------------------------
 # Include API controllers
 # ---------------------------------------------------------------------------
@@ -240,6 +238,7 @@ include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
 include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
 include(joinpath(APP_ROOT, "controllers", "AnalyticsController.jl"))
+include(joinpath(APP_ROOT, "controllers", "BugReportController.jl"))
 
 # ---------------------------------------------------------------------------
 # Include API controllers — E4–E9 new concept tabs
@@ -289,6 +288,9 @@ include(joinpath(APP_ROOT, "routes.jl"))
 # ---------------------------------------------------------------------------
 function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false)
     load_config()
+    # Fail fast in production if BugReport secrets are missing — better to
+    # error on boot than silently disable spam protection or GitHub posting.
+    BugReportController.assert_production_config()
     @info "Starting Rural Hospital Economics Simulator v0.3.0 on $host:$port"
     @info "38 interactive tools | 6 simulation engines | Full API | Education center"
     Genie.config.run_as_server = true

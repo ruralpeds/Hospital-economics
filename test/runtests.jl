@@ -105,7 +105,11 @@ using Test
     include("components/bug_report_redaction_test.jl")
     include("controllers/bug_report_controller_test.jl")
 
+    # Phase 0 — Reusable component library
+    include("app/components_test.jl")
+
     # Phase 0 — Upload + widget component tests
+
     include("components/upload_test.jl")
     include("views/test_form_grid.jl")
     include("views/test_result_table.jl")

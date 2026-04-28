@@ -810,6 +810,53 @@ if get(ENV, "GENIE_ENV", "dev") != "prod"
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Universal upload (E2 component-library intake)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/data/upload", method=POST) do
+    try
+        payload = jsonpayload()
+        result = DataController.handle_universal_upload(payload)
+        json(result)
+    catch e
+        _safe_error("Universal upload", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Bug report submission (E27 BugReport component → GitHub issue)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/bugreport", method=POST) do
+    try
+        payload    = jsonpayload()
+        remote_ip  = string(get(Genie.Requests.header("X-Forwarded-For"), "0.0.0.0"))
+        session_id = let c = Genie.Cookies.get("_session_id")
+            isnothing(c) ? "anonymous" : string(c)
+        end
+        result = BugReportController.handle_submit(
+            payload isa AbstractDict ? payload : Dict{String,Any}();
+            remote_ip  = remote_ip,
+            session_id = session_id,
+        )
+        json(result["body"], status=result["status"])
+    catch e
+        _safe_error("Bug report submission", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Dev-only routes — Component library showcase  (disabled when GENIE_ENV=prod)
+# ═══════════════════════════════════════════════════════════════════════════
+
+if get(ENV, "GENIE_ENV", "dev") != "prod"
+    route("/dev/components") do
+        model = dev_components_model |> init
+        page(model, ui_dev_components) |> html
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Health check
 # ═══════════════════════════════════════════════════════════════════════════
 
