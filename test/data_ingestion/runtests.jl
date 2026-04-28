@@ -8,6 +8,9 @@ using Test
 include("test_types.jl")
 include("test_validators.jl")
 include("test_deidentifiers.jl")
+include("test_claims_formats.jl")
+include("test_quality_extensions.jl")
+include("test_cms_api_connectors.jl")
 
 # Summary
 println("\n" * "="^60)

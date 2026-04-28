@@ -2,6 +2,7 @@ Manifest.toml
 .env
 data/uploads/
 data/exports/
+data/cms_cache/
 *.log
 .DS_Store
 app/config/secrets.jl

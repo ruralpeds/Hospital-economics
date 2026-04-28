@@ -103,6 +103,9 @@ include("data_ingestion/validators.jl")
 include("data_ingestion/deidentifiers.jl")
 include("data_ingestion/audit_logger.jl")
 include("data_ingestion/ingestion_api.jl")
+include("data_ingestion/cms_api_connectors.jl")
+include("data_ingestion/claims_formats.jl")
+include("data_ingestion/quality_extensions.jl")
 
 # ═══════════════════════════════════════════════════════════════
 # PATIENT COHORT BUILDING & ANALYTICS
