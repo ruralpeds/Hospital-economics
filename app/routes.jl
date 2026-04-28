@@ -299,13 +299,18 @@ end
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/data/intake") do
-    html(not_yet_implemented_html("Data Intake",
-        subtitle="Ingest CSV, XLS/XLSX, JSON, Parquet, and HCRIS files"))
+    model = data_intake_model |> init
+    page(model, ui_data_intake) |> html
+end
+
+route("/data/prepare") do
+    model = data_prepare_model |> init
+    page(model, ui_data_prepare) |> html
 end
 
 route("/cohorts") do
-    html(not_yet_implemented_html("Cohort Builder",
-        subtitle="Define patient cohorts using inclusion/exclusion criteria"))
+    model = cohorts_model |> init
+    page(model, ui_cohorts) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -313,18 +318,18 @@ end
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/cost-analysis") do
-    html(not_yet_implemented_html("Cost Analysis",
-        subtitle="Total cost of care, episode costs, high-cost patient identification"))
+    model = cost_analysis_model |> init
+    page(model, ui_cost_analysis) |> html
 end
 
 route("/revenue") do
-    html(not_yet_implemented_html("Revenue & Reimbursement",
-        subtitle="Total revenue, payer mix, denied claims, provider payment"))
+    model = revenue_model |> init
+    page(model, ui_revenue) |> html
 end
 
 route("/profitability") do
-    html(not_yet_implemented_html("Profitability & Operations",
-        subtitle="Contribution margin, break-even, operating margin, cost structure"))
+    model = profitability_model |> init
+    page(model, ui_profitability) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -826,6 +831,397 @@ route("/api/health") do
         "risk_models" => RISK_MODELS,
         "tools"      => TOOL_COUNT,
     ))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Data Ingestion (E4, delegated to IngestionController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/ingest/hospital", method=POST) do
+    try
+        payload = jsonpayload()
+        result = IngestionController.handle_hospital(payload)
+        json(result)
+    catch e
+        _safe_error("Hospital data ingestion", e)
+    end
+end
+
+route("/api/ingest/claims", method=POST) do
+    try
+        payload = jsonpayload()
+        result = IngestionController.handle_claims(payload)
+        json(result)
+    catch e
+        _safe_error("Claims data ingestion", e)
+    end
+end
+
+route("/api/ingest/clinical", method=POST) do
+    try
+        payload = jsonpayload()
+        result = IngestionController.handle_clinical(payload)
+        json(result)
+    catch e
+        _safe_error("Clinical data ingestion", e)
+    end
+end
+
+route("/api/ingest/financial", method=POST) do
+    try
+        payload = jsonpayload()
+        result = IngestionController.handle_financial(payload)
+        json(result)
+    catch e
+        _safe_error("Financial data ingestion", e)
+    end
+end
+
+route("/api/ingest/registry", method=POST) do
+    try
+        payload = jsonpayload()
+        result = IngestionController.handle_registry(payload)
+        json(result)
+    catch e
+        _safe_error("Registry data ingestion", e)
+    end
+end
+
+route("/api/ingest/validate", method=POST) do
+    try
+        payload = jsonpayload()
+        result = IngestionController.handle_validate(payload)
+        json(result)
+    catch e
+        _safe_error("Data validation", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Data Preparation (E5, delegated to PreparationController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/prepare/normalize", method=POST) do
+    try
+        payload = jsonpayload()
+        result = PreparationController.handle_normalize(payload)
+        json(result)
+    catch e
+        _safe_error("ID normalization", e)
+    end
+end
+
+route("/api/prepare/standardize", method=POST) do
+    try
+        payload = jsonpayload()
+        result = PreparationController.handle_standardize(payload)
+        json(result)
+    catch e
+        _safe_error("Code standardization", e)
+    end
+end
+
+route("/api/prepare/aggregate", method=POST) do
+    try
+        payload = jsonpayload()
+        result = PreparationController.handle_aggregate(payload)
+        json(result)
+    catch e
+        _safe_error("Episode aggregation", e)
+    end
+end
+
+route("/api/prepare/risk-adjust", method=POST) do
+    try
+        payload = jsonpayload()
+        result = PreparationController.handle_risk_adjust(payload)
+        json(result)
+    catch e
+        _safe_error("Risk adjustment", e)
+    end
+end
+
+route("/api/prepare/impute", method=POST) do
+    try
+        payload = jsonpayload()
+        result = PreparationController.handle_impute(payload)
+        json(result)
+    catch e
+        _safe_error("Imputation", e)
+    end
+end
+
+route("/api/prepare/time-series", method=POST) do
+    try
+        payload = jsonpayload()
+        result = PreparationController.handle_time_series(payload)
+        json(result)
+    catch e
+        _safe_error("Time-series formatting", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Cohort Builder (E6, delegated to CohortsController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/cohorts/preview", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CohortsController.handle_preview(payload)
+        json(result)
+    catch e
+        _safe_error("Cohort preview", e)
+    end
+end
+
+route("/api/cohorts/save", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CohortsController.handle_save(payload)
+        json(result)
+    catch e
+        _safe_error("Cohort save", e)
+    end
+end
+
+route("/api/cohorts", method=GET) do
+    try
+        result = CohortsController.handle_list()
+        json(result)
+    catch e
+        _safe_error("Cohort list", e)
+    end
+end
+
+route("/api/cohorts/:id", method=GET) do
+    try
+        result = CohortsController.handle_get(params(:id))
+        json(result)
+    catch e
+        _safe_error("Cohort get", e)
+    end
+end
+
+route("/api/cohorts/:id", method=DELETE) do
+    try
+        result = CohortsController.handle_delete(params(:id))
+        json(result)
+    catch e
+        _safe_error("Cohort delete", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Cost Analysis (E7, delegated to CostAnalysisController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/cost-analysis/total", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_total(payload)
+        json(result)
+    catch e
+        _safe_error("Cost total", e)
+    end
+end
+
+route("/api/cost-analysis/breakdown", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_breakdown(payload)
+        json(result)
+    catch e
+        _safe_error("Cost breakdown", e)
+    end
+end
+
+route("/api/cost-analysis/per-episode", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_per_episode(payload)
+        json(result)
+    catch e
+        _safe_error("Per-episode cost", e)
+    end
+end
+
+route("/api/cost-analysis/cpq", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_cpq(payload)
+        json(result)
+    catch e
+        _safe_error("Cost per QALY", e)
+    end
+end
+
+route("/api/cost-analysis/high-cost", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_high_cost(payload)
+        json(result)
+    catch e
+        _safe_error("High-cost patient identification", e)
+    end
+end
+
+route("/api/cost-analysis/project", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_project(payload)
+        json(result)
+    catch e
+        _safe_error("Cost projection", e)
+    end
+end
+
+route("/api/cost-analysis/inflate", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_inflate(payload)
+        json(result)
+    catch e
+        _safe_error("Cost inflation adjustment", e)
+    end
+end
+
+route("/api/cost-analysis/cohort-summary", method=POST) do
+    try
+        payload = jsonpayload()
+        result = CostAnalysisController.handle_cohort_summary(payload)
+        json(result)
+    catch e
+        _safe_error("Cohort cost summary", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Revenue & Reimbursement (E8, delegated to RevenueController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/revenue/total", method=POST) do
+    try
+        payload = jsonpayload()
+        result = RevenueController.handle_total(payload)
+        json(result)
+    catch e
+        _safe_error("Revenue total", e)
+    end
+end
+
+route("/api/revenue/denied", method=POST) do
+    try
+        payload = jsonpayload()
+        result = RevenueController.handle_denied(payload)
+        json(result)
+    catch e
+        _safe_error("Denied claims analysis", e)
+    end
+end
+
+route("/api/revenue/payor-mix", method=POST) do
+    try
+        payload = jsonpayload()
+        result = RevenueController.handle_payor_mix(payload)
+        json(result)
+    catch e
+        _safe_error("Payer mix analysis", e)
+    end
+end
+
+route("/api/revenue/provider-payment", method=POST) do
+    try
+        payload = jsonpayload()
+        result = RevenueController.handle_provider_payment(payload)
+        json(result)
+    catch e
+        _safe_error("Provider payment analysis", e)
+    end
+end
+
+route("/api/revenue/simulate", method=POST) do
+    try
+        payload = jsonpayload()
+        result = RevenueController.handle_simulate(payload)
+        json(result)
+    catch e
+        _safe_error("Revenue simulation", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Profitability & Operations (E9, delegated to ProfitabilityController)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/profitability/contrib-margin", method=POST) do
+    try
+        payload = jsonpayload()
+        result = ProfitabilityController.handle_contrib_margin(payload)
+        json(result)
+    catch e
+        _safe_error("Contribution margin", e)
+    end
+end
+
+route("/api/profitability/by-dept", method=POST) do
+    try
+        payload = jsonpayload()
+        result = ProfitabilityController.handle_by_dept(payload)
+        json(result)
+    catch e
+        _safe_error("Departmental profitability", e)
+    end
+end
+
+route("/api/profitability/fixed-variable", method=POST) do
+    try
+        payload = jsonpayload()
+        result = ProfitabilityController.handle_fixed_variable(payload)
+        json(result)
+    catch e
+        _safe_error("Fixed-variable decomposition", e)
+    end
+end
+
+route("/api/profitability/break-even", method=POST) do
+    try
+        payload = jsonpayload()
+        result = ProfitabilityController.handle_break_even(payload)
+        json(result)
+    catch e
+        _safe_error("Break-even analysis", e)
+    end
+end
+
+route("/api/profitability/operating-margin", method=POST) do
+    try
+        payload = jsonpayload()
+        result = ProfitabilityController.handle_operating_margin(payload)
+        json(result)
+    catch e
+        _safe_error("Operating margin", e)
+    end
+end
+
+route("/api/profitability/margin-decomp", method=POST) do
+    try
+        payload = jsonpayload()
+        result = ProfitabilityController.handle_margin_decomp(payload)
+        json(result)
+    catch e
+        _safe_error("Margin decomposition", e)
+    end
+end
+
+route("/api/profitability/ratios", method=POST) do
+    try
+        payload = jsonpayload()
+        result = ProfitabilityController.handle_ratios(payload)
+        json(result)
+    catch e
+        _safe_error("Profitability ratios", e)
+    end
 end
 
 # ═══════════════════════════════════════════════════════════════════════════

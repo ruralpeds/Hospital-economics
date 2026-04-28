@@ -114,6 +114,16 @@ include(joinpath(APP_ROOT, "views", "disaster_resilience", "DisasterResilienceMo
 include(joinpath(APP_ROOT, "views", "capital_scoring", "CapitalScoringModel.jl"))
 
 # ---------------------------------------------------------------------------
+# Include reactive models — E4–E9 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "data_intake", "DataIntakeModel.jl"))
+include(joinpath(APP_ROOT, "views", "data_prepare", "DataPrepareModel.jl"))
+include(joinpath(APP_ROOT, "views", "cohorts", "CohortsModel.jl"))
+include(joinpath(APP_ROOT, "views", "cost_analysis", "CostAnalysisModel.jl"))
+include(joinpath(APP_ROOT, "views", "revenue", "RevenueModel.jl"))
+include(joinpath(APP_ROOT, "views", "profitability", "ProfitabilityModel.jl"))
+
+# ---------------------------------------------------------------------------
 # Include view functions — Core views
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "dashboard", "dashboard.jl"))
@@ -174,6 +184,16 @@ include(joinpath(APP_ROOT, "views", "disaster_resilience", "disaster_resilience.
 include(joinpath(APP_ROOT, "views", "capital_scoring", "capital_scoring.jl"))
 
 # ---------------------------------------------------------------------------
+# Include view functions — E4–E9 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "data_intake", "data_intake.jl"))
+include(joinpath(APP_ROOT, "views", "data_prepare", "data_prepare.jl"))
+include(joinpath(APP_ROOT, "views", "cohorts", "cohorts.jl"))
+include(joinpath(APP_ROOT, "views", "cost_analysis", "cost_analysis.jl"))
+include(joinpath(APP_ROOT, "views", "revenue", "revenue.jl"))
+include(joinpath(APP_ROOT, "views", "profitability", "profitability.jl"))
+
+# ---------------------------------------------------------------------------
 # Include API controllers
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
@@ -181,6 +201,16 @@ include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
 include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
 include(joinpath(APP_ROOT, "controllers", "AnalyticsController.jl"))
+
+# ---------------------------------------------------------------------------
+# Include API controllers — E4–E9 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "controllers", "IngestionController.jl"))
+include(joinpath(APP_ROOT, "controllers", "PreparationController.jl"))
+include(joinpath(APP_ROOT, "controllers", "CohortsController.jl"))
+include(joinpath(APP_ROOT, "controllers", "CostAnalysisController.jl"))
+include(joinpath(APP_ROOT, "controllers", "RevenueController.jl"))
+include(joinpath(APP_ROOT, "controllers", "ProfitabilityController.jl"))
 
 # ---------------------------------------------------------------------------
 # Dev-only component library demo (disabled in production)
