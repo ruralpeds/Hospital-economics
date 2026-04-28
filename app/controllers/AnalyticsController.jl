@@ -586,6 +586,492 @@ function handle_capex_ranking(payload::Dict)::Dict
     end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# A-08: RHC & CAH Reimbursement Comparison
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_rhc_cah_comparison(payload::Dict) -> Dict
+
+API handler for RHC vs CAH reimbursement analysis.
+"""
+function handle_rhc_cah_comparison(payload::Dict)::Dict
+    try
+        rhc_visits = get(payload, "rhc_visits", Dict())
+        ar_volumes = get(payload, "ar_volumes", Dict())
+        non_ar_volumes = get(payload, "non_ar_volumes", Dict())
+        mileage = Float64(get(payload, "mileage_miles", 0.0))
+        conversion_cost = Float64(get(payload, "conversion_cost", 50_000.0))
+
+        rhc_fixture = joinpath(@__DIR__, "..", "..", "test", "fixtures", "reimbursement", "rhc_rvu_2024.json")
+        cah_fixture = joinpath(@__DIR__, "..", "..", "test", "fixtures", "reimbursement", "cah_ar_2024.json")
+
+        rhc_sch = load_rhc_schedule(rhc_fixture)
+        cah_sch = load_cah_schedule(cah_fixture)
+
+        comp = compare_reimbursement(rhc_visits, ar_volumes, non_ar_volumes, rhc_sch, cah_sch;
+                                    mileage_miles=mileage, conversion_cost_estimate=conversion_cost)
+
+        return Dict(
+            "status" => "ok",
+            "rhc_revenue" => comp.rhc_annual_revenue,
+            "cah_revenue" => comp.cah_annual_revenue,
+            "revenue_difference" => comp.revenue_difference,
+            "revenue_difference_pct" => comp.revenue_difference_pct,
+            "roi_pct" => comp.conversion_roi_pct,
+            "break_even_months" => comp.break_even_months,
+            "recommendation" => comp.recommendation
+        )
+    catch e
+        return Dict("status" => "error", "message" => sprint(showerror, e))
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# A-07: VBC Bayesian Scenario Modeling
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_vbc_bayesian(payload::Dict) -> Dict
+
+API handler for VBC Bayesian posterior sampling.
+
+Expected payload:
+  - scenario: Dict with name, scenario_type, shared_savings_rate, risk_bearing
+  - historical_savings: Vector of annual savings values
+
+Returns posterior statistics and visualization data.
+"""
+function handle_vbc_bayesian(payload::Dict)::Dict
+    try
+        scenario_data = get(payload, "scenario", Dict())
+        historical_savings = Float64.(get(payload, "historical_savings", [100_000.0]))
+
+        # Build VBC scenario
+        scenario = VBCScenario(
+            name = String(get(scenario_data, "name", "Unknown")),
+            scenario_type = Symbol(lowercase(get(scenario_data, "scenario_type", "aco"))),
+            shared_savings_rate = Float64(get(scenario_data, "shared_savings_rate", 0.50)),
+            risk_bearing = Float64(get(scenario_data, "risk_bearing", 0.30))
+        )
+
+        # Sample posterior
+        post = sample_vbc_posterior(scenario, historical_savings; n_iterations=1000, seed=42)
+
+        return Dict(
+            "status" => "ok",
+            "scenario_name" => post.scenario_name,
+            "scenario_type" => string(post.scenario_type),
+            "posterior_mean_savings" => post.posterior_mean_savings,
+            "posterior_std" => post.posterior_std,
+            "ci_lower" => post.credible_interval_lower,
+            "ci_upper" => post.credible_interval_upper,
+            "prob_positive" => post.prob_positive_savings,
+            "prior_mean" => post.prior_mean,
+            "prior_std" => post.prior_std,
+            "n_iterations" => post.n_iterations,
+            "convergence_rhat" => post.convergence_rhat
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+"""
+    handle_vbc_compare_scenarios(payload::Dict) -> Dict
+
+API handler for comparing multiple VBC scenarios.
+
+Expected payload:
+  - scenarios: Vector of scenario dicts
+
+Returns ranked scenarios with posteriors.
+"""
+function handle_vbc_compare_scenarios(payload::Dict)::Dict
+    try
+        scenarios_data = get(payload, "scenarios", [])
+        if isempty(scenarios_data)
+            return Dict(
+                "status" => "error",
+                "message" => "No scenarios provided"
+            )
+        end
+
+        # Build VBC scenarios
+        scenarios = [
+            VBCScenario(
+                name = String(get(s, "name", "Unknown")),
+                scenario_type = Symbol(lowercase(get(s, "scenario_type", "aco"))),
+                shared_savings_rate = Float64(get(s, "shared_savings_rate", 0.50)),
+                risk_bearing = Float64(get(s, "risk_bearing", 0.30))
+            )
+            for s in scenarios_data
+        ]
+
+        # Build historical data dict (default if not provided)
+        historical_dict = Dict(
+            scenario.name => [
+                Float64(get(s, "historical_savings", [100_000.0, 110_000.0]))[1]
+            ]
+            for (s, scenario) in zip(scenarios_data, scenarios)
+        )
+
+        # Compare scenarios
+        ranking_df = compare_scenarios(scenarios, historical_dict)
+
+        # Convert to JSON-serializable format
+        ranked_scenarios = [
+            Dict(
+                "rank" => row.rank,
+                "scenario_name" => row.scenario_name,
+                "scenario_type" => row.scenario_type,
+                "posterior_mean_savings" => row.posterior_mean_savings,
+                "posterior_std" => row.posterior_std,
+                "ci_lower" => row.ci_lower,
+                "ci_upper" => row.ci_upper,
+                "prob_positive" => row.prob_positive,
+                "ranking_score" => row.ranking_score,
+                "shared_savings_rate" => row.shared_savings_rate,
+                "risk_bearing" => row.risk_bearing
+            )
+            for row in eachrow(ranking_df)
+        ]
+
+        return Dict(
+            "status" => "ok",
+            "ranked_scenarios" => ranked_scenarios,
+            "scenario_count" => length(scenarios)
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RHC Service Line Optimization (A-12)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_rhc_optimization(payload::Dict)::Dict
+
+API handler for RHC service line portfolio optimization.
+
+Expected payload keys:
+  - services: Vector{Dict} with [visit_type, cpt_code, avg_rvu, conversion_factor,
+              avg_payment, variable_cost_per_visit, monthly_volume, monthly_fixed_cost, physician_fte_per_1000]
+
+Returns portfolio metrics and optimization recommendations.
+"""
+function handle_rhc_optimization(payload::Dict)::Dict
+    try
+        services_data = get(payload, "services", [])
+        if isempty(services_data)
+            return Dict("error" => "No services provided")
+        end
+
+        services = [
+            RHCServiceLine(
+                String(get(s, "visit_type", "")),
+                String(get(s, "cpt_code", "")),
+                Float64(get(s, "avg_rvu", 1.0)),
+                Float64(get(s, "conversion_factor", 33.45)),
+                Float64(get(s, "avg_payment", 50.0)),
+                Float64(get(s, "variable_cost_per_visit", 10.0)),
+                Int(get(s, "monthly_volume", 100)),
+                Float64(get(s, "monthly_fixed_cost", 5000.0)),
+                Float64(get(s, "physician_fte_per_1000", 0.5))
+            )
+            for s in services_data
+        ]
+
+        portfolio = optimize_rhc_portfolio(services)
+
+        # Get service-level metrics for detail
+        service_metrics = [
+            Dict(
+                "visit_type" => m.visit_type,
+                "annual_visits" => m.annual_visits,
+                "annual_revenue" => m.annual_revenue,
+                "contribution_margin_pct" => m.contribution_margin_pct,
+                "profit_per_visit" => m.profit_per_visit
+            )
+            for m in [calculate_rhc_service_metrics(s) for s in services]
+        ]
+
+        return Dict(
+            "status" => "ok",
+            "total_annual_visits" => portfolio.total_annual_visits,
+            "total_annual_revenue" => portfolio.total_annual_revenue,
+            "portfolio_margin_pct" => portfolio.portfolio_margin_pct,
+            "total_fte_required" => portfolio.total_fte_required,
+            "high_margin_services" => portfolio.high_margin_services,
+            "low_margin_services" => portfolio.low_margin_services,
+            "recommendation" => portfolio.recommended_action,
+            "service_details" => service_metrics
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Medicaid DSH & Supplemental Payments (A-11)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_medicaid_dsh_analysis(payload::Dict)::Dict
+
+API handler for Medicaid DSH and supplemental payment analysis.
+
+Expected payload keys:
+  - hospital_name: String
+  - medicare_cases: Int
+  - medicaid_cases: Int
+  - uninsured_cases: Int
+  - low_income_pct: Float64
+  - medicaid_bed_days: Float64
+  - total_bed_days: Float64
+  - base_medicaid_payment: Float64
+  - include_dsh: Bool
+  - include_upl: Bool
+
+Returns DSH calculations and supplemental payment impacts.
+"""
+function handle_medicaid_dsh_analysis(payload::Dict)::Dict
+    try
+        hosp = HospitalCharacteristics(
+            String(get(payload, "hospital_name", "")),
+            Int(get(payload, "medicare_cases", 0)),
+            Int(get(payload, "medicaid_cases", 0)),
+            Int(get(payload, "uninsured_cases", 0)),
+            Float64(get(payload, "low_income_pct", 0.0)),
+            Float64(get(payload, "medicaid_bed_days", 0.0)),
+            Float64(get(payload, "total_bed_days", 0.0))
+        )
+
+        medicaid_pct = calculate_medicaid_caseload_percentage(hosp)
+        low_income_pct = calculate_low_income_percentage(hosp)
+
+        dsh = calculate_dsh_payment(hosp)
+        base_medicaid = Float64(get(payload, "base_medicaid_payment", 10_000_000.0))
+        include_dsh = get(payload, "include_dsh", true)
+        include_upl = get(payload, "include_upl", true)
+
+        impact = calculate_supplemental_impacts(
+            hosp, base_medicaid,
+            include_dsh=include_dsh,
+            include_upl=include_upl
+        )
+
+        return Dict(
+            "status" => "ok",
+            "medicaid_caseload_pct" => medicaid_pct,
+            "low_income_utilization_pct" => low_income_pct,
+            "dsh_index" => dsh.dsh_index,
+            "estimated_dsh_payment" => dsh.estimated_dsh_payment,
+            "dsh_payment_floor" => dsh.dsh_payment_floor,
+            "dsh_payment_ceiling" => dsh.dsh_payment_ceiling,
+            "total_supplemental" => impact.total_supplemental,
+            "supplemental_as_pct" => impact.supplemental_as_pct_base,
+            "total_medicaid_revenue" => impact.total_medicaid_revenue,
+            "supplemental_programs" => impact.supplemental_programs
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Telehealth & RPM Financial Valuation (A-10)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_telehealth_valuation(payload::Dict)::Dict
+
+API handler for telehealth and RPM financial metrics.
+
+Expected payload keys:
+  - service_code: String (CPT code)
+  - service_name: String
+  - service_type: String (telehealth, rpm, hybrid)
+  - avg_reimbursement: Float64
+  - payer_mix: Dict{String, Float64}
+  - estimated_monthly_volume: Int
+  - variable_cost_per_visit: Float64
+  - fixed_monthly_cost: Float64
+  - annual_patients: Int (volume)
+
+Returns metrics for telehealth scenario.
+"""
+function handle_telehealth_valuation(payload::Dict)::Dict
+    try
+        service = TelehealthService(
+            String(get(payload, "service_code", "")),
+            String(get(payload, "service_name", "")),
+            Symbol(lowercase(get(payload, "service_type", "telehealth"))),
+            Float64(get(payload, "avg_reimbursement", 50.0)),
+            get(payload, "payer_mix", Dict("commercial" => 100.0)),
+            Int(get(payload, "estimated_monthly_volume", 100)),
+            Float64(get(payload, "variable_cost_per_visit", 10.0)),
+            Float64(get(payload, "fixed_monthly_cost", 15000.0))
+        )
+
+        annual_patients = Int(get(payload, "annual_patients", 100))
+        metrics = calculate_telehealth_metrics(service, annual_patients)
+
+        return Dict(
+            "status" => "ok",
+            "annual_visits" => metrics.annual_visits,
+            "annual_revenue" => metrics.annual_revenue,
+            "annual_variable_costs" => metrics.annual_variable_costs,
+            "annual_fixed_costs" => metrics.annual_fixed_costs,
+            "gross_margin_pct" => metrics.gross_margin_pct,
+            "roi_pct" => metrics.roi_pct,
+            "payback_months" => metrics.payback_months,
+            "break_even_volume" => metrics.break_even_volume
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+"""
+    handle_rpm_impact(payload::Dict)::Dict
+
+API handler for RPM financial impact assessment.
+
+Expected payload keys:
+  - enrolled_patients: Int
+  - monthly_monitoring_cost: Float64
+  - monthly_reimbursement: Float64
+  - readmission_reduction_pct: Float64 (default 0.15)
+  - avg_readmission_cost: Float64 (default 15000)
+
+Returns RPM financial impact metrics.
+"""
+function handle_rpm_impact(payload::Dict)::Dict
+    try
+        enrolled_patients = Int(get(payload, "enrolled_patients", 100))
+        monthly_cost = Float64(get(payload, "monthly_monitoring_cost", 45.0))
+        monthly_revenue = Float64(get(payload, "monthly_reimbursement", 55.0))
+        readmission_reduction = Float64(get(payload, "readmission_reduction_pct", 0.15))
+        readmission_cost = Float64(get(payload, "avg_readmission_cost", 15_000.0))
+
+        impact = calculate_rpm_financial_impact(
+            enrolled_patients,
+            monthly_cost,
+            monthly_revenue,
+            readmission_reduction_pct=readmission_reduction,
+            avg_readmission_cost=readmission_cost
+        )
+
+        return Dict(
+            "status" => "ok",
+            "enrolled_patients" => impact.enrolled_patients,
+            "monthly_net_benefit" => impact.monthly_net_benefit,
+            "annual_net_benefit" => impact.annual_net_benefit,
+            "cost_avoidance_from_readmissions" => impact.cost_avoidance_from_readmissions,
+            "total_annual_value" => impact.total_annual_value,
+            "patient_lifetime_value" => impact.patient_lifetime_value
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 340B Drug Program Savings (A-09)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_340b_savings(payload::Dict)::Dict
+
+API handler for 340B drug program savings estimation.
+
+Expected payload keys:
+  - drugs: Vector{Dict} with keys [ndc, description, avg_wholesale_price, ceiling_price, hospital_acquisition_cost, estimated_monthly_usage]
+  - managed_care_cap: Float64 (default 0.15)
+  - optimize: Bool (if true, also compute drug mix optimization)
+  - budget: Float64 (for optimization, default 500000.0)
+
+Returns a Dict with savings metrics and optional optimization results.
+"""
+function handle_340b_savings(payload::Dict)::Dict
+    try
+        drugs_data = get(payload, "drugs", [])
+        managed_care_cap = Float64(get(payload, "managed_care_cap", 0.15))
+        should_optimize = get(payload, "optimize", false)
+        budget = Float64(get(payload, "budget", 500_000.0))
+
+        if isempty(drugs_data)
+            return Dict("error" => "No drugs provided")
+        end
+
+        # Build Drug340B structs
+        drugs = [
+            Drug340B(
+                String(get(d, "ndc", "")),
+                String(get(d, "description", "")),
+                Float64(get(d, "avg_wholesale_price", 0.0)),
+                Float64(get(d, "ceiling_price", 0.0)),
+                Float64(get(d, "hospital_acquisition_cost", 0.0)),
+                Float64(get(d, "estimated_monthly_usage", 0.0))
+            )
+            for d in drugs_data
+        ]
+
+        # Estimate savings
+        metrics = estimate_340b_savings(drugs, managed_care_cap=managed_care_cap)
+
+        result = Dict(
+            "status" => "ok",
+            "total_annual_usage" => metrics.total_annual_usage_units,
+            "avg_discount_pct" => metrics.avg_discount_pct,
+            "estimated_annual_savings" => metrics.estimated_annual_savings,
+            "ceiling_vs_mac_ratio" => metrics.ceiling_vs_mac_ratio,
+            "managed_care_applicability" => metrics.managed_care_discount_applicability
+        )
+
+        # Optimize drug mix if requested
+        if should_optimize && budget > 0
+            opt_result = optimize_drug_mix(drugs, budget, managed_care_cap=managed_care_cap)
+            result["optimization"] = Dict(
+                "optimized_drug_count" => length(opt_result.optimized_drugs),
+                "total_annual_savings" => opt_result.total_annual_savings,
+                "budget_remaining" => opt_result.budget_remaining,
+                "annual_units_used" => opt_result.annual_units_used,
+                "average_discount_pct" => opt_result.average_discount_pct,
+                "optimized_ndcs" => opt_result.optimized_drugs
+            )
+        end
+
+        return result
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
 end  # module AnalyticsController
 
 

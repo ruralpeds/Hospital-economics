@@ -75,6 +75,20 @@ route("/ma-risk") do
     page(model, ui_ma_risk) |> html
 end
 
+# A-08: RHC & CAH Reimbursement Comparison
+route("/rhc-cah") do
+    include("views/rhc_cah/RHCCAHModel.jl")
+    model = rhc_cah_model |> init
+    page(model, ui_rhc_cah) |> html
+end
+
+# A-07: VBC Bayesian Scenario Modeling
+route("/vbc-bayesian") do
+    include("views/vbc_bayesian/VBCBayesianModel.jl")
+    model = vbc_bayesian_model |> init
+    page(model, ui_vbc_bayesian) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Analysis Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -255,6 +269,29 @@ end
 route("/capital-scoring") do
     model = capital_scoring_model |> init
     page(model, ui_capital_scoring) |> html
+end
+
+route("/drug-program-340b") do
+    include("views/program_340b/Program340BModel.jl")
+    model = program_340b_model |> init
+    page(model, ui_program_340b) |> html
+end
+
+route("/telehealth") do
+    include("views/telehealth/TelehealthModel.jl")
+    model = telehealth_model |> init
+    page(model, ui_telehealth) |> html
+end
+
+route("/medicaid-supplemental") do
+    include("views/medicaid_supplemental/MedicaidSupplementalModel.jl")
+    model = medicaid_supplemental_model |> init
+    page(model, ui_medicaid_supplemental) |> html
+end
+
+route("/rhc-optimization") do
+    model = rhc_optimization_model |> init
+    page(model, ui_rhc_optimization) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -554,6 +591,36 @@ route("/api/optimize/capex-ranking", method=POST) do
     end
 end
 
+route("/api/analytics/rhc-cah", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rhc_cah_comparison(payload)
+        json(result)
+    catch e
+        _safe_error("RHC/CAH comparison", e)
+    end
+end
+
+route("/api/analytics/vbc-bayesian", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_vbc_bayesian(payload)
+        json(result)
+    catch e
+        _safe_error("VBC Bayesian sampling", e)
+    end
+end
+
+route("/api/analytics/vbc-compare-scenarios", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_vbc_compare_scenarios(payload)
+        json(result)
+    catch e
+        _safe_error("VBC scenario comparison", e)
+    end
+end
+
 route("/api/import/hcris-auto", method=POST) do
     try
         payload = jsonpayload()
@@ -561,6 +628,56 @@ route("/api/import/hcris-auto", method=POST) do
         json(result)
     catch e
         _safe_error("HCRIS import", e)
+    end
+end
+
+route("/api/analytics/340b-savings", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_340b_savings(payload)
+        json(result)
+    catch e
+        _safe_error("340B savings estimation", e)
+    end
+end
+
+route("/api/analytics/telehealth-valuation", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_telehealth_valuation(payload)
+        json(result)
+    catch e
+        _safe_error("Telehealth valuation", e)
+    end
+end
+
+route("/api/analytics/rpm-impact", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rpm_impact(payload)
+        json(result)
+    catch e
+        _safe_error("RPM impact assessment", e)
+    end
+end
+
+route("/api/analytics/medicaid-dsh", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_medicaid_dsh_analysis(payload)
+        json(result)
+    catch e
+        _safe_error("Medicaid DSH analysis", e)
+    end
+end
+
+route("/api/analytics/rhc-optimization", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rhc_optimization(payload)
+        json(result)
+    catch e
+        _safe_error("RHC optimization", e)
     end
 end
 
