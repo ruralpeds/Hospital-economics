@@ -40,6 +40,7 @@ include("rhc_cah.jl")
 include("program_340b.jl")
 include("telehealth.jl")
 include("medicaid_dsh.jl")
+include("rhc_optimization.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -118,6 +119,10 @@ export TelehealthService, RPMDevice, TelehealthMetrics, RPMFinancialImpact,
 export HospitalCharacteristics, DSHCalculation, SupplementalPaymentImpact,
        calculate_medicaid_caseload_percentage, calculate_low_income_percentage,
        calculate_dsh_index, calculate_dsh_payment, calculate_supplemental_impacts
+
+# RHC Service Line Optimization (Ch. 10d)
+export RHCServiceLine, RHCServiceMetrics, RHCPortfolioOptimization,
+       calculate_rhc_service_metrics, optimize_rhc_portfolio, compare_service_line_scenarios
 
 # Operational Efficiency (Ch. 11)
 export length_of_stay_analysis, bed_turnover_rate, ed_throughput,

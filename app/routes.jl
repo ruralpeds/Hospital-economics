@@ -289,6 +289,11 @@ route("/medicaid-supplemental") do
     page(model, ui_medicaid_supplemental) |> html
 end
 
+route("/rhc-optimization") do
+    model = rhc_optimization_model |> init
+    page(model, ui_rhc_optimization) |> html
+end
+
 # ═══════════════════════════════════════════════════════════════════════════
 # API Routes — Simulation (delegated to SimulationController)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -535,6 +540,16 @@ route("/api/analytics/medicaid-dsh", method=POST) do
         json(result)
     catch e
         _safe_error("Medicaid DSH analysis", e)
+    end
+end
+
+route("/api/analytics/rhc-optimization", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rhc_optimization(payload)
+        json(result)
+    catch e
+        _safe_error("RHC optimization", e)
     end
 end
 

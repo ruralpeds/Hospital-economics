@@ -754,6 +754,76 @@ function handle_vbc_compare_scenarios(payload::Dict)::Dict
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
+# RHC Service Line Optimization (A-12)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    handle_rhc_optimization(payload::Dict)::Dict
+
+API handler for RHC service line portfolio optimization.
+
+Expected payload keys:
+  - services: Vector{Dict} with [visit_type, cpt_code, avg_rvu, conversion_factor,
+              avg_payment, variable_cost_per_visit, monthly_volume, monthly_fixed_cost, physician_fte_per_1000]
+
+Returns portfolio metrics and optimization recommendations.
+"""
+function handle_rhc_optimization(payload::Dict)::Dict
+    try
+        services_data = get(payload, "services", [])
+        if isempty(services_data)
+            return Dict("error" => "No services provided")
+        end
+
+        services = [
+            RHCServiceLine(
+                String(get(s, "visit_type", "")),
+                String(get(s, "cpt_code", "")),
+                Float64(get(s, "avg_rvu", 1.0)),
+                Float64(get(s, "conversion_factor", 33.45)),
+                Float64(get(s, "avg_payment", 50.0)),
+                Float64(get(s, "variable_cost_per_visit", 10.0)),
+                Int(get(s, "monthly_volume", 100)),
+                Float64(get(s, "monthly_fixed_cost", 5000.0)),
+                Float64(get(s, "physician_fte_per_1000", 0.5))
+            )
+            for s in services_data
+        ]
+
+        portfolio = optimize_rhc_portfolio(services)
+
+        # Get service-level metrics for detail
+        service_metrics = [
+            Dict(
+                "visit_type" => m.visit_type,
+                "annual_visits" => m.annual_visits,
+                "annual_revenue" => m.annual_revenue,
+                "contribution_margin_pct" => m.contribution_margin_pct,
+                "profit_per_visit" => m.profit_per_visit
+            )
+            for m in [calculate_rhc_service_metrics(s) for s in services]
+        ]
+
+        return Dict(
+            "status" => "ok",
+            "total_annual_visits" => portfolio.total_annual_visits,
+            "total_annual_revenue" => portfolio.total_annual_revenue,
+            "portfolio_margin_pct" => portfolio.portfolio_margin_pct,
+            "total_fte_required" => portfolio.total_fte_required,
+            "high_margin_services" => portfolio.high_margin_services,
+            "low_margin_services" => portfolio.low_margin_services,
+            "recommendation" => portfolio.recommended_action,
+            "service_details" => service_metrics
+        )
+    catch e
+        return Dict(
+            "status" => "error",
+            "message" => sprint(showerror, e)
+        )
+    end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Medicaid DSH & Supplemental Payments (A-11)
 # ─────────────────────────────────────────────────────────────────────────────
 
