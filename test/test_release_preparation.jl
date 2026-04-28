@@ -2,7 +2,6 @@
 # Tests for ReleasePreparation module
 
 using Test
-using DataFrames
 using Dates
 
 include("../src/release/ReleasePreparation.jl")
