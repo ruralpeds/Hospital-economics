@@ -75,6 +75,19 @@ route("/ma-risk") do
     page(model, ui_ma_risk) |> html
 end
 
+# A-08: RHC & CAH Reimbursement Comparison
+route("/rhc-cah") do
+    include("views/rhc_cah/RHCCAHModel.jl")
+    model = rhc_cah_model |> init
+    page(model, ui_rhc_cah) |> html
+end
+
+# A-07: VBC Bayesian Scenario Modeling
+route("/vbc-bayesian") do
+    include("views/vbc_bayesian/VBCBayesianModel.jl")
+    model = vbc_bayesian_model |> init
+    page(model, ui_vbc_bayesian) |> html
+end
 # ═══════════════════════════════════════════════════════════════════════════
 # Analysis Tool Routes
 # ═══════════════════════════════════════════════════════════════════════════
@@ -255,6 +268,157 @@ end
 route("/capital-scoring") do
     model = capital_scoring_model |> init
     page(model, ui_capital_scoring) |> html
+end
+
+route("/drug-program-340b") do
+    include("views/program_340b/Program340BModel.jl")
+    model = program_340b_model |> init
+    page(model, ui_program_340b) |> html
+end
+
+route("/telehealth") do
+    include("views/telehealth/TelehealthModel.jl")
+    model = telehealth_model |> init
+    page(model, ui_telehealth) |> html
+end
+
+route("/medicaid-supplemental") do
+    include("views/medicaid_supplemental/MedicaidSupplementalModel.jl")
+    model = medicaid_supplemental_model |> init
+    page(model, ui_medicaid_supplemental) |> html
+end
+
+route("/rhc-optimization") do
+    model = rhc_optimization_model |> init
+    page(model, ui_rhc_optimization) |> html
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Data
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/data/intake") do
+    html(not_yet_implemented_html("Data Intake",
+        subtitle="Ingest CSV, XLS/XLSX, JSON, Parquet, and HCRIS files"))
+end
+
+route("/cohorts") do
+    html(not_yet_implemented_html("Cohort Builder",
+        subtitle="Define patient cohorts using inclusion/exclusion criteria"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Financial
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/cost-analysis") do
+    html(not_yet_implemented_html("Cost Analysis",
+        subtitle="Total cost of care, episode costs, high-cost patient identification"))
+end
+
+route("/revenue") do
+    html(not_yet_implemented_html("Revenue & Reimbursement",
+        subtitle="Total revenue, payer mix, denied claims, provider payment"))
+end
+
+route("/profitability") do
+    html(not_yet_implemented_html("Profitability & Operations",
+        subtitle="Contribution margin, break-even, operating margin, cost structure"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Clinical
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/quality") do
+    html(not_yet_implemented_html("Quality & Clinical Outcomes",
+        subtitle="Readmission rates, mortality, quality metrics, outcome disparities"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Statistical
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/stats") do
+    html(not_yet_implemented_html("Descriptive & Inferential Stats",
+        subtitle="Summary statistics, t-tests, ANOVA, chi-square, confidence intervals"))
+end
+
+route("/regression") do
+    html(not_yet_implemented_html("Regression Lab",
+        subtitle="Linear, logistic, Poisson, negative binomial, Cox regression"))
+end
+
+route("/causal") do
+    html(not_yet_implemented_html("Causal Inference Lab",
+        subtitle="Propensity matching, IV analysis, DiD, regression discontinuity"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Economic Evaluation
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/cea") do
+    html(not_yet_implemented_html("Cost-Effectiveness Analysis (CEA)",
+        subtitle="ICER, CEAC, cost-effectiveness plane, NMB, dominance classification"))
+end
+
+route("/cba") do
+    html(not_yet_implemented_html("Cost-Benefit Analysis (CBA) & Budget Impact",
+        subtitle="NPV, ROI, benefit-cost ratio, budget impact modeling"))
+end
+
+route("/comparative") do
+    html(not_yet_implemented_html("Comparative Effectiveness",
+        subtitle="Treatment outcome comparisons, practice variation, SMR, subgroup analysis"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Advanced
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/visualize") do
+    html(not_yet_implemented_html("Visualization Workbench",
+        subtitle="Cost trends, tornado diagrams, survival curves, forest plots, heatmaps"))
+end
+
+route("/reports") do
+    html(not_yet_implemented_html("Reports & Export",
+        subtitle="Financial reports, quality reports, executive summaries, PDF/XLSX export"))
+end
+
+route("/database") do
+    html(not_yet_implemented_html("Database & Queries",
+        subtitle="Query patient records, claims, encounters, and financial data"))
+end
+
+route("/ml") do
+    html(not_yet_implemented_html("Advanced Analytics / ML",
+        subtitle="Risk prediction, readmission models, anomaly detection, stratification"))
+end
+
+route("/systems") do
+    html(not_yet_implemented_html("Network & Systems",
+        subtitle="Referral network analysis, care coordination gaps, care pathways"))
+end
+
+route("/scenario-lab") do
+    html(not_yet_implemented_html("Scenario & Sensitivity Lab",
+        subtitle="Best/base/worst case scenarios, one-way and probabilistic sensitivity"))
+end
+
+route("/functions") do
+    html(not_yet_implemented_html("Function Explorer",
+        subtitle="Browse and invoke all catalog functions with deep-links into concept tabs"))
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Concept Routes — Governance
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/audit") do
+    html(not_yet_implemented_html("Audit & Governance",
+        subtitle="Audit log viewer, data lineage, HIPAA compliance checks"))
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -554,6 +718,35 @@ route("/api/optimize/capex-ranking", method=POST) do
     end
 end
 
+route("/api/analytics/rhc-cah", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rhc_cah_comparison(payload)
+        json(result)
+    catch e
+        _safe_error("RHC/CAH comparison", e)
+    end
+end
+
+route("/api/analytics/vbc-bayesian", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_vbc_bayesian(payload)
+        json(result)
+    catch e
+        _safe_error("VBC Bayesian sampling", e)
+    end
+end
+
+route("/api/analytics/vbc-compare-scenarios", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_vbc_compare_scenarios(payload)
+        json(result)
+    catch e
+        _safe_error("VBC scenario comparison", e)
+    end
+end
 route("/api/import/hcris-auto", method=POST) do
     try
         payload = jsonpayload()
@@ -564,6 +757,55 @@ route("/api/import/hcris-auto", method=POST) do
     end
 end
 
+route("/api/analytics/340b-savings", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_340b_savings(payload)
+        json(result)
+    catch e
+        _safe_error("340B savings estimation", e)
+    end
+end
+
+route("/api/analytics/telehealth-valuation", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_telehealth_valuation(payload)
+        json(result)
+    catch e
+        _safe_error("Telehealth valuation", e)
+    end
+end
+
+route("/api/analytics/rpm-impact", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rpm_impact(payload)
+        json(result)
+    catch e
+        _safe_error("RPM impact assessment", e)
+    end
+end
+
+route("/api/analytics/medicaid-dsh", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_medicaid_dsh_analysis(payload)
+        json(result)
+    catch e
+        _safe_error("Medicaid DSH analysis", e)
+    end
+end
+
+route("/api/analytics/rhc-optimization", method=POST) do
+    try
+        payload = jsonpayload()
+        result = AnalyticsController.handle_rhc_optimization(payload)
+        json(result)
+    catch e
+        _safe_error("RHC optimization", e)
+    end
+end
 # ═══════════════════════════════════════════════════════════════════════════
 # API Routes — MBA Analytics (delegated to AnalyticsController)
 # ═══════════════════════════════════════════════════════════════════════════
