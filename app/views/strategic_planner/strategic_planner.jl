@@ -109,5 +109,6 @@ function ui_strategic_planner(model)
                 ])])
             ]),
         ]),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

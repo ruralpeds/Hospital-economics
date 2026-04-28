@@ -384,5 +384,6 @@ function ui_reh_wizard(model)
                 btn("Export Report", icon="download", color="primary"),
             ]),
         ]),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

@@ -27,6 +27,11 @@ using ...RuralHospitalSim: calculate_sdoh_adjustments, sdoh_financial_impact,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out composite_risk_score::Float64 = 0.55
     @out risk_tier::String = "high"
     @out volume_adjustment::Float64 = 1.0

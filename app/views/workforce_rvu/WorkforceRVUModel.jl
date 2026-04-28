@@ -33,6 +33,11 @@ using ...RuralHospitalSim: total_compensation, total_fte
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out cost_per_wrvu::Vector{Float64} = [66.67, 69.74, 68.89, 51.79, 51.92]
     @out production_vs_benchmark::Vector{Float64} = [100.0, 90.5, 107.1, 66.7, 61.9]
     @out total_wrvus::Float64 = 17_900.0

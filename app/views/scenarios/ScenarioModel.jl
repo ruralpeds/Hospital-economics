@@ -9,6 +9,10 @@ using Stipple, StippleUI
     @in left_drawer_open::Bool = true
     # ── Scenario Library ─────────────────────────────────────────────────
     @in selected_scenario_id::Int = 0
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @out scenarios::Vector{Dict{String,Any}} = [
         Dict("id"=>1, "name"=>"Baseline", "description"=>"Current trajectory",
              "status"=>"completed", "created"=>"2026-01-15"),

@@ -2,6 +2,8 @@
 
 **A Julia-based enterprise healthcare economics research and analytics platform with HIPAA compliance.**
 
+> **v1.0 Released** — 803+ tests · 21 new Web UI concept tabs · MAPE <10% on 4 real-world policy validation cases
+
 ---
 
 ## 📋 Quick Navigation

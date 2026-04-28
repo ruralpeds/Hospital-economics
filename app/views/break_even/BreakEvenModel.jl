@@ -18,6 +18,11 @@ using ...RuralHospitalSim: calculate_break_even, BreakEvenResult
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out break_even_volume::Int = 73_529
     @out contribution_margin_per_unit::Float64 = 170.0
     @out current_net_income::Float64 = 1_440_000.0

@@ -34,6 +34,11 @@ using ...RuralHospitalSim: step_down_allocation, calculate_medicare_cost_share,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_costs::Float64 = 12_920_000.0
     @out total_charges::Float64 = 36_600_000.0
     @out overall_ccr::Float64 = 0.353

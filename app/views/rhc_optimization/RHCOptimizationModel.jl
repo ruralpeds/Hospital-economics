@@ -24,6 +24,11 @@ using ...RuralHospitalSim: optimize_rhc_revenue, rhc_vs_hopd_comparison,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out current_air::Float64 = 140.0
     @out optimized_air::Float64 = 165.0
     @out current_revenue::Float64 = 1_120_000.0

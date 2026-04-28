@@ -24,6 +24,11 @@ using ...RuralHospitalSim: project_monthly_cash_flow, find_cash_nadir,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out monthly_balances::Vector{Float64} = [2100, 1990, 1895, 1820, 1770, 1730, 1380, 1350, 1340, 1355, 1380, 1420, 1475]
     @out nadir_month::Int = 9
     @out nadir_balance::Float64 = 1_340_000.0

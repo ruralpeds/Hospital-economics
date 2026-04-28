@@ -1,0 +1,11 @@
+patient_id,age,sex,diagnosis,los,cost,payer
+P001,72,M,Heart Failure,5,14200.00,Medicare
+P002,45,F,Pneumonia,3,8750.00,Medicaid
+P003,61,M,COPD,4,11300.00,Medicare
+P004,38,F,Appendectomy,2,9100.00,Commercial
+P005,55,M,Hip Fracture,7,22400.00,Medicare
+P006,29,F,Childbirth,2,6800.00,Medicaid
+P007,68,M,Diabetes,3,7600.00,Medicare
+P008,50,F,Colonoscopy,1,3200.00,Commercial
+P009,77,M,Stroke,8,28900.00,Medicare
+P010,42,F,Cholecystectomy,2,10500.00,Commercial

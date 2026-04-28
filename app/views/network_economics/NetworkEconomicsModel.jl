@@ -44,6 +44,11 @@ using ...RuralHospitalSim: evaluate_network, network_aco_formation, joint_purcha
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out annual_savings::Float64 = 390_000.0
     @out implementation_cost::Float64 = 150_000.0
     @out breakeven_years::Float64 = 0.38

@@ -25,6 +25,11 @@ using ...RuralHospitalSim: calculate_vbc_outcome, vbc_transition_timeline,
     @in care_management_investment::Float64 = 500_000.0
     @in recalculate::Bool = false
 
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out model_type_options::Vector{Dict{String,Any}} = [
         Dict("label" => "MSSP Basic", "value" => "mssp_basic"),
         Dict("label" => "MSSP Enhanced", "value" => "mssp_enhanced"),

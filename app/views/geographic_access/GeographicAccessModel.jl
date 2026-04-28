@@ -41,6 +41,11 @@ using ...RuralHospitalSim: calculate_catchment, haversine_distance, estimate_dri
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out catchment_population::Int = 7500
     @out avg_drive_time::Float64 = 12.5
     @out access_score::Float64 = 0.0012

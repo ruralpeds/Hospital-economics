@@ -79,5 +79,6 @@ function ui_vbc_transition(model)
                 ])])
             ]),
         ]),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

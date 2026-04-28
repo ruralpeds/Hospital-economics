@@ -42,5 +42,6 @@ function ui_medicaid_supplemental()
             )
             row(cell(class="col-xs-12", card(card_section([text(:supplemental_detail, class="text-body2")]))))
         @end
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ]) |> html
 end

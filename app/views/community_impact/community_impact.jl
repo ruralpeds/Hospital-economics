@@ -116,5 +116,6 @@ function ui_community_impact(model)
                 ])])
             ]),
         ]),
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end

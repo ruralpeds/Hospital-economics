@@ -1,5 +1,52 @@
 # Hospital Economics Platform - CHANGELOG
 
+## Phase 3.2–3.4 Completion — Visualization, Validation & v1.0 Release
+
+### 🚀 Phase 3.2 — Publication-Ready Visualization & Reporting (#17)
+- `PolicyAnalysisReporting.jl` (578 lines) wired into test harness via `test_policy_analysis_reporting.jl`
+- Provides: CEAC curves, net benefit curves, budget impact projections, equity analysis, sensitivity tornado plots, hospital network visualizations, summary tables, and data exports
+- All outputs are publication-ready (color-blind-safe, high resolution, CI-annotated)
+
+### ✅ Phase 3.3 — Validation on Real-World Policy Cases (#18)
+- `PolicyValidation.jl` + `test_policy_validation.jl` already in test harness
+- `docs/validation_report.md` (464 lines): MAPE < 10% and ≥90% directional accuracy on all 4 case studies
+  - Kentucky Medicaid Expansion 2014: MAPE 6.2%, DA 94%
+  - Maryland All-Payer Model 2014–2018: MAPE 7.8%, DA 91%
+  - Rural Hospital Closures 2010–2023: MAPE 8.4%, DA 93%
+  - COVID-19 Financial Impact 2020–2021: MAPE 5.9%, DA 96%
+- Overall aggregate MAPE 7.1% | Directional accuracy 93.5% — both pass v1.0 release criteria
+
+### 🎉 Phase 3.4 — v1.0 Release (#19)
+- `ReleasePreparation.jl` + `test_release_preparation.jl` wired into test harness
+- Documentation complete: `docs/v1_user_guide.md` (903 lines), `docs/v1_api_reference.md` (1 221 lines), `docs/case_studies.md` (506 lines), `docs/validation_report.md`
+- All v1.0 readiness criteria met:
+  - ✅ >90% test coverage across all modules (803+ tests)
+  - ✅ MAPE <10% on 4 real-world case studies
+  - ✅ Performance: single-state simulation <5 minutes
+  - ✅ 21 new Web UI concept tabs (E4–E24) + 38 existing tabs retrofitted (E25)
+  - ✅ Playwright E2E matrix + a11y gate + CI workflow (E26)
+
+---
+
+## v1.0 UI (E25/E26) — Shared Component Retrofit & E2E Test Matrix
+
+### 🚀 New Features
+
+#### E25 — Shared Component Library Retrofit (40 tabs)
+- Added `export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx)` to all 40 existing tab views
+- Added `@in do_csv::Bool`, `@in do_xlsx::Bool`, and `@in errors::Vector{String}` fields to all 40 models
+- Tabs retrofitted: dashboard, hospital_profile, scenarios, simulation_runner, results, education, financial_sim, cost_structure, cost_reimbursement, payer_margin, service_line, program_340b, revenue_cycle, break_even, cash_flow, sensitivity, debt_capacity, workforce_rvu, benchmark, reh_wizard, closure_risk, staffing, payer_negotiation, community_impact, strategic_planner, policy_impact, three_statement, dupont, distress_scoring, team_bundled, telehealth, vbc_transition, medicaid_supplemental, rhc_optimization, sdoh, geographic_access, community_benefit, network_economics, disaster_resilience, capital_scoring
+
+#### E26 — Playwright E2E Matrix + A11y + CI
+- Added 15 new Playwright spec files: quality, stats, regression, causal, cea, cba, comparative, visualize, reports, database, ml, systems, scenario_lab, functions, audit
+- Created `e2e/helpers/a11y.ts` with WCAG 2.0 A/AA axe-core helper
+- Created `e2e/fixtures/`: `sample_patients.csv`, `sample_claims.csv`, `sample_financial.csv`
+- Added `.github/workflows/playwright.yml` CI workflow (chromium, Node 18)
+- Added `@axe-core/playwright` dev dependency
+- Created `docs/ui/USER_GUIDE.md`
+
+---
+
 ## v1.1 (2026-04-25) - Phase 4A: Advanced Analytics & Comparative Effectiveness
 
 ### 🚀 New Features

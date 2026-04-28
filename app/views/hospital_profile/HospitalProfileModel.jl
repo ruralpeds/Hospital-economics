@@ -101,6 +101,11 @@ using Stipple, StippleUI, Dates
     @in save_profile::Bool = false
     @in load_profile::Bool = false
     @in reset_profile::Bool = false
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out save_status::String = ""
     @out validation_errors::Vector{String} = String[]
     @out is_dirty::Bool = false

@@ -33,6 +33,11 @@ using ...RuralHospitalSim: AnalyticsController
 
     @in run_analysis::Bool = false
 
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out is_loading::Bool = false
     @out error_message::String = ""
     @out altman::Union{Dict, Nothing} = nothing

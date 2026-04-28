@@ -15,6 +15,11 @@
     @in is_calculating::Bool = false
     @in error_message::String = ""
 
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out medicaid_caseload_pct::Float64 = 0.0
     @out low_income_utilization_pct::Float64 = 0.0
     @out dsh_index::Float64 = 0.0

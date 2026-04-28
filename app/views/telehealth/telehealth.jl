@@ -37,5 +37,6 @@ function ui_telehealth()
                 cell(class="col-xs-12 col-sm-3", card(card_section(class="text-center", [text("Total Annual Value"), heading(@text(:rpm_total_value, format(x)=Printf.@sprintf("$%.0f", x)), class="text-h5 q-my-md")])))
             )
         @end
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ]) |> html
 end

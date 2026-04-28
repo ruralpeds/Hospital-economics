@@ -58,6 +58,11 @@ using ...RuralHospitalSim: AnalyticsController
     @in run_projection::Bool = false
 
     # ── Output: Results ──────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out is_loading::Bool = false
     @out error_message::String = ""
     @out projection_data::Union{Dict, Nothing} = nothing

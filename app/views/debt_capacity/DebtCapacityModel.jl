@@ -24,6 +24,11 @@ using ...RuralHospitalSim: calculate_debt_capacity, debt_capacity_sensitivity,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out current_dscr::Float64 = 2.67
     @out max_annual_debt_service::Float64 = 857_143.0
     @out max_new_borrowing::Float64 = 9_850_000.0

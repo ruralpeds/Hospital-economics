@@ -22,6 +22,11 @@ using ...RuralHospitalSim: salary_to_revenue, fte_per_adjusted_occupied_bed
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_cost::Float64 = 19_200_000.0
     @out fixed_costs::Float64 = 12_480_000.0
     @out variable_costs::Float64 = 6_720_000.0

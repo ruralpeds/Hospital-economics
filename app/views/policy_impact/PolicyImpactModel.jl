@@ -22,6 +22,11 @@ using ...RuralHospitalSim: SEQUESTRATION_RATE, PolicyScenario
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_revenue_impact_yr1::Float64 = -185_000.0
     @out total_margin_change::Float64 = -0.010
     @out net_5yr_impact::Float64 = -925_000.0

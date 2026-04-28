@@ -28,6 +28,11 @@ using ...RuralHospitalSim: assess_disaster_resilience, disaster_stress_test,
     @in cash_reserves::Float64 = 2_500_000.0
     @in recalculate::Bool = false
 
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out flood_options::Vector{Dict{String,Any}} = [
         Dict("label"=>"Minimal","value"=>"minimal"), Dict("label"=>"Moderate","value"=>"moderate"),
         Dict("label"=>"High","value"=>"high"), Dict("label"=>"Very High","value"=>"very_high"),

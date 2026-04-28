@@ -11,6 +11,11 @@ using Stipple, StippleUI, StipplePlotly
     @in selected_simulation::String = "sim_10001"
     @in comparison_simulation::String = ""
     @in show_comparison::Bool = false
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out simulation_list::Vector{Dict{String,Any}} = [
         Dict("label"=>"Baseline (sim_10001)", "value"=>"sim_10001",
              "scenario"=>"Baseline", "date"=>"2026-03-15"),

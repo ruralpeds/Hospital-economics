@@ -114,6 +114,35 @@ include(joinpath(APP_ROOT, "views", "disaster_resilience", "DisasterResilienceMo
 include(joinpath(APP_ROOT, "views", "capital_scoring", "CapitalScoringModel.jl"))
 
 # ---------------------------------------------------------------------------
+# Include reactive models — E4–E9 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "data_intake", "DataIntakeModel.jl"))
+include(joinpath(APP_ROOT, "views", "data_prepare", "DataPrepareModel.jl"))
+include(joinpath(APP_ROOT, "views", "cohorts", "CohortsModel.jl"))
+include(joinpath(APP_ROOT, "views", "cost_analysis", "CostAnalysisModel.jl"))
+include(joinpath(APP_ROOT, "views", "revenue", "RevenueModel.jl"))
+include(joinpath(APP_ROOT, "views", "profitability", "ProfitabilityModel.jl"))
+
+# ---------------------------------------------------------------------------
+# Include reactive models — E10–E24 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "quality", "QualityModel.jl"))
+include(joinpath(APP_ROOT, "views", "stats", "StatsModel.jl"))
+include(joinpath(APP_ROOT, "views", "regression", "RegressionModel.jl"))
+include(joinpath(APP_ROOT, "views", "causal", "CausalModel.jl"))
+include(joinpath(APP_ROOT, "views", "cea", "CEAModel.jl"))
+include(joinpath(APP_ROOT, "views", "cba", "CBAModel.jl"))
+include(joinpath(APP_ROOT, "views", "comparative", "ComparativeModel.jl"))
+include(joinpath(APP_ROOT, "views", "visualize", "VisualizeModel.jl"))
+include(joinpath(APP_ROOT, "views", "reports", "ReportsModel.jl"))
+include(joinpath(APP_ROOT, "views", "database", "DatabaseModel.jl"))
+include(joinpath(APP_ROOT, "views", "ml", "MLModel.jl"))
+include(joinpath(APP_ROOT, "views", "systems", "SystemsModel.jl"))
+include(joinpath(APP_ROOT, "views", "scenario_lab", "ScenarioLabModel.jl"))
+include(joinpath(APP_ROOT, "views", "functions", "FunctionsModel.jl"))
+include(joinpath(APP_ROOT, "views", "audit", "AuditModel.jl"))
+
+# ---------------------------------------------------------------------------
 # Include view functions — Core views
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "views", "dashboard", "dashboard.jl"))
@@ -174,6 +203,35 @@ include(joinpath(APP_ROOT, "views", "disaster_resilience", "disaster_resilience.
 include(joinpath(APP_ROOT, "views", "capital_scoring", "capital_scoring.jl"))
 
 # ---------------------------------------------------------------------------
+# Include view functions — E4–E9 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "data_intake", "data_intake.jl"))
+include(joinpath(APP_ROOT, "views", "data_prepare", "data_prepare.jl"))
+include(joinpath(APP_ROOT, "views", "cohorts", "cohorts.jl"))
+include(joinpath(APP_ROOT, "views", "cost_analysis", "cost_analysis.jl"))
+include(joinpath(APP_ROOT, "views", "revenue", "revenue.jl"))
+include(joinpath(APP_ROOT, "views", "profitability", "profitability.jl"))
+
+# ---------------------------------------------------------------------------
+# Include view functions — E10–E24 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "views", "quality", "quality.jl"))
+include(joinpath(APP_ROOT, "views", "stats", "stats.jl"))
+include(joinpath(APP_ROOT, "views", "regression", "regression.jl"))
+include(joinpath(APP_ROOT, "views", "causal", "causal.jl"))
+include(joinpath(APP_ROOT, "views", "cea", "cea.jl"))
+include(joinpath(APP_ROOT, "views", "cba", "cba.jl"))
+include(joinpath(APP_ROOT, "views", "comparative", "comparative.jl"))
+include(joinpath(APP_ROOT, "views", "visualize", "visualize.jl"))
+include(joinpath(APP_ROOT, "views", "reports", "reports.jl"))
+include(joinpath(APP_ROOT, "views", "database", "database.jl"))
+include(joinpath(APP_ROOT, "views", "ml", "ml.jl"))
+include(joinpath(APP_ROOT, "views", "systems", "systems.jl"))
+include(joinpath(APP_ROOT, "views", "scenario_lab", "scenario_lab.jl"))
+include(joinpath(APP_ROOT, "views", "functions", "functions.jl"))
+include(joinpath(APP_ROOT, "views", "audit", "audit.jl"))
+
+# ---------------------------------------------------------------------------
 # Include API controllers
 # ---------------------------------------------------------------------------
 include(joinpath(APP_ROOT, "controllers", "SimulationController.jl"))
@@ -181,6 +239,36 @@ include(joinpath(APP_ROOT, "controllers", "OptimizationController.jl"))
 include(joinpath(APP_ROOT, "controllers", "RiskController.jl"))
 include(joinpath(APP_ROOT, "controllers", "DataController.jl"))
 include(joinpath(APP_ROOT, "controllers", "AnalyticsController.jl"))
+
+# ---------------------------------------------------------------------------
+# Include API controllers — E4–E9 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "controllers", "IngestionController.jl"))
+include(joinpath(APP_ROOT, "controllers", "PreparationController.jl"))
+include(joinpath(APP_ROOT, "controllers", "CohortsController.jl"))
+include(joinpath(APP_ROOT, "controllers", "CostAnalysisController.jl"))
+include(joinpath(APP_ROOT, "controllers", "RevenueController.jl"))
+include(joinpath(APP_ROOT, "controllers", "ProfitabilityController.jl"))
+
+# ---------------------------------------------------------------------------
+# Include API controllers — E10–E24 new concept tabs
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "controllers", "QualityController.jl"))
+include(joinpath(APP_ROOT, "controllers", "StatsController.jl"))
+include(joinpath(APP_ROOT, "controllers", "RegressionController.jl"))
+include(joinpath(APP_ROOT, "controllers", "CausalController.jl"))
+include(joinpath(APP_ROOT, "controllers", "CEAController.jl"))
+include(joinpath(APP_ROOT, "controllers", "CBAController.jl"))
+include(joinpath(APP_ROOT, "controllers", "ComparativeController.jl"))
+include(joinpath(APP_ROOT, "controllers", "VisualizeController.jl"))
+include(joinpath(APP_ROOT, "controllers", "ReportsController.jl"))
+include(joinpath(APP_ROOT, "controllers", "DatabaseController.jl"))
+include(joinpath(APP_ROOT, "controllers", "MLController.jl"))
+include(joinpath(APP_ROOT, "controllers", "SystemsController.jl"))
+include(joinpath(APP_ROOT, "controllers", "ScenarioLabController.jl"))
+include(joinpath(APP_ROOT, "..", "src", "utils", "function_registry.jl"))
+include(joinpath(APP_ROOT, "controllers", "FunctionController.jl"))
+include(joinpath(APP_ROOT, "controllers", "AuditController.jl"))
 
 # ---------------------------------------------------------------------------
 # Dev-only component library demo (disabled in production)

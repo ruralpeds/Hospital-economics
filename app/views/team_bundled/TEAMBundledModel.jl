@@ -22,6 +22,11 @@ using ...RuralHospitalSim: calculate_team_reconciliation, TEAMParams, TEAMResult
     @in low_volume_threshold::Int = 31
     @in recalculate::Bool = false
 
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out risk_track_options::Vector{Dict{String,Any}} = [
         Dict("label" => "Track 1 (10% cap)", "value" => "track1"),
         Dict("label" => "Track 2 (5% cap)", "value" => "track2"),

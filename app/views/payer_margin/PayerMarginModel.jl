@@ -26,6 +26,11 @@ using ...RuralHospitalSim: decompose_margin, margin_waterfall, MarginDecompositi
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_revenue::Float64 = 18_500_000.0
     @out total_cost::Float64 = 19_200_000.0
     @out blended_margin_pct::Float64 = -0.038

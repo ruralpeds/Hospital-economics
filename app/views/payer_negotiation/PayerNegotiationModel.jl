@@ -46,6 +46,11 @@ using ...RuralHospitalSim: simulate_negotiation, optimal_rate_target,
     @in recalculate::Bool = false
 
     # ── Outputs ─────────────────────────────────────────────────────────
+    # Export
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+    @in errors::Vector{String} = String[]
+
     @out total_current_revenue::Float64 = 8_420_000.0
     @out total_proposed_revenue::Float64 = 9_185_000.0
     @out total_revenue_increase::Float64 = 765_000.0
