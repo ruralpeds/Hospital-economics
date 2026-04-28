@@ -337,8 +337,8 @@ end
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/quality") do
-    html(not_yet_implemented_html("Quality & Clinical Outcomes",
-        subtitle="Readmission rates, mortality, quality metrics, outcome disparities"))
+    model = quality_model |> init
+    page(model, ui_quality) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -346,18 +346,18 @@ end
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/stats") do
-    html(not_yet_implemented_html("Descriptive & Inferential Stats",
-        subtitle="Summary statistics, t-tests, ANOVA, chi-square, confidence intervals"))
+    model = stats_model |> init
+    page(model, ui_stats) |> html
 end
 
 route("/regression") do
-    html(not_yet_implemented_html("Regression Lab",
-        subtitle="Linear, logistic, Poisson, negative binomial, Cox regression"))
+    model = regression_model |> init
+    page(model, ui_regression) |> html
 end
 
 route("/causal") do
-    html(not_yet_implemented_html("Causal Inference Lab",
-        subtitle="Propensity matching, IV analysis, DiD, regression discontinuity"))
+    model = causal_model |> init
+    page(model, ui_causal) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -365,18 +365,18 @@ end
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/cea") do
-    html(not_yet_implemented_html("Cost-Effectiveness Analysis (CEA)",
-        subtitle="ICER, CEAC, cost-effectiveness plane, NMB, dominance classification"))
+    model = cea_model |> init
+    page(model, ui_cea) |> html
 end
 
 route("/cba") do
-    html(not_yet_implemented_html("Cost-Benefit Analysis (CBA) & Budget Impact",
-        subtitle="NPV, ROI, benefit-cost ratio, budget impact modeling"))
+    model = cba_model |> init
+    page(model, ui_cba) |> html
 end
 
 route("/comparative") do
-    html(not_yet_implemented_html("Comparative Effectiveness",
-        subtitle="Treatment outcome comparisons, practice variation, SMR, subgroup analysis"))
+    model = comparative_model |> init
+    page(model, ui_comparative) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -384,38 +384,38 @@ end
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/visualize") do
-    html(not_yet_implemented_html("Visualization Workbench",
-        subtitle="Cost trends, tornado diagrams, survival curves, forest plots, heatmaps"))
+    model = visualize_model |> init
+    page(model, ui_visualize) |> html
 end
 
 route("/reports") do
-    html(not_yet_implemented_html("Reports & Export",
-        subtitle="Financial reports, quality reports, executive summaries, PDF/XLSX export"))
+    model = reports_model |> init
+    page(model, ui_reports) |> html
 end
 
 route("/database") do
-    html(not_yet_implemented_html("Database & Queries",
-        subtitle="Query patient records, claims, encounters, and financial data"))
+    model = database_model |> init
+    page(model, ui_database) |> html
 end
 
 route("/ml") do
-    html(not_yet_implemented_html("Advanced Analytics / ML",
-        subtitle="Risk prediction, readmission models, anomaly detection, stratification"))
+    model = ml_model |> init
+    page(model, ui_ml) |> html
 end
 
 route("/systems") do
-    html(not_yet_implemented_html("Network & Systems",
-        subtitle="Referral network analysis, care coordination gaps, care pathways"))
+    model = systems_model |> init
+    page(model, ui_systems) |> html
 end
 
 route("/scenario-lab") do
-    html(not_yet_implemented_html("Scenario & Sensitivity Lab",
-        subtitle="Best/base/worst case scenarios, one-way and probabilistic sensitivity"))
+    model = scenario_lab_model |> init
+    page(model, ui_scenario_lab) |> html
 end
 
 route("/functions") do
-    html(not_yet_implemented_html("Function Explorer",
-        subtitle="Browse and invoke all catalog functions with deep-links into concept tabs"))
+    model = functions_model |> init
+    page(model, ui_functions) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -423,8 +423,8 @@ end
 # ═══════════════════════════════════════════════════════════════════════════
 
 route("/audit") do
-    html(not_yet_implemented_html("Audit & Governance",
-        subtitle="Audit log viewer, data lineage, HIPAA compliance checks"))
+    model = audit_model |> init
+    page(model, ui_audit) |> html
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1222,6 +1222,404 @@ route("/api/profitability/ratios", method=POST) do
     catch e
         _safe_error("Profitability ratios", e)
     end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Quality & Clinical Outcomes (E10)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/quality/readmission", method=POST) do
+    try
+        payload = jsonpayload()
+        result = QualityController.handle_readmission(payload === nothing ? Dict() : payload)
+        json(result)
+    catch e
+        _safe_error("Quality readmission", e)
+    end
+end
+
+route("/api/quality/mortality", method=POST) do
+    try
+        payload = jsonpayload()
+        result = QualityController.handle_mortality(payload === nothing ? Dict() : payload)
+        json(result)
+    catch e
+        _safe_error("Quality mortality", e)
+    end
+end
+
+route("/api/quality/infection", method=POST) do
+    try
+        payload = jsonpayload()
+        result = QualityController.handle_infection(payload === nothing ? Dict() : payload)
+        json(result)
+    catch e
+        _safe_error("Quality infection", e)
+    end
+end
+
+route("/api/quality/psi", method=POST) do
+    try
+        payload = jsonpayload()
+        result = QualityController.handle_psi(payload === nothing ? Dict() : payload)
+        json(result)
+    catch e
+        _safe_error("Quality PSI", e)
+    end
+end
+
+route("/api/quality/qol", method=POST) do
+    try
+        payload = jsonpayload()
+        result = QualityController.handle_qol(payload === nothing ? Dict() : payload)
+        json(result)
+    catch e
+        _safe_error("Quality QoL", e)
+    end
+end
+
+route("/api/quality/disparities", method=POST) do
+    try
+        payload = jsonpayload()
+        result = QualityController.handle_disparities(payload === nothing ? Dict() : payload)
+        json(result)
+    catch e
+        _safe_error("Quality disparities", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Statistics (E11)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/stats/descriptive", method=POST) do
+    try; result = StatsController.handle_descriptive(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Stats descriptive", e); end
+end
+
+route("/api/stats/ttest", method=POST) do
+    try; result = StatsController.handle_ttest(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Stats t-test", e); end
+end
+
+route("/api/stats/anova", method=POST) do
+    try; result = StatsController.handle_anova(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Stats ANOVA", e); end
+end
+
+route("/api/stats/chisquare", method=POST) do
+    try; result = StatsController.handle_chisquare(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Stats chi-square", e); end
+end
+
+route("/api/stats/logrank", method=POST) do
+    try; result = StatsController.handle_logrank(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Stats log-rank", e); end
+end
+
+route("/api/stats/ci", method=POST) do
+    try; result = StatsController.handle_ci(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Stats CI", e); end
+end
+
+route("/api/stats/table1", method=POST) do
+    try; result = StatsController.handle_table1(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Stats Table1", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Regression (E12)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/regression/ols", method=POST) do
+    try; result = RegressionController.handle_ols(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Regression OLS", e); end
+end
+
+route("/api/regression/logistic", method=POST) do
+    try; result = RegressionController.handle_logistic(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Regression logistic", e); end
+end
+
+route("/api/regression/poisson", method=POST) do
+    try; result = RegressionController.handle_poisson(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Regression Poisson", e); end
+end
+
+route("/api/regression/negbin", method=POST) do
+    try; result = RegressionController.handle_negbin(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Regression NegBin", e); end
+end
+
+route("/api/regression/cox", method=POST) do
+    try; result = RegressionController.handle_cox(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Regression Cox", e); end
+end
+
+route("/api/regression/diagnostics", method=POST) do
+    try; result = RegressionController.handle_diagnostics(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Regression diagnostics", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Causal Inference (E13)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/causal/psm", method=POST) do
+    try; result = CausalController.handle_psm(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Causal PSM", e); end
+end
+
+route("/api/causal/iv", method=POST) do
+    try; result = CausalController.handle_iv(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Causal IV", e); end
+end
+
+route("/api/causal/did", method=POST) do
+    try; result = CausalController.handle_did(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Causal DiD", e); end
+end
+
+route("/api/causal/rdd", method=POST) do
+    try; result = CausalController.handle_rdd(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Causal RDD", e); end
+end
+
+route("/api/causal/hte", method=POST) do
+    try; result = CausalController.handle_hte(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Causal HTE", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — CEA (E14)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/cea/icer", method=POST) do
+    try; result = CEAController.handle_icer(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CEA ICER", e); end
+end
+
+route("/api/cea/ceac", method=POST) do
+    try; result = CEAController.handle_ceac(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CEA CEAC", e); end
+end
+
+route("/api/cea/sensitivity", method=POST) do
+    try; result = CEAController.handle_sensitivity(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CEA sensitivity", e); end
+end
+
+route("/api/cea/monte-carlo", method=POST) do
+    try; result = CEAController.handle_monte_carlo(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CEA Monte Carlo", e); end
+end
+
+route("/api/cea/analyze", method=POST) do
+    try; result = CEAController.handle_analyze(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CEA analyze", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — CBA (E15)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/cba/npv", method=POST) do
+    try; result = CBAController.handle_npv(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CBA NPV", e); end
+end
+
+route("/api/cba/roi", method=POST) do
+    try; result = CBAController.handle_roi(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CBA ROI", e); end
+end
+
+route("/api/cba/bcr", method=POST) do
+    try; result = CBAController.handle_bcr(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CBA BCR", e); end
+end
+
+route("/api/cba/break-even", method=POST) do
+    try; result = CBAController.handle_break_even(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CBA break-even", e); end
+end
+
+route("/api/cba/budget-impact", method=POST) do
+    try; result = CBAController.handle_budget_impact(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("CBA budget impact", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Comparative Effectiveness (E16)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/comparative/outcomes", method=POST) do
+    try; result = ComparativeController.handle_outcomes(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Comparative outcomes", e); end
+end
+
+route("/api/comparative/patterns", method=POST) do
+    try; result = ComparativeController.handle_patterns(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Comparative patterns", e); end
+end
+
+route("/api/comparative/variation", method=POST) do
+    try; result = ComparativeController.handle_variation(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Comparative variation", e); end
+end
+
+route("/api/comparative/benchmark", method=POST) do
+    try; result = ComparativeController.handle_benchmark(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Comparative benchmark", e); end
+end
+
+route("/api/comparative/smr", method=POST) do
+    try; result = ComparativeController.handle_smr(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Comparative SMR", e); end
+end
+
+route("/api/comparative/subgroup", method=POST) do
+    try; result = ComparativeController.handle_subgroup(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Comparative subgroup", e); end
+end
+
+route("/api/comparative/interaction", method=POST) do
+    try; result = ComparativeController.handle_interaction(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Comparative interaction", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Visualization (E17)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/visualize/render", method=POST) do
+    try; result = VisualizeController.handle_render(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Visualize render", e); end
+end
+
+route("/api/visualize/export", method=POST) do
+    try; result = VisualizeController.handle_export(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Visualize export", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Reports (E18)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/reports/generate", method=POST) do
+    try; result = ReportsController.handle_generate(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Reports generate", e); end
+end
+
+route("/api/reports/export-pdf", method=POST) do
+    try; result = ReportsController.handle_export_pdf(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Reports export PDF", e); end
+end
+
+route("/api/reports/export-xlsx", method=POST) do
+    try; result = ReportsController.handle_export_xlsx(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Reports export XLSX", e); end
+end
+
+route("/api/reports/preview", method=POST) do
+    try; result = ReportsController.handle_preview(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Reports preview", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Database (E19)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/database/query-patients", method=POST) do
+    try; result = DatabaseController.handle_query_patients(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Database query patients", e); end
+end
+
+route("/api/database/query-claims", method=POST) do
+    try; result = DatabaseController.handle_query_claims(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Database query claims", e); end
+end
+
+route("/api/database/query-encounters", method=POST) do
+    try; result = DatabaseController.handle_query_encounters(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Database query encounters", e); end
+end
+
+route("/api/database/query-financial", method=POST) do
+    try; result = DatabaseController.handle_query_financial(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Database query financial", e); end
+end
+
+route("/api/database/save-result", method=POST) do
+    try; result = DatabaseController.handle_save_result(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Database save result", e); end
+end
+
+route("/api/database/save-version", method=POST) do
+    try; result = DatabaseController.handle_save_version(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Database save version", e); end
+end
+
+route("/api/database/retrieve-archived", method=POST) do
+    try; result = DatabaseController.handle_retrieve_archived(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Database retrieve archived", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — ML (E20)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/ml/train", method=POST) do
+    try; result = MLController.handle_train(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("ML train", e); end
+end
+
+route("/api/ml/predict", method=POST) do
+    try; result = MLController.handle_predict(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("ML predict", e); end
+end
+
+route("/api/ml/predict-batch", method=POST) do
+    try; result = MLController.handle_predict_batch(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("ML predict batch", e); end
+end
+
+route("/api/ml/anomaly", method=POST) do
+    try; result = MLController.handle_anomaly(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("ML anomaly", e); end
+end
+
+route("/api/ml/stratify", method=POST) do
+    try; result = MLController.handle_stratify(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("ML stratify", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Systems (E21)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/systems/referral-network", method=POST) do
+    try; result = SystemsController.handle_referral_network(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Systems referral network", e); end
+end
+
+route("/api/systems/care-gaps", method=POST) do
+    try; result = SystemsController.handle_care_gaps(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Systems care gaps", e); end
+end
+
+route("/api/systems/team-composition", method=POST) do
+    try; result = SystemsController.handle_team_composition(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Systems team composition", e); end
+end
+
+route("/api/systems/simulate-pathway", method=POST) do
+    try; result = SystemsController.handle_simulate_pathway(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Systems simulate pathway", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Scenario Lab (E22)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/scenario/best-case", method=POST) do
+    try; result = ScenarioLabController.handle_best_case(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Scenario best-case", e); end
+end
+
+route("/api/scenario/base-case", method=POST) do
+    try; result = ScenarioLabController.handle_base_case(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Scenario base-case", e); end
+end
+
+route("/api/scenario/worst-case", method=POST) do
+    try; result = ScenarioLabController.handle_worst_case(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Scenario worst-case", e); end
+end
+
+route("/api/scenario/one-way", method=POST) do
+    try; result = ScenarioLabController.handle_one_way(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Scenario one-way", e); end
+end
+
+route("/api/scenario/two-way", method=POST) do
+    try; result = ScenarioLabController.handle_two_way(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Scenario two-way", e); end
+end
+
+route("/api/scenario/psa", method=POST) do
+    try; result = ScenarioLabController.handle_psa(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Scenario PSA", e); end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Function Explorer (E23)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/fn/:name", method=POST) do
+    try
+        payload = jsonpayload()
+        result = FunctionController.handle_invoke(payload === nothing ? Dict() : payload)
+        json(result)
+    catch e
+        _safe_error("Function invoke", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API Routes — Audit (E24)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/api/audit/set-config", method=POST) do
+    try; result = AuditController.handle_set_config(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Audit set config", e); end
+end
+
+route("/api/audit/log", method=POST) do
+    try; result = AuditController.handle_log(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Audit log", e); end
+end
+
+route("/api/audit/generate-log", method=POST) do
+    try; result = AuditController.handle_generate_log(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Audit generate log", e); end
+end
+
+route("/api/audit/deidentify", method=POST) do
+    try; result = AuditController.handle_deidentify(jsonpayload() === nothing ? Dict() : jsonpayload()); json(result); catch e; _safe_error("Audit deidentify", e); end
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
