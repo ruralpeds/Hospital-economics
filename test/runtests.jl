@@ -58,6 +58,12 @@ using Test
 
     # Phase 4 — coverage gap tests
     include("test_reimbursement_functions.jl")
+
+    # Shared component library tests (E1 — UI framework)
+    # Placed here because subsequent includes may throw top-level LoadErrors
+    # (missing packages) that terminate the outer testset early.
+    include("app/components_test.jl")
+
     include("test_monte_carlo_analytics.jl")
     include("test_data_import_export.jl")
     include("test_optimization_portfolio.jl")
@@ -79,7 +85,17 @@ using Test
     # Module 6: Integration with Modules 4-5
     include("integration_module_6.jl")
 
+    # Phase 3.3: Validation on Real-World Policy Cases
+    include("test_policy_validation.jl")
+
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
+
+    # Phase 2.4: Comprehensive Validation & Integration Tests
+    include("test_phase2_validation_integration.jl")
+
+    # E27 — BugReport component tests
+    include("components/bug_report_redaction_test.jl")
+    include("controllers/bug_report_controller_test.jl")
 end

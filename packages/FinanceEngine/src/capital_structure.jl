@@ -310,6 +310,163 @@ function capital_budget_ranking(projects::Vector; budget::Float64=Inf)::DataFram
 end
 
 """
+    irr(cash_flows::Vector{<:Real}; lo=-0.999, hi=10.0, tol=1e-10, max_iter=1000)
+        -> Union{Float64, Missing}
+
+Internal Rate of Return: the discount rate r at which NPV = 0, found by bisection.
+Returns `missing` when no real root exists in [lo, hi].
+
+For nonprofit hospitals this is the unleveraged project yield, compared against
+the tax-exempt bond rate as the hurdle rate.
+"""
+function irr(cash_flows::Vector{<:Real};
+             lo::Real=-0.999, hi::Real=10.0,
+             tol::Real=1e-10, max_iter::Int=1000)::Union{Float64,Missing}
+    length(cash_flows) >= 2 || throw(DomainValidationError("cash_flows",
+        string(length(cash_flows)), "≥ 2", "At least two cash flows required"))
+    # NPV with t-1 exponent: cash_flows[1] is at t=0 (present)
+    f(r) = sum(cf / (1 + r)^(t - 1) for (t, cf) in enumerate(cash_flows))
+    (f(lo) * f(hi) > 0) && return missing
+    for _ in 1:max_iter
+        mid = (lo + hi) / 2
+        fmid = f(mid)
+        abs(fmid) < tol && return mid
+        f(lo) * fmid < 0 ? (hi = mid) : (lo = mid)
+    end
+    return (lo + hi) / 2
+end
+
+"""
+    mirr(cash_flows::Vector{<:Real}, finance_rate::Real, reinvestment_rate::Real)
+        -> Float64
+
+Modified Internal Rate of Return.
+Negative cash flows are discounted to t=0 at `finance_rate` (cost of capital);
+positive cash flows are compounded to the final period at `reinvestment_rate`.
+More reliable than IRR when cash flows change sign multiple times.
+"""
+function mirr(cash_flows::Vector{<:Real},
+              finance_rate::Real,
+              reinvestment_rate::Real)::Float64
+    length(cash_flows) >= 2 || throw(DomainValidationError("cash_flows",
+        string(length(cash_flows)), "≥ 2", "At least two cash flows required"))
+    finance_rate > -1 || throw(DomainValidationError("finance_rate",
+        string(finance_rate), "> -1", "Finance rate must be > -1"))
+    reinvestment_rate > -1 || throw(DomainValidationError("reinvestment_rate",
+        string(reinvestment_rate), "> -1", "Reinvestment rate must be > -1"))
+    n = length(cash_flows)
+    pv_neg = sum(cf / (1 + finance_rate)^(t - 1)
+                 for (t, cf) in enumerate(cash_flows) if cf < 0; init=0.0)
+    fv_pos = sum(cf * (1 + reinvestment_rate)^(n - t)
+                 for (t, cf) in enumerate(cash_flows) if cf > 0; init=0.0)
+    pv_neg == 0 && throw(DataValidationError("No negative cash flows found in mirr"))
+    fv_pos <= 0 && throw(DataValidationError("No positive cash flows found in mirr"))
+    return (fv_pos / abs(pv_neg))^(1 / (n - 1)) - 1
+end
+
+"""
+    discounted_payback_period(cash_flows::Vector{<:Real}, discount_rate::Real) -> Float64
+
+How many periods until cumulative *discounted* cash flows turn non-negative.
+Uses linear interpolation within the crossover period.
+Returns `Inf` if cash flows never recover the initial outlay.
+
+`cash_flows[1]` is the period-0 cash flow (typically the negative initial investment).
+"""
+function discounted_payback_period(cash_flows::Vector{<:Real},
+                                   discount_rate::Real)::Float64
+    isempty(cash_flows) && throw(DataValidationError("cash_flows must not be empty"))
+    discount_rate > -1 || throw(DomainValidationError("discount_rate",
+        string(discount_rate), "> -1", "Discount rate must be > -1"))
+    cumulative = 0.0
+    for (t, cf) in enumerate(cash_flows)
+        prev = cumulative
+        dcf = cf / (1 + discount_rate)^(t - 1)
+        cumulative += dcf
+        if cumulative >= 0 && t > 1
+            return (t - 1) - 1 + (-prev / dcf)
+        end
+    end
+    return Inf
+end
+
+"""
+    interest_coverage_ratio(ebit::Float64, interest_expense::Float64) -> Float64
+
+Times Interest Earned = EBIT / interest expense.
+Benchmarks: lenders typically require ≥ 2.5; A-rated hospitals ≥ 4.0.
+"""
+function interest_coverage_ratio(ebit::Float64,
+                                  interest_expense::Float64)::Float64
+    interest_expense > 0 || throw(DomainValidationError("interest_expense",
+        string(interest_expense), "> 0", "Interest expense must be positive"))
+    return ebit / interest_expense
+end
+
+"""
+    profitability_index(npv_value::Float64, initial_investment::Float64) -> Float64
+
+Profitability Index = (NPV + initial_investment) / initial_investment.
+PI > 1.0 creates value; used to rank projects under capital rationing.
+"""
+function profitability_index(npv_value::Float64,
+                              initial_investment::Float64)::Float64
+    initial_investment > 0 || throw(DomainValidationError("initial_investment",
+        string(initial_investment), "> 0", "Initial investment must be positive"))
+    return (npv_value + initial_investment) / initial_investment
+end
+
+"""
+    modified_duration(cash_flows::Vector{<:Real}, yield::Real) -> Float64
+
+Modified duration = Macaulay duration / (1 + yield).
+Measures bond price sensitivity to a 1 pp change in yield.
+Relevant for hospital tax-exempt bond portfolio management.
+"""
+function modified_duration(cash_flows::Vector{<:Real}, yield::Real)::Float64
+    isempty(cash_flows) && throw(DataValidationError("cash_flows must not be empty"))
+    yield > -1 || throw(DomainValidationError("yield", string(yield), "> -1",
+        "Yield must be > -1"))
+    price = sum(cf / (1 + yield)^t for (t, cf) in enumerate(cash_flows))
+    abs(price) < 1e-12 && throw(DataValidationError(
+        "Present value of cash flows is zero; modified_duration is undefined"))
+    macaulay = sum(t * cf / (1 + yield)^t
+                   for (t, cf) in enumerate(cash_flows)) / price
+    return macaulay / (1 + yield)
+end
+
+"""
+    lease_vs_buy(asset_cost, lease_payments, salvage_value, discount_rate,
+                 useful_life; tax_rate=0.0) -> NamedTuple
+
+Compare present value of leasing versus purchasing an asset.
+For nonprofit hospitals set `tax_rate = 0.0` (no depreciation tax shield).
+
+Returns `(buy_pv, lease_pv, preferred)` where `preferred` is `:lease` or `:buy`.
+"""
+function lease_vs_buy(asset_cost::Float64,
+                      lease_payments::Vector{<:Real},
+                      salvage_value::Float64,
+                      discount_rate::Float64,
+                      useful_life::Int;
+                      tax_rate::Float64=0.0)
+    asset_cost > 0 || throw(DomainValidationError("asset_cost",
+        string(asset_cost), "> 0", "Asset cost must be positive"))
+    discount_rate > 0 || throw(DomainValidationError("discount_rate",
+        string(discount_rate), "> 0", "Discount rate must be positive"))
+    useful_life > 0 || throw(DomainValidationError("useful_life",
+        string(useful_life), "> 0", "Useful life must be positive"))
+    0.0 <= tax_rate < 1.0 || throw(DomainValidationError("tax_rate",
+        string(tax_rate), "0 ≤ tax_rate < 1", "Tax rate must be in [0, 1)"))
+    pv_salvage = salvage_value / (1 + discount_rate)^useful_life
+    buy_pv = asset_cost - pv_salvage
+    lease_pv = sum(pmt * (1 - tax_rate) / (1 + discount_rate)^t
+                   for (t, pmt) in enumerate(lease_payments))
+    preferred = lease_pv <= buy_pv ? :lease : :buy
+    return (buy_pv=buy_pv, lease_pv=lease_pv, preferred=preferred)
+end
+
+"""
     financial_health_scorecard(metrics::Dict{String,Float64}) -> DataFrame
 
 Compute a financial health scorecard with letter grades.

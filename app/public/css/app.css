@@ -3,44 +3,92 @@
    Supplements Quasar/Stipple default styling.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Design Tokens (CSS Custom Properties) ───────────────────────────────── */
+/*
+   Semantic color palette.  All hex values are defined ONLY here.
+   Every rule below (and all subsequent PRs) MUST reference these
+   variables — never hard-code hex codes elsewhere.
+
+   Mirrors the Julia constants in app/components/common.jl::APP_COLORS.
+*/
+:root {
+    /* Brand / interactive */
+    --color-primary:     #1565c0;
+    --color-primary-light: #1976d2;
+    --color-secondary:   #0288d1;
+    --color-on-primary:  #ffffff;
+
+    /* Semantic states */
+    --color-success:     #2e7d32;
+    --color-warning:     #f57f17;
+    --color-danger:      #c62828;
+    --color-info:        #01579b;
+
+    /* Neutral / surface */
+    --color-surface:     #f5f7fa;
+    --color-surface-alt: #ffffff;
+    --color-border:      #e8ecf1;
+    --color-muted:       #607d8b;
+    --color-text:        #2c3e50;
+    --color-heading:     #1a2332;
+
+    /* Spacing scale — mirrors APP_SPACING in common.jl */
+    --space-xs:  4px;
+    --space-sm:  8px;
+    --space-md:  16px;
+    --space-lg:  24px;
+    --space-xl:  32px;
+    --space-xxl: 48px;
+
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
 /* ── Typography ──────────────────────────────────────────────────────────── */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f5f7fa;
-    color: #2c3e50;
+    background-color: var(--color-surface);
+    color: var(--color-text);
 }
 
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
-    color: #1a2332;
+    color: var(--color-heading);
 }
 
 /* ── KPI Cards ───────────────────────────────────────────────────────────── */
 .kpi-card {
-    border-radius: 12px;
-    border: 1px solid #e8ecf1;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
     transition: box-shadow 0.2s ease, transform 0.15s ease;
-    background: white;
+    background: var(--color-surface-alt);
 }
 
 .kpi-card:hover {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
 }
 
 .kpi-card .q-card__section {
-    padding: 16px 20px;
+    padding: var(--space-md) 20px;
 }
 
 .kpi-card-sm {
-    border-radius: 8px;
-    border: 1px solid #e8ecf1;
-    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
     transition: box-shadow 0.2s ease;
 }
 
 .kpi-card-sm:hover {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-md);
 }
 
 /* ── Dashboard Specific ──────────────────────────────────────────────────── */
@@ -49,7 +97,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #7f8c9b;
+    color: var(--color-muted);
 }
 
 /* ── Alert Banners ───────────────────────────────────────────────────────── */
@@ -60,8 +108,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Navigation Drawer ───────────────────────────────────────────────────── */
 .q-drawer .q-item {
-    border-radius: 8px;
-    margin: 2px 8px;
+    border-radius: var(--radius-md);
+    margin: 2px var(--space-sm);
     min-height: 40px;
 }
 
@@ -72,7 +120,7 @@ h1, h2, h3, h4, h5, h6 {
 .q-drawer .q-item--active,
 .q-drawer .q-item.router-link-active {
     background: rgba(25, 118, 210, 0.12);
-    color: #1976d2;
+    color: var(--color-primary-light);
     font-weight: 500;
 }
 
@@ -100,8 +148,8 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #5a6b7d;
-    background: #f8f9fb;
+    color: var(--color-muted);
+    background: var(--color-surface);
 }
 
 .q-table td {
@@ -118,12 +166,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .q-stepper__tab--active .q-stepper__dot {
-    background: #1976d2 !important;
+    background: var(--color-primary-light) !important;
 }
 
 /* ── Form Elements ───────────────────────────────────────────────────────── */
 .q-field--filled .q-field__control {
-    border-radius: 8px;
+    border-radius: var(--radius-md);
 }
 
 .q-field--dense .q-field__control {
@@ -131,10 +179,37 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ── Risk Score Indicators ───────────────────────────────────────────────── */
-.risk-critical { color: #d32f2f; }
-.risk-high { color: #f57c00; }
+.risk-critical { color: var(--color-danger); }
+.risk-high     { color: var(--color-warning); }
 .risk-moderate { color: #fbc02d; }
-.risk-low { color: #388e3c; }
+.risk-low      { color: var(--color-success); }
+
+/* ── Page Header (from app/components/common.jl::page_header) ───────────── */
+.page-header {
+    border-left: 4px solid var(--color-primary);
+}
+
+/* ── Error / Info Banners (from app/components/common.jl::error_banner) ─── */
+.error-banner {
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+}
+
+/* ── Loading Overlay (from app/components/common.jl::loading_overlay) ───── */
+.loading-overlay {
+    background: rgba(255, 255, 255, 0.85);
+    z-index: 9999;
+}
+
+/* ── Concept-tab "not yet implemented" placeholder ───────────────────────── */
+.nyi-placeholder {
+    max-width: 640px;
+    margin: 4rem auto;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xxl);
+    box-shadow: var(--shadow-md);
+}
 
 /* ── Responsive Adjustments ──────────────────────────────────────────────── */
 @media (max-width: 768px) {

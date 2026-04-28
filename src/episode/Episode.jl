@@ -13,7 +13,11 @@ const DRG_BASE_RATES = Dict(
     "246" => 28_000.0, "247" => 18_000.0, "248" => 22_000.0,
     "164" => 16_000.0, "165" => 10_000.0, "166" => 14_000.0,
     "469" => 18_000.0, "470" => 15_000.0, "471" => 12_000.0,
-    "373" => 8_000.0, "374" => 12_000.0, "375" => 6_000.0,
+    "373" =>  8_000.0, "374" => 12_000.0, "375" =>  6_000.0,
+    # Neurology
+    "023" => 14_000.0, "024" => 18_000.0,
+    # Emergency / General
+    "999" =>  3_500.0,
 )
 
 # Payer multipliers (relative to Medicare = 1.0)
@@ -71,7 +75,7 @@ struct Episode
         complications::Vector{String} = String[],
         payer::Payer = Medicare,
         setting::String = "Hospital",
-        metadata::Dict{String, Any} = Dict()
+        metadata::Dict{String, Any} = Dict{String, Any}()
     )
         los = Dates.value(discharge_date - admission_date)
         validate_episode_constructor(episode_id, patient_id, los, admission_date, discharge_date)

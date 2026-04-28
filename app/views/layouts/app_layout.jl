@@ -189,6 +189,129 @@ function app_layout(model, page_title::String, content::Vector)
                         item_section(avatar=true, [q__icon(name="school")]),
                         item_section([item_label("Education Center")]),
                     ]),
+
+                    # ── Concepts ─────────────────────────────────────
+                    separator(class="q-my-sm"),
+                    item_label(header=true, "Data"),
+
+                    item(clickable=true, href="/data/intake", [
+                        item_section(avatar=true, [q__icon(name="upload_file")]),
+                        item_section([item_label("Data Intake")]),
+                    ]),
+                    item(clickable=true, href="/cohorts", [
+                        item_section(avatar=true, [q__icon(name="group")]),
+                        item_section([item_label("Cohort Builder")]),
+                    ]),
+
+                    separator(class="q-my-sm"),
+                    item_label(header=true, "Financial"),
+
+                    item(clickable=true, href="/cost-analysis", [
+                        item_section(avatar=true, [q__icon(name="price_change")]),
+                        item_section([item_label("Cost Analysis")]),
+                    ]),
+                    item(clickable=true, href="/revenue", [
+                        item_section(avatar=true, [q__icon(name="attach_money")]),
+                        item_section([item_label("Revenue & Reimbursement")]),
+                    ]),
+                    item(clickable=true, href="/profitability", [
+                        item_section(avatar=true, [q__icon(name="trending_up")]),
+                        item_section([item_label("Profitability & Operations")]),
+                    ]),
+
+                    separator(class="q-my-sm"),
+                    item_label(header=true, "Clinical"),
+
+                    item(clickable=true, href="/quality", [
+                        item_section(avatar=true, [q__icon(name="health_and_safety")]),
+                        item_section([item_label("Quality & Outcomes")]),
+                    ]),
+
+                    separator(class="q-my-sm"),
+                    item_label(header=true, "Statistical"),
+
+                    item(clickable=true, href="/stats", [
+                        item_section(avatar=true, [q__icon(name="bar_chart")]),
+                        item_section([item_label("Descriptive & Inferential Stats")]),
+                    ]),
+                    item(clickable=true, href="/regression", [
+                        item_section(avatar=true, [q__icon(name="show_chart")]),
+                        item_section([item_label("Regression Lab")]),
+                    ]),
+                    item(clickable=true, href="/causal", [
+                        item_section(avatar=true, [q__icon(name="device_hub")]),
+                        item_section([item_label("Causal Inference Lab")]),
+                    ]),
+
+                    separator(class="q-my-sm"),
+                    item_label(header=true, "Economic Evaluation"),
+
+                    item(clickable=true, href="/cea", [
+                        item_section(avatar=true, [q__icon(name="compare_arrows")]),
+                        item_section([item_label("Cost-Effectiveness (CEA)")]),
+                    ]),
+                    item(clickable=true, href="/cba", [
+                        item_section(avatar=true, [q__icon(name="account_balance_wallet")]),
+                        item_section([item_label("Cost-Benefit (CBA)")]),
+                    ]),
+                    item(clickable=true, href="/comparative", [
+                        item_section(avatar=true, [q__icon(name="difference")]),
+                        item_section([item_label("Comparative Effectiveness")]),
+                    ]),
+
+                    separator(class="q-my-sm"),
+                    item_label(header=true, "Advanced"),
+
+                    item(clickable=true, href="/visualize", [
+                        item_section(avatar=true, [q__icon(name="insert_chart")]),
+                        item_section([item_label("Visualization Workbench")]),
+                    ]),
+                    item(clickable=true, href="/reports", [
+                        item_section(avatar=true, [q__icon(name="description")]),
+                        item_section([item_label("Reports & Export")]),
+                    ]),
+                    item(clickable=true, href="/database", [
+                        item_section(avatar=true, [q__icon(name="storage")]),
+                        item_section([item_label("Database & Queries")]),
+                    ]),
+                    item(clickable=true, href="/ml", [
+                        item_section(avatar=true, [q__icon(name="psychology")]),
+                        item_section([item_label("Advanced Analytics / ML")]),
+                    ]),
+                    item(clickable=true, href="/systems", [
+                        item_section(avatar=true, [q__icon(name="account_tree")]),
+                        item_section([item_label("Network & Systems")]),
+                    ]),
+                    item(clickable=true, href="/scenario-lab", [
+                        item_section(avatar=true, [q__icon(name="science")]),
+                        item_section([item_label("Scenario & Sensitivity Lab")]),
+                    ]),
+                    item(clickable=true, href="/functions", [
+                        item_section(avatar=true, [q__icon(name="functions")]),
+                        item_section([item_label("Function Explorer")]),
+                    ]),
+
+                    separator(class="q-my-sm"),
+                    item_label(header=true, "Governance"),
+
+                    item(clickable=true, href="/audit", [
+                        item_section(avatar=true, [q__icon(name="policy")]),
+                        item_section([item_label("Audit & Governance")]),
+                    ]),
+
+                    # ── Dev tools (non-production only) ───────────────
+                    if get(ENV, "GENIE_ENV", "dev") != "prod"
+                        [
+                            separator(class="q-my-sm"),
+                            item_label(header=true, "Developer"),
+                            item(clickable=true, href="/dev/components", [
+                                item_section(avatar=true, [q__icon(name="widgets")]),
+                                item_section([item_label("Component Library")]),
+                            ]),
+                        ]
+                    else
+                        []
+                    end...,
                 ])
             ]),
 
@@ -201,5 +324,9 @@ function app_layout(model, page_title::String, content::Vector)
         ]),
 
         script(src="/js/app.js"),
+
+        # ── BugReport floating action button (E27) ──────────────────────────
+        # Rendered once here so every current and future page inherits it.
+        bug_report_button()...,
     ]
 end

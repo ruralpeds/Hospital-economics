@@ -1,0 +1,42 @@
+{
+  "model_year": 2024,
+  "source": "42 CFR 413.24 - Prospective Payment System",
+  "note": "CAH All-Patient Refined DRG rates - sample values for testing",
+  "schedule": [
+    {
+      "visit_type": "medical_admission",
+      "ar_drgcd": "MDC01",
+      "ar_payment": 8500.00,
+      "non_ar_payment": 150.00,
+      "blended_rate": 0.75
+    },
+    {
+      "visit_type": "surgical_admission",
+      "ar_drgcd": "MDC02",
+      "ar_payment": 12000.00,
+      "non_ar_payment": 180.00,
+      "blended_rate": 0.70
+    },
+    {
+      "visit_type": "maternity",
+      "ar_drgcd": "MDC14",
+      "ar_payment": 6500.00,
+      "non_ar_payment": 120.00,
+      "blended_rate": 0.80
+    },
+    {
+      "visit_type": "ed_visit",
+      "ar_drgcd": "MDC99",
+      "ar_payment": 1200.00,
+      "non_ar_payment": 200.00,
+      "blended_rate": 0.50
+    },
+    {
+      "visit_type": "outpatient",
+      "ar_drgcd": "MDC00",
+      "ar_payment": 500.00,
+      "non_ar_payment": 85.00,
+      "blended_rate": 0.60
+    }
+  ]
+}
