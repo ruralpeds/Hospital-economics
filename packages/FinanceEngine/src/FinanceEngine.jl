@@ -291,4 +291,39 @@ export MIPS_WEIGHTS_CY2025, MIPS_THRESHOLDS_CY2025,
        HACRP_DOMAIN_WEIGHTS_FY2026, HACRPInputs, HACRPResult, calculate_hacrp,
        HospitalQualityPaymentImpact, hospital_quality_payment_impact
 
+# MBA P1 Bundle 1 — Working Capital, SFA, TDABC, Cox PH Closure, RHC AIR
+include("working_capital.jl")
+include("sfa.jl")
+include("tdabc.jl")
+include("cox_ph_closure.jl")
+include("rhc_air_cap.jl")
+
+# MBA A-10 — Working Capital Optimization
+export WorkingCapitalInputs, WorkingCapitalMetrics, compute_working_capital,
+       target_dso_model,
+       ARAgingBucket, AR_COLLECTION_BENCHMARKS, ar_aging_analysis,
+       working_capital_scenarios
+
+# MBA C-02 — Stochastic Frontier Analysis
+export SFAHospital, SFAResult, SFAAnalysis,
+       build_translog_matrix, jlms_efficiency, run_sfa
+
+# MBA C-05 — Time-Driven Activity-Based Costing
+export ResourcePool, unused_capacity_minutes, unused_capacity_cost, capacity_utilisation,
+       TimeEquation, evaluate_time_equation,
+       TDABCEncounter, TDABCCostResult, TDABCModel,
+       add_resource_pool!, add_time_equation!, cost_encounter, run_tdabc
+
+# MBA D-01 — Cox PH Closure Hazard
+export COX_PH_CLOSURE_COEFFICIENTS, RURAL_HOSPITAL_BASELINE_SURVIVAL,
+       ClosureRiskInputs, ClosureRiskResult,
+       cox_ph_closure_risk, cox_ph_portfolio_risk
+
+# MBA E-04 — RHC AIR Cap & CAA 2021 Phase-In
+export RHCType, independent, provider_based, grandfathered,
+       CAA2021_PROVIDER_BASED_CAPS, INDEPENDENT_RHC_CAPS,
+       RHCAIRInputs, RHCAIRPaymentResult,
+       rhc_applicable_cap, calculate_rhc_air_payment,
+       rhc_cap_projection, rhc_caa2021_summary
+
 end  # module FinanceEngine
