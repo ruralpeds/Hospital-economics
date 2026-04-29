@@ -68,6 +68,11 @@ include("dea.jl")
 include("variance_analysis.jl")
 include("peer_benchmarking.jl")
 
+# MBA Domain E — Reimbursement (E-01 CAH Outliers, E-03 Medicare Advantage, E-06 MIPS/VBP/HRRP)
+include("cah_outlier_payments.jl")
+include("medicare_advantage.jl")
+include("mips_vbp_hrrp.jl")
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Exports
 # ═══════════════════════════════════════════════════════════════════════════
@@ -260,5 +265,30 @@ export FLEX_MONITORING_2022, AHA_RURAL_2023, MGMA_2023,
        benchmark_flex_monitoring, benchmark_aha_rural,
        benchmark_mgma_physician, comprehensive_benchmark,
        benchmark_report_text
+
+# MBA E-01 — CAH Outlier & TEFRA
+export CAH_OUTLIER_FIXED_LOSS_THRESHOLD_FY2026, CAH_OUTLIER_MARGINAL_RATE,
+       CAH_BAD_DEBT_REIMBURSEMENT_RATE, TEFRA_INCENTIVE_RATE,
+       CAHOutlierCase, CAHOutlierPayment, cah_outlier_payment, cah_outlier_analysis,
+       TEFRAHospitalData, TEFRAPaymentResult, tefra_payment,
+       cah_bad_debt_reimbursement, cah_swing_bed_payment,
+       CAHWorksheetE1Inputs, cah_worksheet_e1
+
+# MBA E-03 — Medicare Advantage v28
+export HCC_V28_CNA_COEFFICIENTS, HCC_V28_INTERACTION_COEFFICIENTS,
+       MA_NORMALIZATION_FACTORS, ma_normalization_factor,
+       ma_demographic_factor,
+       MAMemberRAF, MARAFResult, calculate_ma_raf,
+       MA_RURAL_PASSTHROUGH_RATE, ma_rural_passthrough_payment,
+       MACountyCapitationInputs, MACapitationResult, ma_county_capitation,
+       ma_penetration_revenue_impact
+
+# MBA E-06 — MIPS / Hospital VBP / HRRP / HACRP
+export MIPS_WEIGHTS_CY2025, MIPS_THRESHOLDS_CY2025,
+       MIPSScores, MIPSResult, calculate_mips,
+       VBP_DOMAIN_WEIGHTS_FY2026, VBPDomainScores, VBPResult, calculate_vbp,
+       HRRP_MEASURES_FY2026, HRRPMeasure, HRRPResult, calculate_hrrp,
+       HACRP_DOMAIN_WEIGHTS_FY2026, HACRPInputs, HACRPResult, calculate_hacrp,
+       HospitalQualityPaymentImpact, hospital_quality_payment_impact
 
 end  # module FinanceEngine
