@@ -58,6 +58,11 @@ include("performance_optimization.jl")
 include("scenario_persistence.jl")
 include("undo_redo.jl")
 
+# MBA Domain A — Corporate Finance & Valuation (A-04, A-05 EAC, A-06, A-09)
+include("nonprofit_wacc.jl")
+include("real_options.jl")
+include("treasury.jl")
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Exports
 # ═══════════════════════════════════════════════════════════════════════════
@@ -210,5 +215,29 @@ export Command, ParameterChangeCommand, CommandHistory,
        execute!, undo!, redo!, description, can_undo, can_redo,
        next_undo_description, next_redo_description, clear_history!,
        get_history, get_state, execute_and_record!
+
+# MBA A-04 — Nonprofit WACC, MADS, Synthetic Rating
+export MMD_AAA_CURVE, HOSPITAL_SECTOR_SPREADS, mmd_yield,
+       hamada_unlever, hamada_relever,
+       NonprofitWACCInputs, NonprofitWACCResult, nonprofit_wacc,
+       DebtCovenantInputs, CovenantCompliance, CovenantDashboard,
+       mads_headroom, covenant_dashboard,
+       SyntheticRatingInputs, synthetic_rating,
+       equivalent_annual_cost
+
+# MBA A-06 — Real Options
+export RealOptionBSM, BSMResult, bsm_real_option,
+       RealOptionBinomial, BinomialResult, binomial_real_option,
+       ServiceLineOption, ServiceLineOptionResult,
+       value_service_line_option, hospital_real_options_portfolio,
+       estimate_real_asset_volatility
+
+# MBA A-09 — Treasury & Liquidity
+export WeeklyOperatingProfile, WeeklyForecastRow, ThirteenWeekForecast,
+       thirteen_week_forecast,
+       MedicareDelayScenario, MedicareDelayStressResult,
+       medicare_delay_stress, run_medicare_delay_scenarios,
+       LOCHeadroomInputs, LOCHeadroomResult, loc_headroom,
+       LiquidityDashboard, liquidity_dashboard
 
 end  # module FinanceEngine
