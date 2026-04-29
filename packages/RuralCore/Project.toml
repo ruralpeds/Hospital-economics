@@ -1,6 +1,6 @@
 name = "RuralCore"
 uuid = "b1050005-0005-0005-0005-000000000005"
-version = "0.1.0"
+version = "1.0.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

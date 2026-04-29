@@ -293,7 +293,7 @@ include(joinpath(APP_ROOT, "routes.jl"))
 # ---------------------------------------------------------------------------
 function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false)
     load_config()
-    @info "Starting Rural Hospital Economics Simulator v0.3.0 on $host:$port"
+    @info "Starting Rural Hospital Economics Simulator v1.0.0 on $host:$port"
     @info "38 interactive tools | 6 simulation engines | Full API | Education center"
     Genie.config.run_as_server = true
     Genie.config.server_host = host
