@@ -428,4 +428,25 @@ export MSSPTrack, mssp_basic_a, mssp_basic_b, mssp_basic_c, mssp_basic_d,
        MSSPHospitalInputs, MSSPBayesianResult,
        mssp_bayesian_analysis, mssp_track_comparison, bayesian_update_cycle
 
+# MBA P1 Final Reporting — Rating Memo, Tornado API, Scenario Diff
+include("rating_agency_memo.jl")
+include("sensitivity_tornado.jl")
+include("scenario_diff.jl")
+
+# MBA F-02 — Rating Agency Memo
+export RatingMemoInputs,
+       generate_rating_memo_markdown, generate_rating_memo_typst, rating_memo_data
+
+# MBA F-04 — Sensitivity Tornado
+export TornadoRow, TornadoResult,
+       one_way_sensitivity, two_way_sensitivity,
+       break_even_analysis, scenario_sensitivity, tornado_chart_data
+
+# MBA F-05 — Scenario Diff / Compare
+export ScenarioSnapshot, ScenarioDiffRow, ScenarioDiff,
+       STANDARD_METRIC_DIRECTIONS, compare_scenarios,
+       WaterfallStep, build_waterfall,
+       ScenarioSet, scenario_set_diff,
+       rank_scenarios, scenario_diff_table
+
 end  # module FinanceEngine
