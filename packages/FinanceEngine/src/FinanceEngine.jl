@@ -365,4 +365,32 @@ export RHCType, independent, provider_based, grandfathered,
        rhc_applicable_cap, calculate_rhc_air_payment,
        rhc_cap_projection, rhc_caa2021_summary
 
+# MBA P1 Bundle 2 — M&A Valuation, Balanced Scorecard, Reciprocal Cost Allocation
+include("ma_valuation.jl")
+include("balanced_scorecard.jl")
+include("reciprocal_cost_allocation.jl")
+
+# MBA A-07 — Hospital M&A Valuation
+export RURAL_HOSPITAL_TRANSACTION_MULTIPLES,
+       TargetHospitalFinancials, MAValuationInputs,
+       DCFValuationResult, ComparableTransactionResult,
+       AssetBasedValuationResult, MAValuationResult,
+       dcf_valuation, comparable_transactions, asset_based_valuation,
+       synergy_npv, hospital_ma_valuation, ma_sensitivity_table
+
+# MBA B-01 — Balanced Scorecard
+export BSCPerspective, financial, patient_community, internal_process, learning_growth,
+       KPIDirection, higher_better, lower_better, target_range,
+       BSCKPIDefinition, BSCKPIMeasurement, CAH_STANDARD_KPI_LIBRARY,
+       StrategicInitiative, BalancedScorecard,
+       measure_kpi!, rag_status_for_kpi, performance_score_for_kpi,
+       BSCSummary, summarise_bsc, bsc_report_text
+
+# MBA C-06 — Reciprocal Cost Allocation
+export CostCenterType, overhead, patient_care,
+       CostCenter, AllocationBase, CostAllocationModel,
+       AllocationResult, AllocationSummary,
+       step_down_allocation, reciprocal_allocation,
+       compare_allocation_methods
+
 end  # module FinanceEngine
