@@ -81,6 +81,14 @@ function app_layout(model, page_title::String, content::Vector)
                         item_section(avatar=true, [q__icon(name="credit_score")]),
                         item_section([item_label("Debt Capacity")]),
                     ]),
+                    item(clickable=true, href="/lbo", [
+                        item_section(avatar=true, [q__icon(name="business_center")]),
+                        item_section([item_label("LBO Analysis")]),
+                    ]),
+                    item(clickable=true, href="/nsa-idr", [
+                        item_section(avatar=true, [q__icon(name="gavel")]),
+                        item_section([item_label("NSA-IDR Arbitration")]),
+                    ]),
                     item(clickable=true, href="/revenue-cycle", [
                         item_section(avatar=true, [q__icon(name="loop")]),
                         item_section([item_label("Revenue Cycle")]),
@@ -133,6 +141,14 @@ function app_layout(model, page_title::String, content::Vector)
                         item_section(avatar=true, [q__icon(name="handshake")]),
                         item_section([item_label("Payer Negotiation")]),
                     ]),
+                    item(clickable=true, href="/throughput", [
+                        item_section(avatar=true, [q__icon(name="timeline")]),
+                        item_section([item_label("Throughput / TOC")]),
+                    ]),
+                    item(clickable=true, href="/readmission-risk", [
+                        item_section(avatar=true, [q__icon(name="personal_injury")]),
+                        item_section([item_label("Readmission Risk & HRRP")]),
+                    ]),
                     item(clickable=true, href="/sdoh", [
                         item_section(avatar=true, [q__icon(name="diversity_3")]),
                         item_section([item_label("SDOH Analysis")]),
@@ -180,6 +196,18 @@ function app_layout(model, page_title::String, content::Vector)
                     item(clickable=true, href="/capital-scoring", [
                         item_section(avatar=true, [q__icon(name="analytics")]),
                         item_section([item_label("Capital Scoring")]),
+                    ]),
+                    item(clickable=true, href="/blue-ocean", [
+                        item_section(avatar=true, [q__icon(name="waves")]),
+                        item_section([item_label("Blue Ocean Strategy")]),
+                    ]),
+                    item(clickable=true, href="/reh-conversion", [
+                        item_section(avatar=true, [q__icon(name="swap_horiz")]),
+                        item_section([item_label("REH Conversion Decision")]),
+                    ]),
+                    item(clickable=true, href="/scenario-planning", [
+                        item_section(avatar=true, [q__icon(name="explore")]),
+                        item_section([item_label("Scenario Planning")]),
                     ]),
 
                     separator(class="q-my-sm"),
@@ -277,6 +305,14 @@ function app_layout(model, page_title::String, content::Vector)
                     item(clickable=true, href="/ml", [
                         item_section(avatar=true, [q__icon(name="psychology")]),
                         item_section([item_label("Advanced Analytics / ML")]),
+                    ]),
+                    item(clickable=true, href="/climate-risk", [
+                        item_section(avatar=true, [q__icon(name="eco")]),
+                        item_section([item_label("Climate Risk / TCFD")]),
+                    ]),
+                    item(clickable=true, href="/fed-register", [
+                        item_section(avatar=true, [q__icon(name="article")]),
+                        item_section([item_label("Fed Register Parser")]),
                     ]),
                     item(clickable=true, href="/systems", [
                         item_section(avatar=true, [q__icon(name="account_tree")]),

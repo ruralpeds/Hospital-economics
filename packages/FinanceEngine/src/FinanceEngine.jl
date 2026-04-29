@@ -449,4 +449,62 @@ export ScenarioSnapshot, ScenarioDiffRow, ScenarioDiff,
        ScenarioSet, scenario_set_diff,
        rank_scenarios, scenario_diff_table
 
+<<<<<<< HEAD
+=======
+# ─── P2 MBA Gaps ──────────────────────────────────────────────────────────────
+include("lbo_analysis.jl")
+include("blue_ocean.jl")
+include("reh_real_options.jl")
+include("scenario_planning.jl")
+include("theory_of_constraints.jl")
+include("readmission_risk.jl")
+include("climate_risk.jl")
+include("nsa_idr.jl")
+include("fed_register_parser.jl")
+
+# A-08 — LBO Analysis
+export LBOInputs, LBOSourcesUses, LBOYearResult, LBOExitScenario, LBOResult,
+       hospital_lbo
+
+# B-02 — Blue Ocean Strategy
+export CompetitiveFactor, StrategicCanvas, ERRCGrid, BlueOceanResult,
+       build_errc_grid, blue_ocean_analysis
+
+# B-04 — REH Real Options
+export CAHFinancialProfile, REHConversionResult, analyze_cah_to_reh_conversion,
+       REH_MONTHLY_FACILITY_PAYMENT_FY2026
+
+# B-05 — Scenario Planning
+export FiveForce, FiveForcesResult, analyze_five_forces,
+       PESTLEFactor, PESTLEResult, analyze_pestle,
+       UncertaintyAxis, Scenario, ScenarioMatrix,
+       build_scenario_matrix, default_rural_hospital_scenarios
+
+# C-04 — Theory of Constraints
+export ThroughputInputs, ThroughputMetrics, compute_throughput_metrics,
+       HospitalResource, ConstraintAnalysis, identify_constraint,
+       throughput_vs_cost_decision
+
+# D-02 — Readmission Risk
+export lace_score, lace_l_score,
+       PatientDischarge, ReadmissionRiskResult,
+       logistic_readmission_prob, score_population,
+       readmission_population_summary, hrrp_cm_impact
+
+# D-07 — Climate Risk / TCFD
+export PhysicalRiskInputs, PhysicalRiskResult, assess_physical_risk,
+       TransitionRiskInputs, TransitionRiskResult, assess_transition_risk,
+       ClimateScenario, IPCC_SCENARIOS, tcfd_scenario_analysis
+
+# E-09 — NSA-IDR
+export IDRClaimInputs, IDRClaimResult,
+       analyze_idr_claim, batch_idr_claims, idr_portfolio_opportunity,
+       estimated_qpa, IDR_ADMIN_FEE_STANDARD, IDR_ADMIN_FEE_COMPLEX
+
+# F-07 — Federal Register Parser
+export CMS_RULE_REGISTRY, FedRegisterDocument, RateExtraction,
+       build_fed_register_api_url, parse_fed_register_response,
+       extract_rates_from_text, generate_constants_update, validate_rate_extraction
+
+>>>>>>> origin/claude/p2-all-gaps-2026-04-28
 end  # module FinanceEngine
