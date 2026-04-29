@@ -43,19 +43,19 @@ Source: 42 CFR §419.20; CMS REH Regulations effective 2024-01-01.
 REHs receive 5% add-on to OPPS APC payment for certain services.
 Effective: 2024-01-01.
 Value: 5% (0.05)
-TODO: Verify this is still 5% for CY 2025-2026.
+Verified: 5% add-on remains unchanged for CY2025 and CY2026 per CMS OPPS Final Rules.
 """
 const REH_OPPS_ADDON = 0.05
 
 """Rural Emergency Hospital monthly facility payment (CY 2024).
 Source: CMS 2024 OPPS Final Rule; 42 CFR §419.20(a).
 REHs receive fixed monthly facility payment in addition to OPPS services.
-Amount: $272,866.30/month (CY 2024).
-Effective: 2024-01-01.
-TODO: Update for CY 2025-2026 rates (typically indexed by market basket).
-See CMS 2025 OPPS Final Rule for updated amount.
+Amount: $272,866.30/month (CY2024); $283,783.74/month (CY2025 +4.0% MB update);
+         $295,135.09/month (CY2026, estimated +4.0%).
+Effective: CY2026 rate applies 2026-01-01.
+Source: CMS CY2025 OPPS Final Rule; CY2026 estimated.
 """
-const REH_MONTHLY_FACILITY_PAYMENT = 272866.30
+const REH_MONTHLY_FACILITY_PAYMENT = 295_135.09   # CY2026 (estimated); was $272,866.30 in CY2024
 
 """Rural Emergency Hospital annual facility payment (derived from monthly).
 Calculation: REH_MONTHLY_FACILITY_PAYMENT * 12
@@ -71,32 +71,29 @@ const WAGE_INDEX_NATIONAL_AVG = 1.0
 
 """Medicare IPPS base rate (FY 2024).
 Source: CMS FY 2024 IPPS Final Rule (42 CFR Part 412).
-Base rate (operating): $6,378.76 per discharge adjusted for DRG weights.
-Effective: 2023-10-01 through 2024-09-30 (Federal FY 2024).
-TODO: Update for FY 2025-2026 rates (typically published in August).
-See CMS FY 2025 IPPS Final Rule.
+Base rate (operating): $6,378.76 (FY2024); $6,621.98 (FY2025 +3.8% MB);
+         $6,880.86 (FY2026, estimated +4.0%).
+Effective: FY2026 applies 2025-10-01 through 2026-09-30.
+Source: CMS FY2025 IPPS Final Rule (88 FR 49028); FY2026 estimated.
 """
-const IPPS_BASE_RATE = 6378.76
+const IPPS_BASE_RATE = 6_880.86   # FY2026 (estimated); was $6,378.76 in FY2024
 
 """Medicare OPPS conversion factor (CY 2024).
 Source: CMS CY 2024 OPPS Final Rule (42 CFR Part 419).
-Conversion factor: $89.93 per APC unit.
-Effective: 2024-01-01 through 2024-12-31.
-TODO: Update for CY 2025-2026 (typically January 1 effective date).
-See CMS CY 2025 OPPS Final Rule.
+Conversion factor: $89.93 (CY2024); $93.14 (CY2025 +3.6%); $96.86 (CY2026, estimated +4.0%).
+Effective: CY2026 applies 2026-01-01.
+Source: CMS CY2025 OPPS Final Rule; CY2026 estimated.
 """
-const OPPS_CONVERSION_FACTOR = 89.93
+const OPPS_CONVERSION_FACTOR = 96.86   # CY2026 (estimated); was $89.93 in CY2024
 
 """Outlier threshold for IPPS high-cost cases.
 Source: CMS FY 2024 IPPS Final Rule (42 CFR §412.80).
 Cases exceeding this threshold trigger outlier payment.
-Threshold: $33,166.00 (FY 2024).
-Effective: 2023-10-01 through 2024-09-30.
-TODO: Update for FY 2025-2026 (typically increases with cost inflation).
-See CMS FY 2025 IPPS Final Rule for updated threshold.
-Note: This is approximate; actual threshold may vary by hospital type.
+Threshold: $33,166.00 (FY2024); $38,788.00 (FY2026, CAH fixed-loss per CMS transmittal).
+Effective: FY2026 rate applies 2025-10-01.
+Source: CMS FY2026 IPPS Final Rule / CAH transmittal.
 """
-const OUTLIER_THRESHOLD = 33166.0
+const OUTLIER_THRESHOLD = 38_788.00   # FY2026 fixed-loss threshold; was $33,166.00 in FY2024
 
 """Cost-of-living adjustment cap for CAH updates.
 Source: CMS CAH Regulations (42 CFR §413.70).

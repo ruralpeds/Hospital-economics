@@ -1,0 +1,29 @@
+codecov:
+  require_ci_to_pass: no   # non-blocking during initial setup
+
+coverage:
+  precision: 1
+  round: down
+  range: "60...90"          # red below 60%, yellow 60-90%, green above 90%
+
+  status:
+    project:
+      default:
+        target: 60%
+        threshold: 2%       # allow 2pp drop before failing
+    patch:
+      default:
+        target: 50%         # PRs must cover at least 50% of changed lines
+
+ignore:
+  - "e2e/**"                # Playwright specs — not Julia coverage
+  - "docs/**"
+  - "textbook/**"
+  - "scripts/**"            # CLI scripts tested manually
+  - "Economics-textbook-v1/**"
+  - "Economics-textbook-v1 2/**"
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: yes      # only comment on PRs that change coverage

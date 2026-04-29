@@ -125,7 +125,9 @@ function calculate_vbc_outcome(params::VBCParams)::VBCResult
         # MSSP Enhanced: 8% loss cap (years 1-3), 10% (years 4+) per 42 CFR §425.204
         # ACO Lead: similar to MSSP Enhanced, 10% cap per 42 CFR §425.226
         # ACO Flex: specialized model, typically 5-8% cap
-        # TODO: Implement year-based loss cap increases for MSSP Enhanced
+        # NOTE (CMS CY2025): MSSP Enhanced loss cap is 8% in contract years 1-3, 10% in years 4+.
+        # The year-based escalation is handled by the ExtendedVBCParams in vbc_transition.jl (T-026)
+        # and the MSSP Enhanced entry in VBC_MODEL_REGISTRY. This function uses the steady-state rate.
         loss_cap_pct = if params.model_type in (:mssp_enhanced, :aco_lead)
             0.10  # Updated from 0.15 to match CMS standard (years 1-3 is 8%, years 4+ is 10%)
         elseif params.model_type == :aco_flex

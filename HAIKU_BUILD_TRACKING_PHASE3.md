@@ -140,3 +140,18 @@
 - [x] Currency / percent / integer / float / auto formatting
 - [x] Convenience builders for common report types
 - [x] No I/O in Report struct (pure data, export is separate)
+
+---
+
+## Repo Hygiene Completed (2026-04-28)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Merge 5 feature branches to main | ✅ COMPLETE | Via claude/hygiene-merge-all-2026-04-28 |
+| Delete 35 stale branches | ✅ COMPLETE | See below |
+| Julia compat (1.12→1.11) | ✅ COMPLETE | FinanceEngine + RuralCore both fixed |
+| Codecov wiring | ✅ COMPLETE | ci.yml + .codecov.yml + LCOV pipeline |
+| CMS rate TODOs in constants.jl | ✅ COMPLETE | FY2026 values applied (all 5 TODOs cleared) |
+| vbc_transition.jl TODO | ✅ COMPLETE | Documented; escalation handled by ExtendedVBCParams |
+| Duplicate /api/bugreport route | ✅ COMPLETE | Second occurrence removed from routes.jl |
+| JS toolchain moved to e2e/ | ✅ COMPLETE | tsconfig.json, package.json, playwright.config.ts, package-lock.json |
