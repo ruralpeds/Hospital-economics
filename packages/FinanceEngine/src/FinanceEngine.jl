@@ -291,4 +291,25 @@ export MIPS_WEIGHTS_CY2025, MIPS_THRESHOLDS_CY2025,
        HACRP_DOMAIN_WEIGHTS_FY2026, HACRPInputs, HACRPResult, calculate_hacrp,
        HospitalQualityPaymentImpact, hospital_quality_payment_impact
 
+# MBA P1 Final Reporting — Rating Memo, Tornado API, Scenario Diff
+include("rating_agency_memo.jl")
+include("sensitivity_tornado.jl")
+include("scenario_diff.jl")
+
+# MBA F-02 — Rating Agency Memo
+export RatingMemoInputs,
+       generate_rating_memo_markdown, generate_rating_memo_typst, rating_memo_data
+
+# MBA F-04 — Sensitivity Tornado
+export TornadoRow, TornadoResult,
+       one_way_sensitivity, two_way_sensitivity,
+       break_even_analysis, scenario_sensitivity, tornado_chart_data
+
+# MBA F-05 — Scenario Diff / Compare
+export ScenarioSnapshot, ScenarioDiffRow, ScenarioDiff,
+       STANDARD_METRIC_DIRECTIONS, compare_scenarios,
+       WaterfallStep, build_waterfall,
+       ScenarioSet, scenario_set_diff,
+       rank_scenarios, scenario_diff_table
+
 end  # module FinanceEngine
