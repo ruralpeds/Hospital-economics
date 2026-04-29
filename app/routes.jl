@@ -30,6 +30,12 @@ route("/dashboard") do
     page(model, ui_dashboard) |> html
 end
 
+# F-03: CFO 1-Pager Dashboard
+route("/cfo") do
+    model = cfo_dashboard_model |> init
+    page(model, ui_cfo_dashboard) |> html
+end
+
 route("/profile") do
     model = hospital_profile_model |> init
     page(model, ui_hospital_profile) |> html

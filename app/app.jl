@@ -232,6 +232,10 @@ include(joinpath(APP_ROOT, "views", "scenario_lab", "scenario_lab.jl"))
 include(joinpath(APP_ROOT, "views", "functions", "functions.jl"))
 include(joinpath(APP_ROOT, "views", "audit", "audit.jl"))
 
+# F-03: CFO 1-Pager Dashboard
+include(joinpath(APP_ROOT, "views", "cfo_dashboard", "CFODashboardModel.jl"))
+include(joinpath(APP_ROOT, "views", "cfo_dashboard", "cfo_dashboard.jl"))
+
 # ---------------------------------------------------------------------------
 # Include API controllers
 # ---------------------------------------------------------------------------
