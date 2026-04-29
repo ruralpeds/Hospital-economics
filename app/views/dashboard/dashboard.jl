@@ -279,6 +279,135 @@ function ui_dashboard(model)
                 ])
             ])
         ]),
+
+        # ── P2 MBA Advanced Tools Quick-Launch ──────────────────────────
+        row(class="q-mb-md", [cell([
+            h6("Advanced MBA Analytics — P2 Tools", class="q-mb-md text-grey-8"),
+        ])]),
+        row(class="q-mb-lg q-gutter-md", [
+
+            # A-08 LBO
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/lbo'",
+                     class="cursor-pointer bg-indigo-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="business_center", size="28px", color="indigo"),
+                        p("LBO Analysis", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("Leveraged buyout
+IRR + MOIC", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+            # B-02 Blue Ocean
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/blue-ocean'",
+                     class="cursor-pointer bg-blue-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="waves", size="28px", color="blue"),
+                        p("Blue Ocean", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("ERRC grid
+Strategic canvas", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+            # B-04 REH Conversion
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/reh-conversion'",
+                     class="cursor-pointer bg-green-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="swap_horiz", size="28px", color="green"),
+                        p("REH Conversion", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("CAH vs REH
+NPV + decision", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+            # B-05 Scenario Planning
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/scenario-planning'",
+                     class="cursor-pointer bg-teal-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="explore", size="28px", color="teal"),
+                        p("Scenario Planning", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("Five Forces
+2x2 matrix", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+            # C-04 Throughput
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/throughput'",
+                     class="cursor-pointer bg-purple-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="timeline", size="28px", color="purple"),
+                        p("Throughput / TOC", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("T=Rev-TVC
+Constraint ID", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+            # D-02 Readmission Risk
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/readmission-risk'",
+                     class="cursor-pointer bg-orange-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="personal_injury", size="28px", color="orange"),
+                        p("Readmission Risk", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("LACE scorer
+HRRP impact", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+        ]),
+        row(class="q-mb-lg q-gutter-md", [
+
+            # D-07 Climate Risk
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/climate-risk'",
+                     class="cursor-pointer bg-green-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="eco", size="28px", color="green-8"),
+                        p("Climate / TCFD", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("Physical + transition
+IPCC scenarios", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+            # E-09 NSA-IDR
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/nsa-idr'",
+                     class="cursor-pointer bg-red-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="gavel", size="28px", color="red"),
+                        p("NSA-IDR", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("Claim evaluator
+Portfolio IDR", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+            # F-07 Fed Register
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card(clickable=true, var"@click"="window.location='/fed-register'",
+                     class="cursor-pointer bg-grey-1", [
+                    card_section(class="text-center q-pa-sm", [
+                        q__icon(name="article", size="28px", color="grey-8"),
+                        p("Fed Register", class="text-overline q-mb-none q-mt-xs text-weight-bold"),
+                        p("CMS rate
+extractor", class="text-caption text-grey-7"),
+                    ]),
+                ]),
+            ]),
+
+        ]),
+
         export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
     ])
 end
