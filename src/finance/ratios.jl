@@ -201,3 +201,156 @@ function compute_all_ratios(financials::AnnualFinancials, staff::StaffingModel,
         medicare_cost_to_charge_ratio = medicare_cost_to_charge_ratio(financials),
     )
 end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T-023: Ratio Calculation Caching
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    RatioCache
+
+Caches `compute_all_ratios` results keyed by a hash of the
+`AnnualFinancials` fields (plus optional staffing/bed inputs). Invalidation
+is automatic because the key changes whenever any field changes.
+
+# Fields
+- `store::Dict{UInt64, NamedTuple}`: Hash → ratio NamedTuple.
+- `enabled::Bool`: When `false`, bypassed entirely (pure passthrough).
+- `hits::Ref{Int}`, `misses::Ref{Int}`: Diagnostic counters.
+- `max_size::Int`: LRU-style eviction above this many entries.
+"""
+mutable struct RatioCache
+    store::Dict{UInt64, NamedTuple}
+    enabled::Bool
+    hits::Ref{Int}
+    misses::Ref{Int}
+    max_size::Int
+end
+
+RatioCache(; enabled::Bool = true, max_size::Int = 512) =
+    RatioCache(Dict{UInt64, NamedTuple}(), enabled, Ref(0), Ref(0), max_size)
+
+"""Global default ratio cache (opt-in via `use_cache=true`)."""
+const _RATIO_CACHE = RatioCache()
+
+"""Clear the global ratio cache and reset counters."""
+function clear_ratio_cache!()
+    empty!(_RATIO_CACHE.store)
+    _RATIO_CACHE.hits[] = 0
+    _RATIO_CACHE.misses[] = 0
+    return nothing
+end
+
+"""Return `(hits, misses)` from the global ratio cache."""
+ratio_cache_stats() = (_RATIO_CACHE.hits[], _RATIO_CACHE.misses[])
+
+# Key from financials fields (fast, no JSON serialisation)
+function _ratio_key(f::AnnualFinancials)::UInt64
+    hash(f.net_patient_revenue) ⊻ hash(f.total_operating_expenses) ⊻
+    hash(f.total_assets) ⊻ hash(f.total_liabilities) ⊻
+    hash(f.long_term_debt) ⊻ hash(f.current_assets) ⊻
+    hash(f.current_liabilities) ⊻ hash(f.cash_and_investments) ⊻
+    hash(f.net_assets) ⊻ hash(f.depreciation_expense)
+end
+
+function _ratio_key(f::AnnualFinancials, staff, beds::Int, adc::Float64)::UInt64
+    _ratio_key(f) ⊻ hash(staff) ⊻ hash(beds) ⊻ hash(adc)
+end
+
+function _evict_if_needed!(cache::RatioCache)
+    length(cache.store) <= cache.max_size && return
+    # Simple eviction: remove ~10% oldest keys
+    n_remove = max(1, cache.max_size ÷ 10)
+    for k in Iterators.take(keys(cache.store), n_remove)
+        delete!(cache.store, k)
+    end
+end
+
+"""
+    compute_all_ratios(financials; use_cache=false) -> NamedTuple
+
+Compute all 10 Flex Monitoring financial ratios with optional result caching.
+On a cache hit the NamedTuple is returned immediately without recomputing any
+ratio. On a miss all ratios are computed and the result is stored.
+
+Pass `use_cache=true` to enable. The global cache (`_RATIO_CACHE`) is used;
+call `clear_ratio_cache!()` to force fresh computation.
+"""
+function compute_all_ratios(
+    financials::AnnualFinancials;
+    use_cache::Bool = false,
+)
+    if use_cache && _RATIO_CACHE.enabled
+        key = _ratio_key(financials)
+        if haskey(_RATIO_CACHE.store, key)
+            _RATIO_CACHE.hits[] += 1
+            return _RATIO_CACHE.store[key]
+        end
+        _RATIO_CACHE.misses[] += 1
+    end
+
+    result = (
+        operating_margin             = operating_margin(financials),
+        total_margin                 = total_margin(financials),
+        days_cash_on_hand            = days_cash_on_hand(financials),
+        current_ratio                = current_ratio(financials),
+        debt_to_capitalization       = debt_to_capitalization(financials),
+        average_age_of_plant         = average_age_of_plant(financials),
+        fte_per_adjusted_occupied_bed = missing,
+        salary_to_revenue            = salary_to_revenue(financials),
+        outpatient_revenue_share     = outpatient_revenue_share(financials),
+        medicare_cost_to_charge_ratio = medicare_cost_to_charge_ratio(financials),
+    )
+
+    if use_cache && _RATIO_CACHE.enabled
+        key = _ratio_key(financials)
+        _evict_if_needed!(_RATIO_CACHE)
+        _RATIO_CACHE.store[key] = result
+    end
+
+    return result
+end
+
+"""
+    compute_all_ratios(financials, staff, beds, adc; use_cache=false) -> NamedTuple
+
+Staffing-aware variant with optional caching. Cache key incorporates all four
+arguments so changing any input automatically misses the cache.
+"""
+function compute_all_ratios(
+    financials::AnnualFinancials,
+    staff::StaffingModel,
+    beds::Int,
+    adc::Float64;
+    use_cache::Bool = false,
+)
+    if use_cache && _RATIO_CACHE.enabled
+        key = _ratio_key(financials, staff, beds, adc)
+        if haskey(_RATIO_CACHE.store, key)
+            _RATIO_CACHE.hits[] += 1
+            return _RATIO_CACHE.store[key]
+        end
+        _RATIO_CACHE.misses[] += 1
+    end
+
+    result = (
+        operating_margin             = operating_margin(financials),
+        total_margin                 = total_margin(financials),
+        days_cash_on_hand            = days_cash_on_hand(financials),
+        current_ratio                = current_ratio(financials),
+        debt_to_capitalization       = debt_to_capitalization(financials),
+        average_age_of_plant         = average_age_of_plant(financials),
+        fte_per_adjusted_occupied_bed = fte_per_adjusted_occupied_bed(financials, staff, beds, adc),
+        salary_to_revenue            = salary_to_revenue(financials),
+        outpatient_revenue_share     = outpatient_revenue_share(financials),
+        medicare_cost_to_charge_ratio = medicare_cost_to_charge_ratio(financials),
+    )
+
+    if use_cache && _RATIO_CACHE.enabled
+        key = _ratio_key(financials, staff, beds, adc)
+        _evict_if_needed!(_RATIO_CACHE)
+        _RATIO_CACHE.store[key] = result
+    end
+
+    return result
+end

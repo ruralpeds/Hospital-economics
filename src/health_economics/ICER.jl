@@ -265,3 +265,206 @@ function recommend_intervention(result::CostEffectivenessResult)::String
                string(round(Int, result.icer)) * " per unit effect)"
     end
 end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T-027: ICER Sensitivity Analysis Framework
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    ICERParameter
+
+A named parameter with a range for sensitivity analysis.
+
+# Fields
+- `name::Symbol`: Parameter identifier (must match a keyword accepted by `calculate_icer`).
+- `base_value::Float64`: Central-case value.
+- `low_value::Float64`: Pessimistic / low bound.
+- `high_value::Float64`: Optimistic / high bound.
+- `label::String`: Display label for tornado charts.
+"""
+@kwdef struct ICERParameter
+    name::Symbol
+    base_value::Float64
+    low_value::Float64
+    high_value::Float64
+    label::String = string(name)
+end
+
+"""
+    ICERSensitivityResult
+
+Output of one-way ICER sensitivity analysis for a single parameter.
+
+# Fields
+- `param::ICERParameter`
+- `icer_base::Float64`: ICER at base value.
+- `icer_low::Float64`: ICER at `param.low_value`.
+- `icer_high::Float64`: ICER at `param.high_value`.
+- `delta_low::Float64`: `icer_low - icer_base` (signed).
+- `delta_high::Float64`: `icer_high - icer_base` (signed).
+- `absolute_swing::Float64`: `abs(icer_high - icer_low)` — used for tornado ranking.
+"""
+struct ICERSensitivityResult
+    param::ICERParameter
+    icer_base::Float64
+    icer_low::Float64
+    icer_high::Float64
+    delta_low::Float64
+    delta_high::Float64
+    absolute_swing::Float64
+end
+
+"""
+    ICERTornadoData
+
+Complete tornado-plot dataset for a set of ICER sensitivity results.
+
+# Fields
+- `base_icer::Float64`: Central-case ICER.
+- `wtp_threshold::Float64`: WTP threshold line (default \$100,000/QALY).
+- `rows::Vector{ICERSensitivityResult}`: Results sorted by `absolute_swing` descending.
+"""
+struct ICERTornadoData
+    base_icer::Float64
+    wtp_threshold::Float64
+    rows::Vector{ICERSensitivityResult}
+end
+
+"""
+    icer_one_way_sensitivity(
+        cost_intervention, cost_comparator,
+        effect_intervention, effect_comparator,
+        parameters;
+        wtp_threshold
+    ) -> ICERTornadoData
+
+Run one-way sensitivity analysis on a set of ICER parameters. For each
+parameter, the ICER is recomputed holding all other parameters at their base
+values while sweeping the focal parameter from `low_value` to `high_value`.
+
+# Arguments
+- `cost_intervention`, `cost_comparator`: Base-case costs.
+- `effect_intervention`, `effect_comparator`: Base-case effects (e.g. QALYs).
+- `parameters::Vector{ICERParameter}`: Parameters to vary.
+- `wtp_threshold::Float64 = 100_000.0`: Cost-effectiveness threshold line.
+
+# Returns
+`ICERTornadoData` with rows sorted by `absolute_swing` (largest first) —
+ready for direct tornado plotting.
+
+# Example
+```julia
+params = [
+    ICERParameter(name=:cost_intervention, base_value=50_000, low_value=40_000, high_value=65_000, label="Intervention cost"),
+    ICERParameter(name=:effect_intervention, base_value=0.85, low_value=0.70, high_value=0.95, label="Treatment efficacy (QALY)"),
+]
+tornado = icer_one_way_sensitivity(50_000, 20_000, 0.85, 0.60, params)
+tornado.base_icer        # central ICER
+tornado.rows[1].absolute_swing  # largest driver
+```
+"""
+function icer_one_way_sensitivity(
+    cost_intervention::Float64,
+    cost_comparator::Float64,
+    effect_intervention::Float64,
+    effect_comparator::Float64,
+    parameters::Vector{ICERParameter};
+    wtp_threshold::Float64 = 100_000.0,
+)::ICERTornadoData
+
+    base_icer = calculate_icer(;
+        cost_intervention, cost_comparator,
+        effect_intervention, effect_comparator,
+    ).icer
+
+    results = ICERSensitivityResult[]
+
+    for param in parameters
+        # Build named-tuple overrides for low and high
+        function _icer_at(val::Float64)::Float64
+            c_int = param.name == :cost_intervention  ? val : cost_intervention
+            c_cmp = param.name == :cost_comparator    ? val : cost_comparator
+            e_int = param.name == :effect_intervention ? val : effect_intervention
+            e_cmp = param.name == :effect_comparator  ? val : effect_comparator
+            calculate_icer(;
+                cost_intervention=c_int, cost_comparator=c_cmp,
+                effect_intervention=e_int, effect_comparator=e_cmp,
+            ).icer
+        end
+
+        icer_low  = _icer_at(param.low_value)
+        icer_high = _icer_at(param.high_value)
+
+        push!(results, ICERSensitivityResult(
+            param,
+            base_icer,
+            icer_low,
+            icer_high,
+            icer_low  - base_icer,
+            icer_high - base_icer,
+            abs(icer_high - icer_low),
+        ))
+    end
+
+    # Sort by absolute swing descending (tornado order)
+    sort!(results; by = r -> r.absolute_swing, rev = true)
+
+    ICERTornadoData(base_icer, wtp_threshold, results)
+end
+
+"""
+    icer_probabilistic_sensitivity(
+        cost_fn, effect_fn, n_samples;
+        wtp_threshold, rng_seed
+    ) -> NamedTuple
+
+Probabilistic sensitivity analysis (PSA) for ICER. Calls user-supplied
+functions to sample costs and effects, then computes the CEAC (cost-
+effectiveness acceptability curve) across WTP thresholds.
+
+# Arguments
+- `cost_fn()`: Zero-argument function returning `(cost_intervention, cost_comparator)`.
+- `effect_fn()`: Zero-argument function returning `(effect_intervention, effect_comparator)`.
+- `n_samples::Int = 1_000`: PSA iterations.
+- `wtp_threshold::Float64 = 100_000.0`: Primary WTP threshold.
+- `rng_seed::Int = 42`
+
+# Returns
+NamedTuple with:
+- `icers::Vector{Float64}`: Simulated ICERs.
+- `pct_cost_effective::Float64`: Fraction of ICERs ≤ `wtp_threshold`.
+- `median_icer`, `p025_icer`, `p975_icer`
+- `ceac_wtp::Vector{Float64}`, `ceac_prob::Vector{Float64}`: CEAC curve data.
+"""
+function icer_probabilistic_sensitivity(
+    cost_fn,
+    effect_fn;
+    n_samples::Int = 1_000,
+    wtp_threshold::Float64 = 100_000.0,
+    rng_seed::Int = 42,
+)
+    Random.seed!(rng_seed)
+
+    icers = Float64[]
+    for _ in 1:n_samples
+        ci, cc = cost_fn()
+        ei, ec = effect_fn()
+        r = calculate_icer(; cost_intervention=ci, cost_comparator=cc,
+                             effect_intervention=ei, effect_comparator=ec)
+        push!(icers, r.icer)
+    end
+
+    # CEAC across WTP range 0..500k
+    wtp_grid = 0.0:5_000.0:500_000.0
+    ceac_prob = [mean(i <= wtp for i in icers) for wtp in wtp_grid]
+
+    (
+        icers           = icers,
+        pct_cost_effective = mean(i <= wtp_threshold for i in icers),
+        median_icer     = median(icers),
+        p025_icer       = quantile(icers, 0.025),
+        p975_icer       = quantile(icers, 0.975),
+        ceac_wtp        = collect(wtp_grid),
+        ceac_prob       = ceac_prob,
+    )
+end

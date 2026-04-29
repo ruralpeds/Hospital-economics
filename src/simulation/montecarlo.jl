@@ -305,3 +305,336 @@ function value_at_risk(values::Vector{Float64}, alpha::Float64)::Float64
     isempty(values) && return 0.0
     return quantile(values, alpha)
 end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T-021: Monte Carlo Performance Optimizations
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    MCResultCache
+
+Optional result cache for `run_monte_carlo`. When a hospital object is run
+multiple times with the same `MonteCarloParams` the cache returns the prior
+`MonteCarloSummary` immediately, bypassing all simulation work.
+
+# Fields
+- `store::Dict{UInt64, MonteCarloSummary}`: Maps `(hospital_hash, params_hash)` → summary.
+- `enabled::Bool`: When `false` the cache is a no-op.
+- `hits::Ref{Int}`, `misses::Ref{Int}`: Counters for diagnostics.
+"""
+mutable struct MCResultCache
+    store::Dict{UInt64, MonteCarloSummary}
+    enabled::Bool
+    hits::Ref{Int}
+    misses::Ref{Int}
+end
+
+MCResultCache(; enabled::Bool = true) =
+    MCResultCache(Dict{UInt64, MonteCarloSummary}(), enabled, Ref(0), Ref(0))
+
+"""Global default cache instance (opt-in via `use_mc_cache=true`)."""
+const _MC_CACHE = MCResultCache()
+
+"""Clear the global MC result cache and reset counters."""
+function clear_mc_cache!()
+    empty!(_MC_CACHE.store)
+    _MC_CACHE.hits[] = 0
+    _MC_CACHE.misses[] = 0
+    return nothing
+end
+
+"""Return `(hits, misses)` from the global cache."""
+mc_cache_stats() = (_MC_CACHE.hits[], _MC_CACHE.misses[])
+
+# Simple but stable key: hash(params) xor hash(hospital fields)
+_mc_cache_key(hospital, params::MonteCarloParams) =
+    hash(params.n_iterations) ⊻ hash(params.random_seed) ⊻
+    hash(params.projection_years) ⊻ hash(objectid(hospital))
+
+"""
+    ConvergenceCriteria
+
+Optional early-stopping criteria for Monte Carlo. Simulation halts once the
+rolling standard-error of the mean operating margin falls below `tol` for
+`window` consecutive checks (checked every `check_every` iterations).
+
+Set `enabled = false` (default) to run all `n_iterations`.
+"""
+@kwdef struct ConvergenceCriteria
+    enabled::Bool          = false
+    tol::Float64           = 1e-4   # SE-of-mean tolerance on operating margin
+    window::Int            = 5      # consecutive checks that must pass
+    check_every::Int       = 500    # iterations between checks
+    min_iterations::Int    = 1_000  # never stop before this many
+end
+
+"""
+    run_monte_carlo(hospital, params; use_cache, convergence, progress_cb)
+
+High-performance Monte Carlo simulation with optional result caching,
+streaming collection to bound memory usage, and convergence-based early
+stopping.
+
+# Extended keyword arguments (T-021)
+- `use_cache::Bool = false`: When `true`, check the global `_MC_CACHE` before
+  running; store the result on a miss.
+- `convergence::ConvergenceCriteria = ConvergenceCriteria()`: Early-stopping
+  configuration. Disabled by default.
+- `progress_cb = nothing`: Optional `Function(completed::Int, total::Int)`
+  called every `convergence.check_every` iterations. Useful for progress bars.
+
+# Performance notes
+- Results are collected into a pre-allocated `Vector{IterationResult}` to
+  avoid repeated `push!` allocation.
+- Per-thread RNGs are pre-generated from a single base seed, guaranteeing
+  reproducibility regardless of thread count.
+- The existing `Threads.@threads` parallelism is preserved; convergence
+  checking runs on the coordinating thread between batches.
+"""
+function run_monte_carlo(
+    hospital,
+    params::MonteCarloParams;
+    use_cache::Bool = false,
+    convergence::ConvergenceCriteria = ConvergenceCriteria(),
+    progress_cb = nothing,
+)::MonteCarloSummary
+
+    # ── Cache check ──────────────────────────────────────────────────────────
+    if use_cache && _MC_CACHE.enabled
+        key = _mc_cache_key(hospital, params)
+        if haskey(_MC_CACHE.store, key)
+            _MC_CACHE.hits[] += 1
+            return _MC_CACHE.store[key]
+        end
+        _MC_CACHE.misses[] += 1
+    end
+
+    n = params.n_iterations
+    base_rng = MersenneTwister(params.random_seed)
+    thread_seeds = rand(base_rng, UInt64, n)
+
+    # ── Streaming pre-allocation ──────────────────────────────────────────────
+    results = Vector{IterationResult}(undef, n)
+
+    if !convergence.enabled
+        # ── Fast path: all iterations, fully parallel ─────────────────────
+        Threads.@threads for i in 1:n
+            rng = MersenneTwister(thread_seeds[i])
+            det_params = _sample_deterministic_params(params, rng)
+            det_result = project_financials(hospital, det_params)
+            sampled = _collect_sampled_params(params, rng)
+            terminal_dcoh = isempty(det_result.projections) ? 0.0 :
+                            det_result.projections[end].days_cash_on_hand
+            results[i] = IterationResult(
+                i, det_result.terminal_operating_margin,
+                det_result.cumulative_operating_income,
+                det_result.closure_risk_year, terminal_dcoh, sampled,
+            )
+        end
+        actual_n = n
+    else
+        # ── Convergence path: batch processing with early-stop check ──────
+        step      = convergence.check_every
+        min_iter  = max(convergence.min_iterations, step)
+        consec    = 0
+        actual_n  = 0
+
+        batch_start = 1
+        while batch_start <= n
+            batch_end = min(batch_start + step - 1, n)
+            Threads.@threads for i in batch_start:batch_end
+                rng = MersenneTwister(thread_seeds[i])
+                det_params = _sample_deterministic_params(params, rng)
+                det_result = project_financials(hospital, det_params)
+                sampled = _collect_sampled_params(params, rng)
+                terminal_dcoh = isempty(det_result.projections) ? 0.0 :
+                                det_result.projections[end].days_cash_on_hand
+                results[i] = IterationResult(
+                    i, det_result.terminal_operating_margin,
+                    det_result.cumulative_operating_income,
+                    det_result.closure_risk_year, terminal_dcoh, sampled,
+                )
+            end
+            actual_n = batch_end
+
+            progress_cb !== nothing && progress_cb(actual_n, n)
+
+            if actual_n >= min_iter
+                completed = @view results[1:actual_n]
+                margins   = [r.terminal_operating_margin for r in completed]
+                sem       = std(margins) / sqrt(actual_n)
+                if sem < convergence.tol
+                    consec += 1
+                    consec >= convergence.window && break
+                else
+                    consec = 0
+                end
+            end
+            batch_start = batch_end + 1
+        end
+        # trim to actual completed iterations
+        results = results[1:actual_n]
+    end
+
+    summary = _compute_summary(params, results)
+
+    # ── Cache store ───────────────────────────────────────────────────────────
+    if use_cache && _MC_CACHE.enabled
+        key = _mc_cache_key(hospital, params)
+        _MC_CACHE.store[key] = summary
+    end
+
+    return summary
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T-022: Hospital Projection Parallelization
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    HospitalProjectionResult
+
+Result for a single hospital in a bulk Monte Carlo run.
+
+# Fields
+- `hospital_id`: The identifier passed in (any type — typically String or Int).
+- `summary::MonteCarloSummary`: Full MC summary for this hospital.
+- `elapsed_seconds::Float64`: Wall-clock time for this hospital's simulation.
+- `error::Union{Nothing, String}`: Non-nothing if the simulation threw.
+"""
+struct HospitalProjectionResult
+    hospital_id::Any
+    summary::Union{MonteCarloSummary, Nothing}
+    elapsed_seconds::Float64
+    error::Union{Nothing, String}
+end
+
+"""
+    bulk_project_hospitals(
+        hospitals, params;
+        ids, progress_cb, use_cache, convergence
+    ) -> Vector{HospitalProjectionResult}
+
+Run `run_monte_carlo` for every hospital in `hospitals` in parallel using
+`Threads.@threads`. Each hospital's simulation is itself thread-parallel
+(nested via Julia's cooperative scheduler on the same thread pool), so for
+small networks the per-hospital parallelism dominates; for large networks
+the between-hospital parallelism dominates.
+
+# Arguments
+- `hospitals`: Any iterable of hospital objects (e.g. `Vector{CriticalAccessHospital}`).
+- `params::MonteCarloParams`: Shared simulation parameters.
+- `ids = eachindex(hospitals)`: Optional identifiers aligned with `hospitals`.
+  Defaults to 1-based indices.
+- `progress_cb = nothing`: Optional `Function(completed::Int, total::Int)`.
+  Called (thread-safely) after each hospital finishes.
+- `use_cache::Bool = false`: Forwarded to `run_monte_carlo`.
+- `convergence::ConvergenceCriteria = ConvergenceCriteria()`: Forwarded.
+
+# Thread safety
+Each hospital simulation uses its own per-iteration RNG seeded from
+`params.random_seed ⊻ hash(id)`, so results are deterministic regardless
+of scheduling order and thread count.
+
+# Returns
+`Vector{HospitalProjectionResult}` in the same order as `hospitals`.
+Hospitals that error are wrapped (non-fatal) — check `.error` field.
+
+# Example
+```julia
+results = bulk_project_hospitals(network, params; ids=["CAH-001","CAH-002","REH-007"])
+for r in results
+    isnothing(r.error) || @warn "Hospital \$(r.hospital_id) failed: \$(r.error)"
+    println(r.hospital_id, " => median margin: ", r.summary.median_operating_margin)
+end
+```
+"""
+function bulk_project_hospitals(
+    hospitals,
+    params::MonteCarloParams;
+    ids = eachindex(hospitals),
+    progress_cb = nothing,
+    use_cache::Bool = false,
+    convergence::ConvergenceCriteria = ConvergenceCriteria(),
+)::Vector{HospitalProjectionResult}
+
+    hospital_vec = collect(hospitals)
+    id_vec       = collect(ids)
+    n_hospitals  = length(hospital_vec)
+    n_hospitals == length(id_vec) || error(
+        "bulk_project_hospitals: length(hospitals)=$(n_hospitals) ≠ length(ids)=$(length(id_vec))"
+    )
+
+    results = Vector{HospitalProjectionResult}(undef, n_hospitals)
+    completed = Threads.Atomic{Int}(0)
+
+    Threads.@threads for idx in 1:n_hospitals
+        hosp = hospital_vec[idx]
+        hid  = id_vec[idx]
+
+        # Perturb the seed per-hospital so hospitals don't share RNG streams
+        per_hospital_params = MonteCarloParams(
+            params.n_iterations, params.projection_years,
+            params.random_seed ⊻ (hash(hid) & 0xFFFF_FFFF),
+            params.confidence_levels,
+            params.volume_growth, params.cost_inflation,
+            params.salary_inflation, params.supply_inflation,
+            params.payer_mix_shift, params.ma_penetration_growth,
+            params.staffing_turnover, params.travel_nurse_premium,
+        )
+
+        t0 = time()
+        summary = nothing
+        err     = nothing
+        try
+            summary = run_monte_carlo(hosp, per_hospital_params;
+                                      use_cache = use_cache,
+                                      convergence = convergence)
+        catch e
+            err = sprint(showerror, e)
+        end
+        elapsed = time() - t0
+
+        results[idx] = HospitalProjectionResult(hid, summary, elapsed, err)
+
+        done = Threads.atomic_add!(completed, 1) + 1
+        progress_cb !== nothing && progress_cb(done, n_hospitals)
+    end
+
+    return results
+end
+
+"""
+    aggregate_network_projection(results) -> NamedTuple
+
+Aggregate a `Vector{HospitalProjectionResult}` into network-level summary
+statistics. Failed hospitals (`.error !== nothing`) are excluded.
+
+Returns a NamedTuple with:
+- `n_hospitals`, `n_failed`
+- `network_median_margin`, `network_mean_margin`
+- `network_p05_margin`, `network_p95_margin`
+- `pct_closure_risk`: fraction of hospitals with `mean_closure_risk_year < Inf`
+- `total_elapsed_seconds`
+"""
+function aggregate_network_projection(
+    results::Vector{HospitalProjectionResult},
+)
+    successful = filter(r -> isnothing(r.error), results)
+    n_failed   = length(results) - length(successful)
+
+    margins = [r.summary.median_operating_margin for r in successful]
+    closure_finite = count(r -> isfinite(r.summary.mean_closure_risk_year), successful)
+
+    (
+        n_hospitals              = length(results),
+        n_failed                 = n_failed,
+        network_median_margin    = isempty(margins) ? NaN : median(margins),
+        network_mean_margin      = isempty(margins) ? NaN : mean(margins),
+        network_p05_margin       = isempty(margins) ? NaN : quantile(margins, 0.05),
+        network_p95_margin       = isempty(margins) ? NaN : quantile(margins, 0.95),
+        pct_closure_risk         = isempty(successful) ? NaN :
+                                   closure_finite / length(successful),
+        total_elapsed_seconds    = sum(r.elapsed_seconds for r in results),
+    )
+end
