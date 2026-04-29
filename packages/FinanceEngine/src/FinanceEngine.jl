@@ -63,6 +63,11 @@ include("nonprofit_wacc.jl")
 include("real_options.jl")
 include("treasury.jl")
 
+# MBA Domain C — Operations Analytics (C-01 DEA, C-03 Variance, C-07 Benchmarking)
+include("dea.jl")
+include("variance_analysis.jl")
+include("peer_benchmarking.jl")
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Exports
 # ═══════════════════════════════════════════════════════════════════════════
@@ -239,5 +244,21 @@ export WeeklyOperatingProfile, WeeklyForecastRow, ThirteenWeekForecast,
        medicare_delay_stress, run_medicare_delay_scenarios,
        LOCHeadroomInputs, LOCHeadroomResult, loc_headroom,
        LiquidityDashboard, liquidity_dashboard
+
+# MBA C-01 — Data Envelopment Analysis
+export DEAUnit, DEAResult, DEAAnalysis,
+       dea, dea_ccr, dea_bcc, scale_efficiency, dea_summary_table
+
+# MBA C-03 — Revenue Cycle Variance Analysis
+export RevenuePeriod, VarianceBridge, revenue_variance_bridge,
+       PayerRevenuePeriod, PayerVarianceRow, PayerVarianceBridge, payer_variance_bridge,
+       ExpenseVarianceBridge, expense_variance, multi_category_variance
+
+# MBA C-07 — Peer Benchmarking
+export FLEX_MONITORING_2022, AHA_RURAL_2023, MGMA_2023,
+       BenchmarkComparison, PeerBenchmarkReport,
+       benchmark_flex_monitoring, benchmark_aha_rural,
+       benchmark_mgma_physician, comprehensive_benchmark,
+       benchmark_report_text
 
 end  # module FinanceEngine
