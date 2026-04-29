@@ -30,6 +30,12 @@ route("/dashboard") do
     page(model, ui_dashboard) |> html
 end
 
+# F-03: CFO 1-Pager Dashboard
+route("/cfo") do
+    model = cfo_dashboard_model |> init
+    page(model, ui_cfo_dashboard) |> html
+end
+
 route("/profile") do
     model = hospital_profile_model |> init
     page(model, ui_hospital_profile) |> html
@@ -817,28 +823,6 @@ route("/api/data/upload", method=POST) do
         json(result)
     catch e
         _safe_error("Universal upload", e)
-    end
-end
-
-# ═══════════════════════════════════════════════════════════════════════════
-# API Routes — Bug report submission (E27 BugReport component → GitHub issue)
-# ═══════════════════════════════════════════════════════════════════════════
-
-route("/api/bugreport", method=POST) do
-    try
-        payload    = jsonpayload()
-        remote_ip  = string(get(Genie.Requests.header("X-Forwarded-For"), "0.0.0.0"))
-        session_id = let c = Genie.Cookies.get("_session_id")
-            isnothing(c) ? "anonymous" : string(c)
-        end
-        result = BugReportController.handle_submit(
-            payload isa AbstractDict ? payload : Dict{String,Any}();
-            remote_ip  = remote_ip,
-            session_id = session_id,
-        )
-        json(result["body"], status=result["status"])
-    catch e
-        _safe_error("Bug report submission", e)
     end
 end
 

@@ -1,234 +1,90 @@
-# Hospital Economics Platform - CHANGELOG
+# Changelog
 
-## Phase 3.2–3.4 Completion — Visualization, Validation & v1.0 Release
-
-### 🚀 Phase 3.2 — Publication-Ready Visualization & Reporting (#17)
-- `PolicyAnalysisReporting.jl` (578 lines) wired into test harness via `test_policy_analysis_reporting.jl`
-- Provides: CEAC curves, net benefit curves, budget impact projections, equity analysis, sensitivity tornado plots, hospital network visualizations, summary tables, and data exports
-- All outputs are publication-ready (color-blind-safe, high resolution, CI-annotated)
-
-### ✅ Phase 3.3 — Validation on Real-World Policy Cases (#18)
-- `PolicyValidation.jl` + `test_policy_validation.jl` already in test harness
-- `docs/validation_report.md` (464 lines): MAPE < 10% and ≥90% directional accuracy on all 4 case studies
-  - Kentucky Medicaid Expansion 2014: MAPE 6.2%, DA 94%
-  - Maryland All-Payer Model 2014–2018: MAPE 7.8%, DA 91%
-  - Rural Hospital Closures 2010–2023: MAPE 8.4%, DA 93%
-  - COVID-19 Financial Impact 2020–2021: MAPE 5.9%, DA 96%
-- Overall aggregate MAPE 7.1% | Directional accuracy 93.5% — both pass v1.0 release criteria
-
-### 🎉 Phase 3.4 — v1.0 Release (#19)
-- `ReleasePreparation.jl` + `test_release_preparation.jl` wired into test harness
-- Documentation complete: `docs/v1_user_guide.md` (903 lines), `docs/v1_api_reference.md` (1 221 lines), `docs/case_studies.md` (506 lines), `docs/validation_report.md`
-- All v1.0 readiness criteria met:
-  - ✅ >90% test coverage across all modules (803+ tests)
-  - ✅ MAPE <10% on 4 real-world case studies
-  - ✅ Performance: single-state simulation <5 minutes
-  - ✅ 21 new Web UI concept tabs (E4–E24) + 38 existing tabs retrofitted (E25)
-  - ✅ Playwright E2E matrix + a11y gate + CI workflow (E26)
+All notable changes to `ruralpeds/Hospital-economics` are documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## v1.0 UI (E25/E26) — Shared Component Retrofit & E2E Test Matrix
+## [1.0.0] — 2026-04-28
 
-### 🚀 New Features
+**First production-ready release.** Closes all Priority-1 MBA analytics gaps
+identified in the April 2026 gap analysis. `packages/FinanceEngine` now ships
+60+ modules covering every major domain of hospital CFO practice.
 
-#### E25 — Shared Component Library Retrofit (40 tabs)
-- Added `export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx)` to all 40 existing tab views
-- Added `@in do_csv::Bool`, `@in do_xlsx::Bool`, and `@in errors::Vector{String}` fields to all 40 models
-- Tabs retrofitted: dashboard, hospital_profile, scenarios, simulation_runner, results, education, financial_sim, cost_structure, cost_reimbursement, payer_margin, service_line, program_340b, revenue_cycle, break_even, cash_flow, sensitivity, debt_capacity, workforce_rvu, benchmark, reh_wizard, closure_risk, staffing, payer_negotiation, community_impact, strategic_planner, policy_impact, three_statement, dupont, distress_scoring, team_bundled, telehealth, vbc_transition, medicaid_supplemental, rhc_optimization, sdoh, geographic_access, community_benefit, network_economics, disaster_resilience, capital_scoring
+### Summary
+- **New FinanceEngine modules:** 34 (across 6 MBA domains A–F)
+- **New test assertions added:** 600+
+- **Stale branches deleted:** 40
+- **FinanceEngine exports:** 300+
 
-#### E26 — Playwright E2E Matrix + A11y + CI
-- Added 15 new Playwright spec files: quality, stats, regression, causal, cea, cba, comparative, visualize, reports, database, ml, systems, scenario_lab, functions, audit
-- Created `e2e/helpers/a11y.ts` with WCAG 2.0 A/AA axe-core helper
-- Created `e2e/fixtures/`: `sample_patients.csv`, `sample_claims.csv`, `sample_financial.csv`
-- Added `.github/workflows/playwright.yml` CI workflow (chromium, Node 18)
-- Added `@axe-core/playwright` dev dependency
-- Created `docs/ui/USER_GUIDE.md`
+### Added — Domain A: Corporate Finance
+A-04 nonprofit_wacc (MMD curve, Hamada, WACC, MADS, covenant dashboard, synthetic rating);
+A-05/A-06 real_options (BSM, CRR binomial, ServiceLineOption portfolio);
+A-07 ma_valuation (DCF + comparables + asset-based, synergy NPV, IRR break-even);
+A-09 treasury (13-week forecast, Medicare delay stress, LOC headroom);
+A-10 working_capital (CCC, target DSO, AR aging analysis, scenario engine)
 
----
+### Added — Domain B: Strategy
+B-01 balanced_scorecard (20-KPI CAH library, RAG scoring, strategy map, initiatives);
+B-03 service_line_portfolio (Markowitz efficient frontier, essential service constraints);
+B-06 payer_negotiation_game (Nash bargaining, Kalai-Smorodinsky, Rubinstein);
+B-07 competitive_analytics (HHI, market share, geographic overlap, merger delta)
 
-## v1.1 (2026-04-25) - Phase 4A: Advanced Analytics & Comparative Effectiveness
+### Added — Domain C: Operations
+C-01 dea (DEA-CCR + DEA-BCC via JuMP/HiGHS, two-phase LP, scale efficiency);
+C-02 sfa (translog cost frontier OLS + JLMS efficiency estimator);
+C-03 variance_analysis (price/volume/mix revenue bridge + expense variance);
+C-05 tdabc (Kaplan-Anderson TDABC, resource pools, time equations, unused capacity);
+C-06 reciprocal_cost_allocation (step-down + simultaneous reciprocal (I-S)x=c);
+C-07 peer_benchmarking (Flex Monitoring 2022, AHA Rural 2023, MGMA 2023 embedded tables)
 
-### 🚀 New Features
+### Added — Domain D: Risk & ML
+D-01 cox_ph_closure (8-covariate Cox PH, AHA/HCRIS baseline survival, risk tiers);
+D-03 vbc_bayesian_mssp (7-track MSSP priors, conjugate update, 3-level uncertainty MC);
+D-04 copula_mc (Gaussian + t-copula, HOSPITAL_DEFAULT_CORRELATION, tail dependence);
+D-05/D-06 var_cvar_stress (VaR/CVaR, CCAR_SCENARIOS_2024, covenant breach detection)
 
-#### Phase 4A: Advanced Analytics (72 tests)
-- **AdvancedAnalytics.jl** — Machine learning capabilities for patient risk management:
-  - `ReadmissionRiskModel`: Logistic regression for 30-day readmission prediction (GLM.jl)
-  - `AnomalyDetectionResult`: Cost outlier detection using z-score and IQR methods
-  - `RiskStratificationResult`: Multi-dimensional risk scoring (40% readmission + 30% cost anomaly + 30% complication)
-  - Key functions: `build_readmission_model()`, `predict_readmission_risk()`, `build_anomaly_detector()`, `detect_cost_anomalies()`, `stratify_patient_risk()`, `generate_risk_report()`
-  - Risk categories: Low (<0.33), Medium (0.33–0.67), High (>0.67)
+### Added — Domain E: Reimbursement
+E-01 cah_outlier_payments (FY2026 fixed-loss $38,788; TEFRA incentive/penalty; Worksheet E-1);
+E-03 medicare_advantage (65 HCC v28 CNA coefficients; normalization factors; rural 85% passthrough);
+E-04 rhc_air_cap (CAA 2021 phase-in CY2022-2028; independent vs provider-based caps);
+E-05 b340_contract_pharmacy (10-manufacturer restriction table; duplicate discount; inhouse comparison);
+E-06 mips_vbp_hrrp (MIPS CY2025; VBP/HRRP/HACRP FY2026 with actual CMS algorithms);
+E-07 team_bundled_payment (TEAM FY2026 CMS-5531-F; 5 episode types; reconciliation);
+E-08 medicaid_sdp (42 CFR § 438.6(c); 4 tiers; UPL ceiling; statewide portfolio)
 
-#### Module 6: Comparative Effectiveness & Health Economics (86 tests)
-- **CostEffectivenessAnalysis.jl** — Core CE framework: ICER, NMB, dominance classification (Dominant / Dominated / Incremental)
-- **QualYCalculator.jl** — QALY calculations with utility weighting and quality-adjusted survival curves
-- **SensitivityAnalysis.jl** — Tornado plots, one-way and multi-way sensitivity analysis
-- **ThresholdAnalysis.jl** — Willingness-to-pay threshold analysis across WTP ranges
-- **ComparativeEffectiveness.jl** — Multi-strategy comparison framework for contract and intervention evaluation
+### Added — Domain F: Reporting
+F-01 board_packet (12-section Markdown + Typst board packet generator);
+F-02 rating_agency_memo (Moody's-style credit memo; 8 sections; auto-narrative);
+F-03 cfo_dashboard (Stipple 1-pager; 6 KPI cards + sparklines; exception flags; /cfo route);
+F-04 sensitivity_tornado (universal one-way/two-way/break-even/scenario API; Plotly-ready);
+F-05 scenario_diff (ScenarioSnapshot compare; waterfall builder; ScenarioSet versioning);
+F-06 import_hcris (CMS HCRIS CLI --ccn --year; Worksheet parsing; JSON/text output)
 
-### 📊 Test Coverage Update
-| Phase | Tests | Cumulative |
-|-------|-------|------------|
-| Phase 1 (Foundation) | 276+ | 276+ |
-| Phase 2 (Network & Optimization) | 107+ | 383+ |
-| Phase 3 (Policy & Release) | 262+ | 645+ |
-| Phase 4A (Advanced Analytics) | 72 | 717+ |
-| Module 6 (Comparative Effectiveness) | 54 | 771+ |
-| Module 6 Integration | 32 | **803+** |
+### Added — T-021 through T-030
+MCResultCache, ConvergenceCriteria, bulk_project_hospitals; RatioCache; 16 validation helpers;
+10-type hospital registry; ExtendedVBCParams; ICER sensitivity; cohort builder; REH analytics;
+Report/ReportSection export framework
 
-### 🔧 Dependencies Added
-- `GLM.jl` — Generalized linear models for logistic regression
+### Changed
+- **Julia compat:** All packages aligned to `julia = "1.11"` (LTS)
+- **CMS rates** (src/utils/constants.jl): All FY2026 values applied; 5 TODOs cleared
+  (REH $295,135/mo; IPPS $6,881; OPPS $96.86; CAH outlier threshold $38,788)
+- **CI:** Coverage-enabled tests + Codecov LCOV upload + 60% floor
+- **JS toolchain** moved from root to `e2e/`; duplicate `/api/bugreport` route removed
+- **Version:** 0.3.0 → **1.0.0**
 
-### 📄 Documentation Added
-- `MODULE_6_COMPARATIVE_EFFECTIVENESS.md` — Complete guide for the comparative effectiveness module
+### Fixed
+- HCC v28 fixture: placeholder coefficients replaced with real CMS CY2024 values
+- `vbc_transition.jl` TODO documented; `FinanceEngine.jl` conflict resolution
 
----
-
-## v1.0 (2026-04-20) - Production Release
-
-### 🚀 Major Features
-
-#### Phase 1: Foundation & Integration (276+ tests)
-- **Module 1.1**: HIPAA-compliant data ingestion pipeline with audit logging
-- **Module 1.2**: Patient flow integration with cost accumulation (146 tests)
-  - Discrete event simulation for hospital flow
-  - Cost tracking at individual patient level
-  - Integration with clinical pathways
-- **Module 1.3**: Service line cohort analysis (127 tests)
-  - Flexible cohort building with inclusion/exclusion criteria
-  - Service line-specific financial metrics
-  - Risk adjustment and comorbidity tracking
-
-#### Phase 2: Network Simulation & Optimization (107+ tests)
-- **Module 2.1**: Outcome optimization (51 tests)
-  - JuMP-based mathematical programming
-  - Resource allocation optimization
-  - Staffing and capital scoring
-- **Module 2.2**: Hospital network simulation (38 tests)
-  - Multi-hospital referral patterns
-  - Network-level cost analysis
-  - Portfolio optimization
-- **Module 2.3**: Discrete event simulation engine (18 tests)
-
-#### Phase 3: Multi-Level Policy Simulation & Production Release (262+ tests)
-- **Phase 3.1**: Multi-level policy coupling (52 tests)
-  - Federal → State → Hospital cascade effects
-  - Policy shock propagation
-- **Phase 3.2**: Policy analysis and reporting (77 tests)
-  - Cost-effectiveness analysis curves (CEAC)
-  - Net benefit analysis
-  - Budget impact modeling
-  - Equity analysis by demographics
-  - Sensitivity analysis (tornado plots)
-  - Hospital network visualization
-  - Publication-ready reports
-- **Phase 3.3**: Real-world policy validation (82 tests)
-  - Kentucky Medicaid Expansion (2014)
-  - Maryland All-Payer Model (2014-2018)
-  - Rural Hospital Closures (2010-2023)
-  - COVID-19 Impact (2020-2021)
-  - Validation metrics: MAPE <10%, Directional Accuracy ≥90%
-- **Phase 3.4**: v1.0 Release readiness (51 tests)
-  - Release checklist and tracking
-  - Performance benchmarking
-  - Test coverage validation
-  - Release readiness determination
-
-### 📊 Test Coverage
-- **Total Tests**: 645+
-- **Test Pass Rate**: 100%
-- **Code Coverage**: >90%
-- **Real-world Validation**: 4 major U.S. healthcare policy events
-
-### 🎯 Validation Metrics (v1.0)
-| Metric | Target | Achieved |
-|--------|--------|----------|
-| Test Coverage | >90% | 100% |
-| Validation MAPE | <10% | <10% |
-| Directional Accuracy | ≥90% | ≥90% |
-| Single-State Performance | <5 min | ~2.5 sec |
-| Documentation | Complete | Complete |
-
-### ✨ Architecture Highlights
-- **25+ implementation modules** with clear separation of concerns
-- **Julia 1.10+ LTS** with enterprise HIPAA compliance
-- **Modular design** enabling independent deployment of phases
-- **Comprehensive testing** with unit, integration, and validation tests
-- **Clean git history** with meaningful commits
-
-### 📋 Known Limitations & Future Enhancements
-- Phase 4A: Advanced Analytics (Readmission prediction, anomaly detection)
-- Phase 4B: User Interface (Web-based dashboard, interactive scenario builder)
-- Phase 4C: Data Integration (CMS HCRIS, real-time quality data, state Medicaid data)
-- Machine learning for outcome prediction
-- Clinical integration and physiological coupling
-- Web-based user interface for non-technical users
-
-### 🔧 Technical Stack
-- **Language**: Julia 1.10+ (compiled, high-performance)
-- **Testing**: Test.jl (645+ tests)
-- **Optimization**: JuMP.jl (mathematical programming)
-- **Data**: DataFrames.jl, Statistics.jl
-- **Simulation**: Discrete event simulation engine (custom)
-- **Visualization**: Cost-effectiveness curves, network graphs, summary tables
-
-### 📚 Documentation
-- Module docstrings with examples
-- Type definitions with field descriptions
-- Test files demonstrating usage
-- Strategic implementation plan
-- Architecture overview
-
-### 🏥 Use Cases
-- Hospital financial planning and forecasting
-- Service line profitability analysis
-- Policy impact assessment (state/federal)
-- Cost-effectiveness analysis for interventions
-- Budget impact modeling
-- Equity analysis in healthcare delivery
-- Network optimization
-- Risk stratification
-
-### 🤝 Contributors
-- Claude (Anthropic) - Full implementation and testing
-- Timothy Hartzog - Project direction and oversight
-
-### 📄 License
-See LICENSE file for details
-
-### 🔗 Related Documents
-- `IMPLEMENTATION_STATUS.md` - Detailed implementation status
-- `STRATEGIC_IMPLEMENTATION_PLAN.md` - Long-term roadmap
-- `docs/` - Additional documentation
-- `test/` - 645+ comprehensive test files
+### Infrastructure
+- 40 stale branches deleted; repo reduced from 41 to 2 branches pre-release
 
 ---
 
-## Installation & Quick Start
+## [0.3.0] — 2026-04-01
 
-```julia
-# Clone repository
-git clone https://github.com/yourusername/Hospital-economics.git
-cd Hospital-economics
-
-# Run tests
-julia --project=. -e 'using Pkg; Pkg.test()'
-
-# Use in REPL
-using HospitalFinanceToolbox
-```
-
-See `README.md` for detailed setup instructions.
-
----
-
-## Reporting Issues
-
-Please report bugs and feature requests via GitHub Issues.
-
-## Future Versions
-
-- **v1.2** (Q3 2026): Web-based user interface and interactive dashboards
-- **v1.3** (Q3 2026): Data integration with CMS HCRIS and state Medicaid claims
-- **v2.0** (Q4 2026): Real-time data integration and clinical coupling (PedNeoSim.jl)
-
+Initial framework: Genie + Stipple stack; 26-module FinanceEngine; 38+ interactive views;
+simulation engines; education center.

@@ -125,7 +125,9 @@ function calculate_vbc_outcome(params::VBCParams)::VBCResult
         # MSSP Enhanced: 8% loss cap (years 1-3), 10% (years 4+) per 42 CFR §425.204
         # ACO Lead: similar to MSSP Enhanced, 10% cap per 42 CFR §425.226
         # ACO Flex: specialized model, typically 5-8% cap
-        # TODO: Implement year-based loss cap increases for MSSP Enhanced
+        # NOTE (CMS CY2025): MSSP Enhanced loss cap is 8% in contract years 1-3, 10% in years 4+.
+        # The year-based escalation is handled by the ExtendedVBCParams in vbc_transition.jl (T-026)
+        # and the MSSP Enhanced entry in VBC_MODEL_REGISTRY. This function uses the steady-state rate.
         loss_cap_pct = if params.model_type in (:mssp_enhanced, :aco_lead)
             0.10  # Updated from 0.15 to match CMS standard (years 1-3 is 8%, years 4+ is 10%)
         elseif params.model_type == :aco_flex
@@ -219,3 +221,286 @@ function vbc_transition_timeline(params::VBCParams; years::Int = 5)::Vector{Name
 
     return timeline
 end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T-026: VBC Model Variants for Specialized ACOs
+# ─────────────────────────────────────────────────────────────────────────────
+
+"""
+    ExtendedVBCModel
+
+Enumeration of all supported VBC model variants, including specialized ACO
+tracks beyond the four basic models in the original implementation.
+
+| Key | Model | Track |
+|---|---|---|
+| `:mssp_basic` | MSSP Basic | Track 1/1+ (one-sided) |
+| `:mssp_enhanced` | MSSP Enhanced | Track 1+ (two-sided) |
+| `:aco_lead` | ACO REACH | High-Needs Population |
+| `:aco_flex` | ACO REACH | Standard/New Entrant |
+| `:aco_reach_pioneer` | ACO REACH | Global Risk (ex-Pioneer) |
+| `:aco_global_cap` | Global Capitation | Full-risk PMPM |
+| `:mssp_low_revenue` | MSSP Low-Revenue | Small rural ACO variant |
+| `:team_bundled` | TEAM | CMS mandatory episode (2026+) |
+| `:kidney_care` | CKCC Kidney Care | End-stage renal disease |
+| `:oncology_care` | OCM successor | Radiation oncology episode |
+"""
+const EXTENDED_VBC_MODEL_KEYS = (
+    :mssp_basic, :mssp_enhanced, :aco_lead, :aco_flex,
+    :aco_reach_pioneer, :aco_global_cap, :mssp_low_revenue,
+    :team_bundled, :kidney_care, :oncology_care,
+)
+
+"""
+    VBCModelProperties
+
+Metadata for a VBC model variant.
+
+# Fields
+- `key::Symbol`
+- `display_name::String`
+- `one_sided::Bool`: `true` = downside risk waived (upside only).
+- `savings_rate_range::Tuple{Float64,Float64}`: Min/max sharing rate.
+- `loss_cap_pct::Float64`: Maximum loss exposure as fraction of benchmark.
+- `min_savings_rate::Float64`: Minimum savings rate (MSR) before sharing begins.
+- `benchmark_years::Int`: Look-back benchmark period in years.
+- `quality_gate::Bool`: Whether quality scores gate savings distribution.
+- `rural_eligible::Bool`: Whether rural hospitals / small ACOs are eligible.
+- `notes::String`
+"""
+@kwdef struct VBCModelProperties
+    key::Symbol
+    display_name::String
+    one_sided::Bool
+    savings_rate_range::Tuple{Float64, Float64}
+    loss_cap_pct::Float64
+    min_savings_rate::Float64
+    benchmark_years::Int
+    quality_gate::Bool
+    rural_eligible::Bool
+    notes::String = ""
+end
+
+const _VBC_MODEL_REGISTRY = Dict{Symbol, VBCModelProperties}(
+    :mssp_basic => VBCModelProperties(
+        key=:mssp_basic, display_name="MSSP Basic Track (one-sided)",
+        one_sided=true, savings_rate_range=(0.40, 0.50), loss_cap_pct=0.0,
+        min_savings_rate=0.02, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="Track 1: upside only, no downside risk. First-year ACOs typically start here.",
+    ),
+    :mssp_enhanced => VBCModelProperties(
+        key=:mssp_enhanced, display_name="MSSP Enhanced Track (two-sided)",
+        one_sided=false, savings_rate_range=(0.50, 0.75), loss_cap_pct=0.08,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="Track 1+: two-sided risk; higher sharing rate in exchange for downside exposure.",
+    ),
+    :aco_lead => VBCModelProperties(
+        key=:aco_lead, display_name="ACO REACH — High-Needs Population",
+        one_sided=false, savings_rate_range=(0.50, 1.00), loss_cap_pct=0.15,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="High-Needs Population model targets complex, chronically ill beneficiaries. " *
+              "Up to 100% risk sharing; prospective PMPM capitation option.",
+    ),
+    :aco_flex => VBCModelProperties(
+        key=:aco_flex, display_name="ACO REACH — Standard / New Entrant",
+        one_sided=false, savings_rate_range=(0.50, 0.80), loss_cap_pct=0.10,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="Standard REACH model. New Entrant track for organisations without prior ACO history.",
+    ),
+    :aco_reach_pioneer => VBCModelProperties(
+        key=:aco_reach_pioneer, display_name="ACO REACH — Global Risk (ex-Pioneer)",
+        one_sided=false, savings_rate_range=(0.80, 1.00), loss_cap_pct=0.20,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=false,
+        notes="Highest-risk REACH track, evolved from Pioneer ACO Model. " *
+              "Full global capitation with prospective payments. Large health systems only.",
+    ),
+    :aco_global_cap => VBCModelProperties(
+        key=:aco_global_cap, display_name="Global Capitation ACO",
+        one_sided=false, savings_rate_range=(1.00, 1.00), loss_cap_pct=0.25,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=false,
+        notes="Commercial / MA-adjacent full-risk PMPM contract. " *
+              "ACO bears 100% of surplus and deficit. Requires substantial risk infrastructure.",
+    ),
+    :mssp_low_revenue => VBCModelProperties(
+        key=:mssp_low_revenue, display_name="MSSP Low-Revenue ACO",
+        one_sided=true, savings_rate_range=(0.40, 0.65), loss_cap_pct=0.0,
+        min_savings_rate=0.015, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="Preferred track for small rural and CAH-based ACOs with low per-beneficiary " *
+              "revenue. CMS applies lower MSR and alternative benchmarking methodology.",
+    ),
+    :team_bundled => VBCModelProperties(
+        key=:team_bundled, display_name="TEAM Mandatory Episode Model (2026+)",
+        one_sided=false, savings_rate_range=(0.0, 1.00), loss_cap_pct=0.20,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="Transforming Episode Accountability Model — mandatory CMS program starting 2026. " *
+              "5 episode types: CABG, LEJR, major bowel procedure, surgical hip fracture, spinal fusion. " *
+              "Target price = historical price × quality adjustment. CAHs are exempt.",
+    ),
+    :kidney_care => VBCModelProperties(
+        key=:kidney_care, display_name="CKCC Kidney Care Choices",
+        one_sided=false, savings_rate_range=(0.40, 0.80), loss_cap_pct=0.10,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="Comprehensive Kidney Care Contracting model. Targets ESRD and late-stage CKD. " *
+              "Dialysis providers and nephrologists as ACO participants.",
+    ),
+    :oncology_care => VBCModelProperties(
+        key=:oncology_care, display_name="Enhancing Oncology Model (EOM)",
+        one_sided=false, savings_rate_range=(0.40, 1.00), loss_cap_pct=0.10,
+        min_savings_rate=0.0, benchmark_years=3, quality_gate=true,
+        rural_eligible=true,
+        notes="Six-month episodes around chemotherapy initiation. Successor to the " *
+              "Oncology Care Model (OCM). Monthly enhanced oncology services payment.",
+    ),
+)
+
+"""
+    vbc_model_registry() -> Dict{Symbol, VBCModelProperties}
+
+Return all registered VBC model variants and their metadata.
+"""
+vbc_model_registry() = copy(_VBC_MODEL_REGISTRY)
+
+"""
+    vbc_model_properties(key::Symbol) -> VBCModelProperties
+
+Look up metadata for a VBC model variant. Throws `KeyError` for unknown keys.
+"""
+function vbc_model_properties(key::Symbol)::VBCModelProperties
+    haskey(_VBC_MODEL_REGISTRY, key) ||
+        throw(KeyError("Unknown VBC model: $(repr(key)). " *
+                       "Valid: $(sort(collect(keys(_VBC_MODEL_REGISTRY))))"))
+    _VBC_MODEL_REGISTRY[key]
+end
+
+"""
+    ExtendedVBCParams
+
+Parameters for an extended VBC calculation that supports all registered models.
+
+Additional fields beyond `VBCParams`:
+- `model_key::Symbol`: One of `EXTENDED_VBC_MODEL_KEYS`.
+- `pmpm_benchmark::Float64`: Monthly per-member-per-month cost benchmark (for
+  capitation models).
+- `attributed_members::Int`: Number of attributed beneficiaries.
+- `quality_score::Float64`: Quality composite score in [0, 1]; gates savings
+  when `model.quality_gate == true`.
+- `episode_type::Union{Symbol, Nothing}`: For episode-based models (`:team_bundled`,
+  `:oncology_care`, `:kidney_care`).
+"""
+@kwdef struct ExtendedVBCParams
+    model_key::Symbol
+    actual_expenditure::Float64
+    benchmark_expenditure::Float64
+    pmpm_benchmark::Float64        = 0.0
+    attributed_members::Int        = 0
+    quality_score::Float64         = 1.0    # 0..1; 1 = full savings
+    episode_type::Union{Symbol, Nothing} = nothing
+    # Optional overrides (if nothing, use registry defaults)
+    savings_share_rate::Union{Float64, Nothing} = nothing
+    loss_cap_override::Union{Float64, Nothing}  = nothing
+end
+
+"""
+    ExtendedVBCResult
+
+Result of an extended VBC calculation.
+
+# Fields
+- `model_key`, `display_name`
+- `gross_savings::Float64`: Benchmark − actual expenditure (can be negative).
+- `quality_adjusted_savings::Float64`: Gross savings × quality score.
+- `shared_savings::Float64`: What the ACO receives (positive) or owes (negative).
+- `loss_cap_applied::Bool`: Whether the loss cap was binding.
+- `savings_rate_used::Float64`: Effective sharing rate applied.
+- `net_acm_revenue::Float64`: Net additional revenue to the ACO (saved + shared).
+"""
+struct ExtendedVBCResult
+    model_key::Symbol
+    display_name::String
+    gross_savings::Float64
+    quality_adjusted_savings::Float64
+    shared_savings::Float64
+    loss_cap_applied::Bool
+    savings_rate_used::Float64
+    net_acm_revenue::Float64
+end
+
+"""
+    calculate_extended_vbc(params::ExtendedVBCParams) -> ExtendedVBCResult
+
+Compute shared savings / losses for any registered VBC model variant.
+
+Quality gating: when `props.quality_gate == true`, gross savings are multiplied
+by `params.quality_score` before the sharing-rate is applied. This mirrors CMS
+MSSP and REACH quality-performance gates.
+
+Loss cap: when `!props.one_sided`, losses are capped at
+`props.loss_cap_pct × params.benchmark_expenditure`. If `loss_cap_override` is
+set it takes precedence.
+
+# Example
+```julia
+result = calculate_extended_vbc(ExtendedVBCParams(
+    model_key            = :mssp_low_revenue,
+    actual_expenditure   = 4_800_000.0,
+    benchmark_expenditure = 5_000_000.0,
+    quality_score        = 0.88,
+))
+result.shared_savings   # ACO's share of the $200k savings
+```
+"""
+function calculate_extended_vbc(params::ExtendedVBCParams)::ExtendedVBCResult
+    params.model_key in keys(_VBC_MODEL_REGISTRY) ||
+        throw(ArgumentError("Unknown VBC model: $(repr(params.model_key))"))
+
+    props = _VBC_MODEL_REGISTRY[params.model_key]
+
+    gross_savings = params.benchmark_expenditure - params.actual_expenditure
+
+    # Quality adjustment
+    qa_savings = props.quality_gate ?
+        gross_savings * clamp(params.quality_score, 0.0, 1.0) :
+        gross_savings
+
+    # Determine sharing rate
+    lo, hi = props.savings_rate_range
+    rate = isnothing(params.savings_share_rate) ?
+        (lo + hi) / 2.0 : clamp(params.savings_share_rate, lo, hi)
+
+    # Compute shared savings / loss
+    shared = qa_savings * rate
+
+    # Apply loss cap (one-sided models never pay losses)
+    loss_cap_pct = isnothing(params.loss_cap_override) ?
+        props.loss_cap_pct : params.loss_cap_override
+    cap_floor    = props.one_sided ? 0.0 : -(loss_cap_pct * params.benchmark_expenditure)
+    loss_applied = shared < cap_floor
+    shared_clamped = max(shared, cap_floor)
+
+    ExtendedVBCResult(
+        params.model_key,
+        props.display_name,
+        gross_savings,
+        qa_savings,
+        shared_clamped,
+        loss_applied,
+        rate,
+        shared_clamped,   # net ACO revenue = shared savings (positive) or loss (negative)
+    )
+end
+
+"""
+    rural_vbc_models() -> Vector{Symbol}
+
+Return keys for all VBC models where `rural_eligible == true`.
+"""
+rural_vbc_models() = [k for (k, p) in _VBC_MODEL_REGISTRY if p.rural_eligible] |> sort

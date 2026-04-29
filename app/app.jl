@@ -232,6 +232,10 @@ include(joinpath(APP_ROOT, "views", "scenario_lab", "scenario_lab.jl"))
 include(joinpath(APP_ROOT, "views", "functions", "functions.jl"))
 include(joinpath(APP_ROOT, "views", "audit", "audit.jl"))
 
+# F-03: CFO 1-Pager Dashboard
+include(joinpath(APP_ROOT, "views", "cfo_dashboard", "CFODashboardModel.jl"))
+include(joinpath(APP_ROOT, "views", "cfo_dashboard", "cfo_dashboard.jl"))
+
 # ---------------------------------------------------------------------------
 # Include API controllers
 # ---------------------------------------------------------------------------
@@ -289,7 +293,7 @@ include(joinpath(APP_ROOT, "routes.jl"))
 # ---------------------------------------------------------------------------
 function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false)
     load_config()
-    @info "Starting Rural Hospital Economics Simulator v0.3.0 on $host:$port"
+    @info "Starting Rural Hospital Economics Simulator v1.0.0 on $host:$port"
     @info "38 interactive tools | 6 simulation engines | Full API | Education center"
     Genie.config.run_as_server = true
     Genie.config.server_host = host

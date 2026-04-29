@@ -58,6 +58,21 @@ include("performance_optimization.jl")
 include("scenario_persistence.jl")
 include("undo_redo.jl")
 
+# MBA Domain A — Corporate Finance & Valuation (A-04, A-05 EAC, A-06, A-09)
+include("nonprofit_wacc.jl")
+include("real_options.jl")
+include("treasury.jl")
+
+# MBA Domain C — Operations Analytics (C-01 DEA, C-03 Variance, C-07 Benchmarking)
+include("dea.jl")
+include("variance_analysis.jl")
+include("peer_benchmarking.jl")
+
+# MBA Domain E — Reimbursement (E-01 CAH Outliers, E-03 Medicare Advantage, E-06 MIPS/VBP/HRRP)
+include("cah_outlier_payments.jl")
+include("medicare_advantage.jl")
+include("mips_vbp_hrrp.jl")
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Exports
 # ═══════════════════════════════════════════════════════════════════════════
@@ -210,5 +225,228 @@ export Command, ParameterChangeCommand, CommandHistory,
        execute!, undo!, redo!, description, can_undo, can_redo,
        next_undo_description, next_redo_description, clear_history!,
        get_history, get_state, execute_and_record!
+
+# MBA A-04 — Nonprofit WACC, MADS, Synthetic Rating
+export MMD_AAA_CURVE, HOSPITAL_SECTOR_SPREADS, mmd_yield,
+       hamada_unlever, hamada_relever,
+       NonprofitWACCInputs, NonprofitWACCResult, nonprofit_wacc,
+       DebtCovenantInputs, CovenantCompliance, CovenantDashboard,
+       mads_headroom, covenant_dashboard,
+       SyntheticRatingInputs, synthetic_rating,
+       equivalent_annual_cost
+
+# MBA A-06 — Real Options
+export RealOptionBSM, BSMResult, bsm_real_option,
+       RealOptionBinomial, BinomialResult, binomial_real_option,
+       ServiceLineOption, ServiceLineOptionResult,
+       value_service_line_option, hospital_real_options_portfolio,
+       estimate_real_asset_volatility
+
+# MBA A-09 — Treasury & Liquidity
+export WeeklyOperatingProfile, WeeklyForecastRow, ThirteenWeekForecast,
+       thirteen_week_forecast,
+       MedicareDelayScenario, MedicareDelayStressResult,
+       medicare_delay_stress, run_medicare_delay_scenarios,
+       LOCHeadroomInputs, LOCHeadroomResult, loc_headroom,
+       LiquidityDashboard, liquidity_dashboard
+
+# MBA C-01 — Data Envelopment Analysis
+export DEAUnit, DEAResult, DEAAnalysis,
+       dea, dea_ccr, dea_bcc, scale_efficiency, dea_summary_table
+
+# MBA C-03 — Revenue Cycle Variance Analysis
+export RevenuePeriod, VarianceBridge, revenue_variance_bridge,
+       PayerRevenuePeriod, PayerVarianceRow, PayerVarianceBridge, payer_variance_bridge,
+       ExpenseVarianceBridge, expense_variance, multi_category_variance
+
+# MBA C-07 — Peer Benchmarking
+export FLEX_MONITORING_2022, AHA_RURAL_2023, MGMA_2023,
+       BenchmarkComparison, PeerBenchmarkReport,
+       benchmark_flex_monitoring, benchmark_aha_rural,
+       benchmark_mgma_physician, comprehensive_benchmark,
+       benchmark_report_text
+
+# MBA E-01 — CAH Outlier & TEFRA
+export CAH_OUTLIER_FIXED_LOSS_THRESHOLD_FY2026, CAH_OUTLIER_MARGINAL_RATE,
+       CAH_BAD_DEBT_REIMBURSEMENT_RATE, TEFRA_INCENTIVE_RATE,
+       CAHOutlierCase, CAHOutlierPayment, cah_outlier_payment, cah_outlier_analysis,
+       TEFRAHospitalData, TEFRAPaymentResult, tefra_payment,
+       cah_bad_debt_reimbursement, cah_swing_bed_payment,
+       CAHWorksheetE1Inputs, cah_worksheet_e1
+
+# MBA E-03 — Medicare Advantage v28
+export HCC_V28_CNA_COEFFICIENTS, HCC_V28_INTERACTION_COEFFICIENTS,
+       MA_NORMALIZATION_FACTORS, ma_normalization_factor,
+       ma_demographic_factor,
+       MAMemberRAF, MARAFResult, calculate_ma_raf,
+       MA_RURAL_PASSTHROUGH_RATE, ma_rural_passthrough_payment,
+       MACountyCapitationInputs, MACapitationResult, ma_county_capitation,
+       ma_penetration_revenue_impact
+
+# MBA E-06 — MIPS / Hospital VBP / HRRP / HACRP
+export MIPS_WEIGHTS_CY2025, MIPS_THRESHOLDS_CY2025,
+       MIPSScores, MIPSResult, calculate_mips,
+       VBP_DOMAIN_WEIGHTS_FY2026, VBPDomainScores, VBPResult, calculate_vbp,
+       HRRP_MEASURES_FY2026, HRRPMeasure, HRRPResult, calculate_hrrp,
+       HACRP_DOMAIN_WEIGHTS_FY2026, HACRPInputs, HACRPResult, calculate_hacrp,
+       HospitalQualityPaymentImpact, hospital_quality_payment_impact
+
+# MBA Domains B + D — Strategy & Risk/ML
+include("service_line_portfolio.jl")
+include("payer_negotiation_game.jl")
+include("competitive_analytics.jl")
+include("copula_mc.jl")
+include("var_cvar_stress.jl")
+
+# MBA B-03 — Service-Line Portfolio
+export ServiceLine, PortfolioStats, EfficientFrontierPoint, ServiceLinePortfolioResult,
+       compute_portfolio_stats, optimize_service_line_portfolio, portfolio_recommendation
+
+# MBA B-06 — Nash Bargaining Payer Negotiation
+export NashBargainInputs, NashBargainResult, nash_bargaining, kalai_smorodinsky,
+       batna_sensitivity,
+       RubinsteinParams, RubinsteinRound, RubinsteinResult, rubinstein_simulation,
+       hospital_reservation_price
+
+# MBA B-07 — Competitive Analytics
+export compute_hhi, HHI_UNCONCENTRATED, HHI_MODERATELY_CONC,
+       market_concentration_tier, hhi_merger_delta,
+       HospitalCompetitor, MarketShareResult, analyze_market_share,
+       geographic_overlap_score,
+       HHITrendPoint, compute_hhi_trend,
+       competitive_position_score
+
+# MBA D-04 — Copula MC
+export CopulaSpec, HOSPITAL_DEFAULT_CORRELATION,
+       sample_gaussian_copula, sample_t_copula, sample_copula,
+       CopulaMarginal, uniforms_to_marginals,
+       CopulaMCParams, CopulaMCResult, CopulaMCSummary,
+       run_copula_mc, compare_copula_vs_independent
+
+# MBA D-05 + D-06 — VaR/CVaR + CCAR Stress Test
+export VaRResult, compute_var_cvar, hospital_var_cvar,
+       MacroScenario, CCAR_SCENARIOS_2024,
+       StressTestYearResult, StressTestResult,
+       HospitalStressTestInputs,
+       run_stress_scenario, run_ccar_stress_test
+
+# MBA P1 Bundle 1 — Working Capital, SFA, TDABC, Cox PH Closure, RHC AIR
+include("working_capital.jl")
+include("sfa.jl")
+include("tdabc.jl")
+include("cox_ph_closure.jl")
+include("rhc_air_cap.jl")
+
+# MBA A-10 — Working Capital Optimization
+export WorkingCapitalInputs, WorkingCapitalMetrics, compute_working_capital,
+       target_dso_model,
+       ARAgingBucket, AR_COLLECTION_BENCHMARKS, ar_aging_analysis,
+       working_capital_scenarios
+
+# MBA C-02 — Stochastic Frontier Analysis
+export SFAHospital, SFAResult, SFAAnalysis,
+       build_translog_matrix, jlms_efficiency, run_sfa
+
+# MBA C-05 — Time-Driven Activity-Based Costing
+export ResourcePool, unused_capacity_minutes, unused_capacity_cost, capacity_utilisation,
+       TimeEquation, evaluate_time_equation,
+       TDABCEncounter, TDABCCostResult, TDABCModel,
+       add_resource_pool!, add_time_equation!, cost_encounter, run_tdabc
+
+# MBA D-01 — Cox PH Closure Hazard
+export COX_PH_CLOSURE_COEFFICIENTS, RURAL_HOSPITAL_BASELINE_SURVIVAL,
+       ClosureRiskInputs, ClosureRiskResult,
+       cox_ph_closure_risk, cox_ph_portfolio_risk
+
+# MBA E-04 — RHC AIR Cap & CAA 2021 Phase-In
+export RHCType, independent, provider_based, grandfathered,
+       CAA2021_PROVIDER_BASED_CAPS, INDEPENDENT_RHC_CAPS,
+       RHCAIRInputs, RHCAIRPaymentResult,
+       rhc_applicable_cap, calculate_rhc_air_payment,
+       rhc_cap_projection, rhc_caa2021_summary
+
+# MBA P1 Bundle 2 — M&A Valuation, Balanced Scorecard, Reciprocal Cost Allocation
+include("ma_valuation.jl")
+include("balanced_scorecard.jl")
+include("reciprocal_cost_allocation.jl")
+
+# MBA A-07 — Hospital M&A Valuation
+export RURAL_HOSPITAL_TRANSACTION_MULTIPLES,
+       TargetHospitalFinancials, MAValuationInputs,
+       DCFValuationResult, ComparableTransactionResult,
+       AssetBasedValuationResult, MAValuationResult,
+       dcf_valuation, comparable_transactions, asset_based_valuation,
+       synergy_npv, hospital_ma_valuation, ma_sensitivity_table
+
+# MBA B-01 — Balanced Scorecard
+export BSCPerspective, financial, patient_community, internal_process, learning_growth,
+       KPIDirection, higher_better, lower_better, target_range,
+       BSCKPIDefinition, BSCKPIMeasurement, CAH_STANDARD_KPI_LIBRARY,
+       StrategicInitiative, BalancedScorecard,
+       measure_kpi!, rag_status_for_kpi, performance_score_for_kpi,
+       BSCSummary, summarise_bsc, bsc_report_text
+
+# MBA C-06 — Reciprocal Cost Allocation
+export CostCenterType, overhead, patient_care,
+       CostCenter, AllocationBase, CostAllocationModel,
+       AllocationResult, AllocationSummary,
+       step_down_allocation, reciprocal_allocation,
+       compare_allocation_methods
+
+# MBA P1 Bundle 3 — 340B Contract Pharmacy, TEAM, Medicaid SDPs, Bayesian VBC MSSP
+include("b340_contract_pharmacy.jl")
+include("team_bundled_payment.jl")
+include("medicaid_sdp.jl")
+include("vbc_bayesian_mssp.jl")
+
+# MBA E-05 — 340B Contract Pharmacy
+export CoveredEntityType, cah_340b, dsh_hospital, rural_referral, fqhc_340b, ryan_white,
+       ManufacturerRestrictionPolicy, MANUFACTURER_RESTRICTION_POLICIES_2026,
+       ContractPharmacy, ContractPharmacyDrugRecord, ContractPharmacyDrugResult,
+       calculate_contract_pharmacy_savings, compare_inhouse_vs_contract
+
+# MBA E-07 — TEAM FY2026
+export TEAMEpisodeType, lejr, shff, sf, cdi, cabg,
+       TEAM_DRG_MAP, TEAM_QUALITY_ADJUSTMENTS, TEAM_REGIONAL_BENCHMARKS_FY2026,
+       TEAMEpisode, TEAMTargetPriceInputs,
+       TEAMEpisodeResult, TEAMPortfolioResult,
+       calculate_team_target_price, team_episode_reconciliation,
+       team_portfolio_analysis, team_annual_projection
+
+# MBA E-08 — Medicaid State Directed Payments
+export SDPType, atb_all_hospitals, safety_net_directed, rural_cah_directed,
+       transition_directed, value_based_directed,
+       SDPEligibilityTier, tier_1_cah_sole_community, tier_2_rural_hospital,
+       tier_3_safety_net_urban, tier_4_all_eligible,
+       SDPHospitalInputs, SDPProgramInputs, SDPPaymentResult,
+       sdp_eligibility_tier, calculate_sdp_payment, sdp_portfolio_analysis
+
+# MBA D-03 — Bayesian VBC / MSSP
+export MSSPTrack, mssp_basic_a, mssp_basic_b, mssp_basic_c, mssp_basic_d,
+       mssp_basic_e, mssp_enhanced, reach_aco,
+       MSSP_TRACK_PARAMETERS, MSSP_EMPIRICAL_PRIORS,
+       MSSPHospitalInputs, MSSPBayesianResult,
+       mssp_bayesian_analysis, mssp_track_comparison, bayesian_update_cycle
+
+# MBA P1 Final Reporting — Rating Memo, Tornado API, Scenario Diff
+include("rating_agency_memo.jl")
+include("sensitivity_tornado.jl")
+include("scenario_diff.jl")
+
+# MBA F-02 — Rating Agency Memo
+export RatingMemoInputs,
+       generate_rating_memo_markdown, generate_rating_memo_typst, rating_memo_data
+
+# MBA F-04 — Sensitivity Tornado
+export TornadoRow, TornadoResult,
+       one_way_sensitivity, two_way_sensitivity,
+       break_even_analysis, scenario_sensitivity, tornado_chart_data
+
+# MBA F-05 — Scenario Diff / Compare
+export ScenarioSnapshot, ScenarioDiffRow, ScenarioDiff,
+       STANDARD_METRIC_DIRECTIONS, compare_scenarios,
+       WaterfallStep, build_waterfall,
+       ScenarioSet, scenario_set_diff,
+       rank_scenarios, scenario_diff_table
 
 end  # module FinanceEngine
