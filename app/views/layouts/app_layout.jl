@@ -29,6 +29,10 @@ function app_layout(model, page_title::String, content::Vector)
                         item_section(avatar=true, [q__icon(name="dashboard")]),
                         item_section([item_label("Financial Dashboard")]),
                     ]),
+                    item(clickable=true, href="/cfo", [
+                        item_section(avatar=true, [q__icon(name="speed")]),
+                        item_section([item_label("CFO 1-Pager")]),
+                    ]),
                     item(clickable=true, href="/profile", [
                         item_section(avatar=true, [q__icon(name="business")]),
                         item_section([item_label("Hospital Profile")]),
@@ -68,6 +72,26 @@ function app_layout(model, page_title::String, content::Vector)
                     item(clickable=true, href="/break-even", [
                         item_section(avatar=true, [q__icon(name="balance")]),
                         item_section([item_label("Break-Even")]),
+                    ]),
+                    item(clickable=true, href="/wacc", [
+                        item_section(avatar=true, [q__icon(name="percent")]),
+                        item_section([item_label("WACC Calculator")]),
+                    ]),
+                    item(clickable=true, href="/capex", [
+                        item_section(avatar=true, [q__icon(name="construction")]),
+                        item_section([item_label("Capital Expenditure")]),
+                    ]),
+                    item(clickable=true, href="/three-statement", [
+                        item_section(avatar=true, [q__icon(name="table_chart")]),
+                        item_section([item_label("Three-Statement Model")]),
+                    ]),
+                    item(clickable=true, href="/dupont", [
+                        item_section(avatar=true, [q__icon(name="account_tree")]),
+                        item_section([item_label("DuPont Analysis")]),
+                    ]),
+                    item(clickable=true, href="/rhc-cah", [
+                        item_section(avatar=true, [q__icon(name="local_hospital")]),
+                        item_section([item_label("RHC vs CAH Comparison")]),
                     ]),
                     item(clickable=true, href="/cash-flow", [
                         item_section(avatar=true, [q__icon(name="account_balance")]),
@@ -140,6 +164,18 @@ function app_layout(model, page_title::String, content::Vector)
                     item(clickable=true, href="/payer-negotiation", [
                         item_section(avatar=true, [q__icon(name="handshake")]),
                         item_section([item_label("Payer Negotiation")]),
+                    ]),
+                    item(clickable=true, href="/distress-scoring", [
+                        item_section(avatar=true, [q__icon(name="monitor_heart")]),
+                        item_section([item_label("Distress Scoring")]),
+                    ]),
+                    item(clickable=true, href="/vbc-bayesian", [
+                        item_section(avatar=true, [q__icon(name="psychology")]),
+                        item_section([item_label("VBC Bayesian")]),
+                    ]),
+                    item(clickable=true, href="/ma-risk", [
+                        item_section(avatar=true, [q__icon(name="merge")]),
+                        item_section([item_label("M&A Risk")]),
                     ]),
                     item(clickable=true, href="/throughput", [
                         item_section(avatar=true, [q__icon(name="timeline")]),

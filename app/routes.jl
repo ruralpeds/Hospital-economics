@@ -227,25 +227,12 @@ route("/team-bundled") do
     page(model, ui_team_bundled) |> html
 end
 
-route("/telehealth") do
-    model = telehealth_model |> init
-    page(model, ui_telehealth) |> html
-end
 
 route("/vbc-transition") do
     model = vbc_transition_model |> init
     page(model, ui_vbc_transition) |> html
 end
 
-route("/medicaid-supplemental") do
-    model = medicaid_supplemental_model |> init
-    page(model, ui_medicaid_supplemental) |> html
-end
-
-route("/rhc-optimization") do
-    model = rhc_optimization_model |> init
-    page(model, ui_rhc_optimization) |> html
-end
 
 route("/sdoh") do
     model = sdoh_model |> init
