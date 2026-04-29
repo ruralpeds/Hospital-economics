@@ -291,4 +291,39 @@ export MIPS_WEIGHTS_CY2025, MIPS_THRESHOLDS_CY2025,
        HACRP_DOMAIN_WEIGHTS_FY2026, HACRPInputs, HACRPResult, calculate_hacrp,
        HospitalQualityPaymentImpact, hospital_quality_payment_impact
 
+# MBA P1 Bundle 3 — 340B Contract Pharmacy, TEAM, Medicaid SDPs, Bayesian VBC MSSP
+include("b340_contract_pharmacy.jl")
+include("team_bundled_payment.jl")
+include("medicaid_sdp.jl")
+include("vbc_bayesian_mssp.jl")
+
+# MBA E-05 — 340B Contract Pharmacy
+export CoveredEntityType, cah_340b, dsh_hospital, rural_referral, fqhc_340b, ryan_white,
+       ManufacturerRestrictionPolicy, MANUFACTURER_RESTRICTION_POLICIES_2026,
+       ContractPharmacy, ContractPharmacyDrugRecord, ContractPharmacyDrugResult,
+       calculate_contract_pharmacy_savings, compare_inhouse_vs_contract
+
+# MBA E-07 — TEAM FY2026
+export TEAMEpisodeType, lejr, shff, sf, cdi, cabg,
+       TEAM_DRG_MAP, TEAM_QUALITY_ADJUSTMENTS, TEAM_REGIONAL_BENCHMARKS_FY2026,
+       TEAMEpisode, TEAMTargetPriceInputs,
+       TEAMEpisodeResult, TEAMPortfolioResult,
+       calculate_team_target_price, team_episode_reconciliation,
+       team_portfolio_analysis, team_annual_projection
+
+# MBA E-08 — Medicaid State Directed Payments
+export SDPType, atb_all_hospitals, safety_net_directed, rural_cah_directed,
+       transition_directed, value_based_directed,
+       SDPEligibilityTier, tier_1_cah_sole_community, tier_2_rural_hospital,
+       tier_3_safety_net_urban, tier_4_all_eligible,
+       SDPHospitalInputs, SDPProgramInputs, SDPPaymentResult,
+       sdp_eligibility_tier, calculate_sdp_payment, sdp_portfolio_analysis
+
+# MBA D-03 — Bayesian VBC / MSSP
+export MSSPTrack, mssp_basic_a, mssp_basic_b, mssp_basic_c, mssp_basic_d,
+       mssp_basic_e, mssp_enhanced, reach_aco,
+       MSSP_TRACK_PARAMETERS, MSSP_EMPIRICAL_PRIORS,
+       MSSPHospitalInputs, MSSPBayesianResult,
+       mssp_bayesian_analysis, mssp_track_comparison, bayesian_update_cycle
+
 end  # module FinanceEngine
