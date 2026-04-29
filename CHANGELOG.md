@@ -6,6 +6,68 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.0] — 2026-04-28
+
+**P2 MBA gaps complete.** Adds 9 new FinanceEngine analytics modules,
+9 Genie/Stipple interactive views, sidebar navigation entries, and a
+dashboard quick-launch grid. All MBA analytics gaps (P1 + P2) are now closed.
+
+### Added — P2 Modules
+
+- **`lbo_analysis.jl`** (A-08) — Hospital LBO: debt tranche sizing from EBITDA multiples,
+  annual amortisation + cash sweep, IRR via bisection across exit multiple × hold year matrix, MOIC.
+
+- **`blue_ocean.jl`** (B-02) — Blue Ocean Strategy: CompetitiveFactor with ERRC action,
+  StrategicCanvas, differentiation index (weighted target-vs-industry distance), value
+  innovation score, convergence warnings.
+
+- **`reh_real_options.jl`** (B-04) — REH conversion decision tree: REH revenue
+  (OPPS×1.05 + \$3.54M/yr facility payment) vs lost inpatient; saved variable costs;
+  5-year NPV; break-even ED visit count; recommendation :convert_now/:wait/:stay_cah/:close_evaluate.
+
+- **`scenario_planning.jl`** (B-05) — Porter's Five Forces (intensity tier, dominant force);
+  PESTLE analysis; 2×2 scenario matrix with `default_rural_hospital_scenarios()` pre-built.
+
+- **`theory_of_constraints.jl`** (C-04) — Throughput Accounting global measures
+  (T=Revenue-TVC, OE, I → NP, ROI, productivity, investment turns);
+  `identify_constraint()` finds highest-utilisation bottleneck with exploit/subordinate/elevate steps;
+  `throughput_vs_cost_decision()` evaluates investments by NP/ROI delta.
+
+- **`readmission_risk.jl`** (D-02) — LACE index (van Walraven 2010, validated);
+  logistic regression with published coefficients; `score_population()` batch scoring;
+  `hrrp_cm_impact()` estimates HRRP penalty reduction + ROI from care management investment.
+
+- **`climate_risk.jl`** (D-07) — Physical risk composite score (flood/wildfire/heat/severe weather);
+  probabilistic EAL + 1-in-100-yr max loss; Scope 1+2 transition risk;
+  `IPCC_SCENARIOS` (1.5°C/2°C/3°C); `tcfd_scenario_analysis()` expected-value risk.
+
+- **`nsa_idr.jl`** (E-09) — NSA IDR economics: admin fee split across batched claims;
+  expected payment = p_win×offer + (1−p_win)×payer_offer; break-even claim amount;
+  `batch_idr_claims()`; `idr_portfolio_opportunity()` annual revenue estimate.
+
+- **`fed_register_parser.jl`** (F-07) — Federal Register API URL builder;
+  `extract_rates_from_text()` regex extraction (IPPS, OPPS, REH rates);
+  `generate_constants_update()` Julia code with prior-year diff comments;
+  `validate_rate_extraction()` flags >15% YoY change.
+
+### Added — P2 Genie/Stipple Views (9 new routes)
+
+`/lbo`, `/blue-ocean`, `/reh-conversion`, `/scenario-planning`,
+`/throughput`, `/readmission-risk`, `/climate-risk`, `/nsa-idr`, `/fed-register`
+
+Each view follows the standard Stipple `@app` / `@onchange` reactive pattern,
+delegating computation to the FinanceEngine domain layer.
+
+### Changed
+
+- Sidebar navigation (`app_layout.jl`): 9 new items in Finance Tools, Analysis Tools,
+  Strategic Tools, and Advanced sections with purpose-matched Material icons.
+- Dashboard (`dashboard.jl`): "P2 MBA Advanced Tools" quick-launch grid — two rows
+  of colour-coded clickable cards linking to all 9 P2 views.
+- Version: `1.0.0` → **`1.1.0`**
+
+---
+
 ## [1.0.0] — 2026-04-28
 
 **First production-ready release.** Closes all Priority-1 MBA analytics gaps
