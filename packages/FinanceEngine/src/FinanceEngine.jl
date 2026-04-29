@@ -291,4 +291,43 @@ export MIPS_WEIGHTS_CY2025, MIPS_THRESHOLDS_CY2025,
        HACRP_DOMAIN_WEIGHTS_FY2026, HACRPInputs, HACRPResult, calculate_hacrp,
        HospitalQualityPaymentImpact, hospital_quality_payment_impact
 
+# MBA Domains B + D — Strategy & Risk/ML
+include("service_line_portfolio.jl")
+include("payer_negotiation_game.jl")
+include("competitive_analytics.jl")
+include("copula_mc.jl")
+include("var_cvar_stress.jl")
+
+# MBA B-03 — Service-Line Portfolio
+export ServiceLine, PortfolioStats, EfficientFrontierPoint, ServiceLinePortfolioResult,
+       compute_portfolio_stats, optimize_service_line_portfolio, portfolio_recommendation
+
+# MBA B-06 — Nash Bargaining Payer Negotiation
+export NashBargainInputs, NashBargainResult, nash_bargaining, kalai_smorodinsky,
+       batna_sensitivity,
+       RubinsteinParams, RubinsteinRound, RubinsteinResult, rubinstein_simulation,
+       hospital_reservation_price
+
+# MBA B-07 — Competitive Analytics
+export compute_hhi, HHI_UNCONCENTRATED, HHI_MODERATELY_CONC,
+       market_concentration_tier, hhi_merger_delta,
+       HospitalCompetitor, MarketShareResult, analyze_market_share,
+       geographic_overlap_score,
+       HHITrendPoint, compute_hhi_trend,
+       competitive_position_score
+
+# MBA D-04 — Copula MC
+export CopulaSpec, HOSPITAL_DEFAULT_CORRELATION,
+       sample_gaussian_copula, sample_t_copula, sample_copula,
+       CopulaMarginal, uniforms_to_marginals,
+       CopulaMCParams, CopulaMCResult, CopulaMCSummary,
+       run_copula_mc, compare_copula_vs_independent
+
+# MBA D-05 + D-06 — VaR/CVaR + CCAR Stress Test
+export VaRResult, compute_var_cvar, hospital_var_cvar,
+       MacroScenario, CCAR_SCENARIOS_2024,
+       StressTestYearResult, StressTestResult,
+       HospitalStressTestInputs,
+       run_stress_scenario, run_ccar_stress_test
+
 end  # module FinanceEngine
