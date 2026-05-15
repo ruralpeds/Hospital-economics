@@ -1,0 +1,64 @@
+FROM debian:bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. Install system utilities as root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sudo git curl ca-certificates ssh gnupg2 lsb-release procps vim unzip \
+    build-essential libssl-dev pkg-config lldb \
+    libc++abi1 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 2. Install Node.js (Prerequisite for Gemini and Codex CLIs)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 3. Install Google Cloud CLI as root
+RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && apt-get update && apt-get install -y google-cloud-cli \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 4. Setup non-root user 'vscode'
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
+# 5. Install Juliaup, Rust, and FireDBG as 'vscode'
+USER $USERNAME
+ENV RUSTUP_HOME=/home/vscode/.rustup \
+    CARGO_HOME=/home/vscode/.cargo \
+    JULIA_DEPOT_PATH=/home/vscode/.julia \
+    PATH=/home/vscode/.juliaup/bin:/home/vscode/.cargo/bin:$PATH
+
+# Install Juliaup (Non-interactive)
+RUN curl -fsSL https://install.julialang.org | sh -s -- -y \
+    && /home/vscode/.juliaup/bin/juliaup add 1.11 \
+    && /home/vscode/.juliaup/bin/juliaup default 1.11
+
+# Install Rust (Pinned to 1.81)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.81 --no-modify-path
+
+# Install FireDBG (Architecture-aware)
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        curl https://raw.githubusercontent.com/SeaQL/FireDBG.for.Rust/main/install.sh -sSf | bash; \
+    fi
+
+# 6. Install Gemini and Codex CLIs as root (via sudo)
+RUN sudo npm install -g @google/gemini-cli @openai/codex
+
+WORKDIR /workspace
+
+# Copy source
+COPY --chown=$USERNAME:$USERNAME . .
+
+ENV JULIA_NUM_THREADS=auto \
+    JULIA_PROJECT=/workspace
+
+# Default command: use Julia via Juliaup
+CMD ["julia"]

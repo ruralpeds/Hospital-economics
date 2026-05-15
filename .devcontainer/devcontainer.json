@@ -1,0 +1,39 @@
+{
+  "name": "RuralPeds Hardened Julia Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile.hardened",
+    "context": ".."
+  },
+
+  "remoteUser": "vscode",
+
+  "containerEnv": {
+    "JULIA_NUM_THREADS": "auto",
+    "JULIA_PROJECT": "/workspace",
+    "GEMINI_API_KEY": "${localEnv:GEMINI_API_KEY:}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY:}"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "julialang.language-julia",
+        "tamasfe.even-better-toml",
+        "google.gemini",
+        "GoogleCloudTools.cloudcode",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "openai.chatgpt",
+        "sea-ql.firedbg-rust",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "julia.environmentPath": "/workspace",
+        "julia.lint.run": true,
+        "julia.execution.resultType": "inline"
+      }
+    }
+  },
+
+  "postCreateCommand": "/bin/bash .devcontainer/setup.sh"
+}
