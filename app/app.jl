@@ -8,7 +8,7 @@ module HospitalEconomicsApp
 
 using Genie, Genie.Router, Genie.Renderer.Html
 using Stipple, StippleUI, StipplePlotly
-using Logging, Dates
+using Logging, Dates, HTTP
 
 # ---------------------------------------------------------------------------
 # Bootstrap helpers
@@ -21,8 +21,28 @@ function load_config()
     isfile(cfg_path) && include(cfg_path)
     init_path = joinpath(APP_ROOT, "config", "initializers", "logging.jl")
     isfile(init_path) && include(init_path)
+    db_init_path = joinpath(APP_ROOT, "config", "initializers", "db.jl")
+    isfile(db_init_path) && include(db_init_path)
     @info "Loaded configuration for environment: $env"
 end
+
+# ---------------------------------------------------------------------------
+# Security modules (P0-1, P0-2)
+# middleware.jl includes auth.jl and rbac.jl internally
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "..", "src", "security", "middleware.jl"))
+include(joinpath(APP_ROOT, "..", "src", "security", "encryption.jl"))
+
+using .SecurityMiddleware
+using .SecurityMiddleware.Auth
+using .SecurityMiddleware.RBAC
+using .Encryption
+
+# ---------------------------------------------------------------------------
+# Observability (P0-6)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "..", "src", "observability", "health.jl"))
+using .Health
 
 # ---------------------------------------------------------------------------
 # Reusable component library  (app/components/)
@@ -302,6 +322,14 @@ function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false
     Genie.config.cors_headers["Access-Control-Allow-Origin"] = allowed_origin
     Genie.config.cors_headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     Genie.config.cors_headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+
+    # Register middleware stack (P0-1)
+    if get(ENV, "RHSIM_AUTH_ENABLED", "true") == "true"
+        Genie.Router.push_middleware!(SecurityMiddleware.auth_middleware)
+        @info "Auth middleware enabled"
+    end
+    Genie.Router.push_middleware!(SecurityMiddleware.security_headers_middleware)
+    @info "Security headers middleware enabled"
 
     up(port; async = async)
 end

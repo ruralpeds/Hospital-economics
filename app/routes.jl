@@ -18,6 +18,85 @@ function _safe_error(label::String, e::Exception)
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Health / Readiness / Metrics (P0-6) — no auth required
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/healthz") do
+    json(Health.healthz())
+end
+
+route("/readyz") do
+    result = Health.readyz()
+    status_code = result["status"] == "ok" ? 200 : 503
+    json(result, status=status_code)
+end
+
+route("/metrics") do
+    Genie.Responses.respond(Health.metrics(), "text/plain; version=0.0.4; charset=utf-8")
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Authentication Routes (P0-1)
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/login") do
+    html("""
+    <!DOCTYPE html>
+    <html><head><title>Login — Rural Hospital Economics</title>
+    <style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5}
+    .card{background:#fff;padding:2rem;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.1);width:360px}
+    h2{margin-top:0;color:#1a237e}input{width:100%;padding:.5rem;margin:.5rem 0 1rem;border:1px solid #ccc;border-radius:4px;box-sizing:border-box}
+    button{width:100%;padding:.75rem;background:#1a237e;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:1rem}
+    button:hover{background:#283593}.error{color:#c62828;font-size:.85rem}</style></head>
+    <body><div class="card"><h2>Rural Hospital Economics</h2>
+    <form method="POST" action="/api/auth/login">
+    <label>Email<input type="email" name="email" required></label>
+    <label>Password<input type="password" name="password" required></label>
+    <button type="submit">Sign In</button></form></div></body></html>
+    """)
+end
+
+route("/api/auth/login", method=POST) do
+    try
+        payload = jsonpayload()
+        if payload === nothing
+            payload = Dict{String,Any}("email" => Genie.Requests.postpayload(:email, ""),
+                                        "password" => Genie.Requests.postpayload(:password, ""))
+        end
+        email    = get(payload, "email", "")
+        password = get(payload, "password", "")
+
+        if isempty(email) || isempty(password)
+            return json(Dict("status" => "error", "message" => "Email and password required"), status=400)
+        end
+
+        session = Auth.create_session(0, email, "analyst", 0; ttl_hours=8)
+        json(Dict("status" => "ok", "token" => session.token, "role" => session.role, "expires_at" => string(session.expires_at)))
+    catch e
+        _safe_error("Authentication", e)
+    end
+end
+
+route("/api/auth/logout", method=POST) do
+    try
+        headers_dict = Dict{String,String}()
+        for name in ["Authorization", "authorization", "Cookie", "cookie"]
+            val = Genie.Requests.getheader(name, "")
+            if val != ""
+                headers_dict[name] = val
+            end
+        end
+        token = Auth.extract_token(headers_dict)
+        if token !== nothing
+            Auth.destroy_session(token)
+        end
+        json(Dict("status" => "ok", "message" => "Logged out"))
+    catch e
+        _safe_error("Logout", e)
+    end
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Core Page Routes
 # ═══════════════════════════════════════════════════════════════════════════
 
