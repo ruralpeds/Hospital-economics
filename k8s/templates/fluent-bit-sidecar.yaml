@@ -1,0 +1,138 @@
+# ============================================================================
+# Fluent Bit Sidecar ConfigMap — Rural Hospital Economics Simulator
+# SIEM Log Shipping for Kubernetes Deployments
+# ============================================================================
+#
+# Usage: Add the Fluent Bit sidecar container to the deployment spec.
+# In k8s/templates/deployment.yaml, add the following under spec.template.spec:
+#
+#   containers:
+#     - name: rhsim              # <-- existing app container
+#       ...
+#       volumeMounts:
+#         - name: app-logs       # <-- add this mount to the app container
+#           mountPath: /var/log/rhsim
+#
+#     - name: fluent-bit         # <-- add this sidecar container
+#       image: fluent/fluent-bit:3.0
+#       imagePullPolicy: IfNotPresent
+#       securityContext:
+#         allowPrivilegeEscalation: false
+#         readOnlyRootFilesystem: true
+#         capabilities:
+#           drop:
+#             - ALL
+#       env:
+#         - name: ENVIRONMENT
+#           value: {{ .Values.env.GENIE_ENV | quote }}
+#         - name: AWS_REGION
+#           value: {{ .Values.fluentBit.region | default "us-east-1" | quote }}
+#         - name: FLUENT_BIT_DEBUG
+#           value: {{ .Values.fluentBit.debug | default "false" | quote }}
+#         - name: HOSTNAME
+#           valueFrom:
+#             fieldRef:
+#               fieldPath: spec.nodeName
+#       resources:
+#         requests:
+#           cpu: 100m
+#           memory: 128Mi
+#         limits:
+#           cpu: 250m
+#           memory: 256Mi
+#       volumeMounts:
+#         - name: fluent-bit-config
+#           mountPath: /fluent-bit/etc/
+#           readOnly: true
+#         - name: app-logs
+#           mountPath: /var/log/rhsim
+#         - name: fluent-bit-state
+#           mountPath: /var/log/rhsim
+#
+#   volumes:                     # <-- add these volumes
+#     - name: fluent-bit-config
+#       configMap:
+#         name: {{ include "rhsim.fullname" . }}-fluent-bit
+#     - name: app-logs
+#       emptyDir: {}
+#     - name: fluent-bit-state
+#       emptyDir: {}
+#
+# ============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rhsim.fullname" . }}-fluent-bit
+  labels:
+    {{- include "rhsim.labels" . | nindent 4 }}
+    app.kubernetes.io/component: logging
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush           5
+        Daemon          off
+        Log_Level       info
+        Parsers_File    parsers.conf
+        HTTP_Server     On
+        HTTP_Listen     0.0.0.0
+        HTTP_Port       2020
+
+    [INPUT]
+        Name            tail
+        Tag             rhsim.app
+        Path            /var/log/rhsim/app.log
+        Parser          json
+        DB              /var/log/rhsim/flb_app.db
+        Mem_Buf_Limit   5MB
+        Skip_Long_Lines On
+        Refresh_Interval 10
+
+    [INPUT]
+        Name            tail
+        Tag             rhsim.audit
+        Path            /var/log/rhsim/audit.log
+        Parser          json
+        DB              /var/log/rhsim/flb_audit.db
+        Mem_Buf_Limit   10MB
+        Skip_Long_Lines On
+        Refresh_Interval 5
+
+    [FILTER]
+        Name            record_modifier
+        Match           *
+        Record          hostname ${HOSTNAME}
+        Record          environment ${ENVIRONMENT}
+        Record          app_name rhsim
+
+    [OUTPUT]
+        Name            cloudwatch_logs
+        Match           rhsim.app
+        region          ${AWS_REGION}
+        log_group_name  /rhsim/${ENVIRONMENT}/application
+        log_stream_prefix from-tag-
+        auto_create_group On
+
+    # Retention: 2555 days (7 years) — must be set on the CloudWatch log group
+    # via Terraform/AWS CLI to meet HIPAA audit trail requirements.
+    [OUTPUT]
+        Name            cloudwatch_logs
+        Match           rhsim.audit
+        region          ${AWS_REGION}
+        log_group_name  /rhsim/${ENVIRONMENT}/audit
+        log_stream_prefix from-tag-
+        auto_create_group On
+
+    [OUTPUT]
+        Name            stdout
+        Match           *
+        Format          json_lines
+        @ENABLE         ${FLUENT_BIT_DEBUG}
+
+  parsers.conf: |
+    [PARSER]
+        Name        json
+        Format      json
+        Time_Key    timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+        Time_Keep   On

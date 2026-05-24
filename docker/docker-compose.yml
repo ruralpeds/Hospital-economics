@@ -28,6 +28,7 @@ services:
     volumes:
       - app-data:/app/data/uploads
       - app-exports:/app/data/exports
+      - app-logs:/var/log/rhsim
     depends_on:
       postgres:
         condition: service_healthy
@@ -168,6 +169,34 @@ services:
           memory: 1G
 
   # --------------------------------------------------------------------------
+  # Fluent Bit — SIEM Log Shipping
+  # --------------------------------------------------------------------------
+  fluent-bit:
+    image: fluent/fluent-bit:3.0
+    container_name: rhsim-fluent-bit
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - FLUENT_BIT_DEBUG=${FLUENT_BIT_DEBUG:-false}
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - app-logs:/var/log/rhsim
+    depends_on:
+      - app
+    networks:
+      - rhsim-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+
+  # --------------------------------------------------------------------------
   # Nginx Reverse Proxy
   # --------------------------------------------------------------------------
   nginx:
@@ -206,6 +235,8 @@ volumes:
   nginx-certs:
     driver: local
   nginx-logs:
+    driver: local
+  app-logs:
     driver: local
   zookeeper-data:
     driver: local
