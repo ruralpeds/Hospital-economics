@@ -1,0 +1,87 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/ruralpeds/hospital-economics
+  tag: "1.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+  hosts:
+    - host: rhsim.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - rhsim.example.com
+      secretName: rhsim-tls
+
+resources:
+  requests:
+    cpu: "2"
+    memory: 4Gi
+  limits:
+    cpu: "4"
+    memory: 8Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+postgresql:
+  host: rhsim-db.internal
+  port: 5432
+  database: hospital_economics
+  existingSecret: rhsim-db-credentials
+  existingSecretPasswordKey: password
+  existingSecretUsernameKey: username
+
+redis:
+  host: rhsim-redis.internal
+  port: 6379
+
+kafka:
+  brokers: rhsim-kafka.internal:9092
+
+env:
+  GENIE_ENV: prod
+  JULIA_NUM_THREADS: auto
+  JULIA_DEPOT_PATH: /app/.julia
+
+podAnnotations: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""

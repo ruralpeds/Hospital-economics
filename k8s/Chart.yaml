@@ -1,0 +1,14 @@
+apiVersion: v2
+name: rhsim
+description: Rural Hospital Economics Simulator
+type: application
+version: 0.1.0
+appVersion: "1.1.0"
+keywords:
+  - healthcare
+  - economics
+  - simulation
+  - julia
+maintainers:
+  - name: Rural Pediatrics Team
+    url: https://github.com/ruralpeds/hospital-economics
