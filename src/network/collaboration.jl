@@ -23,7 +23,7 @@ A collaboration room tracking connected users.
 @kwdef mutable struct CollaborationRoom
     room_id::String
     connected_users::Dict{String,DateTime}  = Dict{String,DateTime}()
-    created_at::DateTime                    = Dates.now(Dates.UTC)
+    created_at::DateTime                    = Dates.now()
 end
 
 function Base.show(io::IO, r::CollaborationRoom)
@@ -103,7 +103,7 @@ function join_room!(manager::CollaborationManager, room_id::String,
         error("Room '$(room_id)' is at capacity ($(manager.max_users_per_room) users)")
     end
 
-    room.connected_users[user_id] = Dates.now(Dates.UTC)
+    room.connected_users[user_id] = Dates.now()
     return room
 end
 
