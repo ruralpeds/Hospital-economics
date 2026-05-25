@@ -97,6 +97,9 @@ using Test
     # Biostatistics quality integration
     include("test_quality_integration.jl")
 
+    # Quality controller (wired to Biostatistics)
+    include("test_quality_controller.jl")
+
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
