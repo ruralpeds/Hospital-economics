@@ -142,7 +142,7 @@ function generate_fmea_report(modes::Vector{FailureMode})
         return FMEAReport(modes, 0, 0.0, 0, 0.0)
     end
 
-    high_risk_count = count(m -> assess_risk_acceptability(m.rpn) == :unacceptable, modes)
+    high_risk_count = count(m -> assess_risk_acceptability(m.rpn) != :acceptable, modes)
     rpns = [m.rpn for m in modes]
     average_rpn = sum(rpns) / length(rpns)
     max_rpn = maximum(rpns)
