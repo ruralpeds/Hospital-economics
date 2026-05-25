@@ -538,4 +538,29 @@ export FPLTier, FinancialAssistancePolicy, CommunityProfile, CharityCareResult,
        presumptive_eligibility_model, tax_exemption_analysis,
        fap_compliance_check
 
+# ─── ED Throughput Revenue Linkage ───────────────────────────────────────────
+include("ed_throughput.jl")
+
+export EDConfig, EDRevenueModel, EDThroughputResult,
+       ed_revenue_analysis, lwbs_revenue_impact, boarding_cost_analysis,
+       throughput_optimization, fast_track_roi, staffing_revenue_model,
+       emtala_compliance_cost, ed_expansion_business_case
+
+# ─── Hospital Exit / Transition Planning ─────────────────────────────────────
+include("exit_planning.jl")
+
+export HospitalProfile, ExitScenario, CommunityImpactAssessment, TransitionPlan,
+       assess_viability, community_impact, asset_liquidation,
+       reh_conversion_analysis, merger_analysis, service_line_reduction,
+       regulatory_requirements, transition_timeline, patient_migration_model
+
+# ─── ACO Compliance & Reporting ──────────────────────────────────────────────
+include("aco_compliance.jl")
+
+export ACOTrack, ACOFinancials, ACOPerformance, QualityMeasureResult,
+       mssp_tracks, aco_reach_tracks, calculate_performance,
+       benchmark_calculation, quality_scorecard, aco_quality_measures,
+       financial_reconciliation, rural_aco_considerations,
+       aco_readiness_assessment, track_recommendation
+
 end  # module FinanceEngine
