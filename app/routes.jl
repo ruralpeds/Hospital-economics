@@ -1709,6 +1709,82 @@ route("/api/audit/deidentify", method=POST) do
 end
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Ported from cah-modeling — Interactive Views
+# ═══════════════════════════════════════════════════════════════════════════
+
+route("/cms-programs") do
+    include("views/cms_programs/CMSProgramsModel.jl")
+    model = cms_programs_model |> init
+    page(model, ui_cms_programs) |> html
+end
+
+route("/spc-charts") do
+    include("views/spc_charts/SPCChartsModel.jl")
+    model = spc_charts_model |> init
+    page(model, ui_spc_charts) |> html
+end
+
+route("/physician-comp") do
+    include("views/physician_comp/PhysicianCompModel.jl")
+    model = physician_comp_model |> init
+    page(model, ui_physician_comp) |> html
+end
+
+route("/treasury-forecast") do
+    include("views/treasury_forecast/TreasuryForecastModel.jl")
+    model = treasury_forecast_model |> init
+    page(model, ui_treasury_forecast) |> html
+end
+
+route("/revenue-variance") do
+    include("views/revenue_variance/RevenueVarianceModel.jl")
+    model = revenue_variance_model |> init
+    page(model, ui_revenue_variance) |> html
+end
+
+route("/real-options") do
+    include("views/real_options/RealOptionsModel.jl")
+    model = real_options_model |> init
+    page(model, ui_real_options) |> html
+end
+
+route("/var-cvar") do
+    include("views/var_cvar/VaRCVaRModel.jl")
+    model = var_cvar_model |> init
+    page(model, ui_var_cvar) |> html
+end
+
+route("/copula-mc") do
+    include("views/copula_mc/CopulaMCModel.jl")
+    model = copula_mc_model |> init
+    page(model, ui_copula_mc) |> html
+end
+
+route("/forecasting") do
+    include("views/forecasting_tools/ForecastingModel.jl")
+    model = forecasting_model |> init
+    page(model, ui_forecasting) |> html
+end
+
+route("/fmea") do
+    include("views/fmea/FMEAModel.jl")
+    model = fmea_model |> init
+    page(model, ui_fmea) |> html
+end
+
+route("/pk-ode") do
+    include("views/pk_ode/PKODEModel.jl")
+    model = pk_ode_model |> init
+    page(model, ui_pk_ode) |> html
+end
+
+route("/bayesian") do
+    include("views/bayesian/BayesianModel.jl")
+    model = bayesian_model |> init
+    page(model, ui_bayesian) |> html
+end
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Dev-only routes — Component Library showcase
 # Disabled in production (GENIE_ENV == "prod")
 # ═══════════════════════════════════════════════════════════════════════════
