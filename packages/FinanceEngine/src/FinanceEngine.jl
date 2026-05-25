@@ -43,6 +43,7 @@ include("medicaid_dsh.jl")
 include("rhc_optimization.jl")
 include("network_economics.jl")
 include("physician_compensation.jl")
+include("physician_employment.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -156,6 +157,12 @@ export HospitalNode, NetworkTransfer, NetworkEconomics, NetworkAnalysisResult,
 # Physician Compensation (Ch. 10f)
 export PhysicianProfile, CompensationModel, PhysicianCompensation, SpecialtyBenchmarks,
        calculate_physician_compensation, benchmark_specialty, identify_outliers
+
+# Physician Employment vs IC Economics (Ch. 10g)
+export MGMA_BENCHMARKS_2024,
+       PhysEmploymentProfile, W2EmploymentModel, IndependentContractorModel, EmploymentComparison,
+       total_w2_cost, total_ic_cost, compare_employment,
+       mgma_benchmark_salary, physician_roi, staffing_gap_analysis, compensation_design
 
 # Budgeting (Ch. 10b)
 export operating_budget, flex_budget, volume_variance, price_variance,
