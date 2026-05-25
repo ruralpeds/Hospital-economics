@@ -514,4 +514,14 @@ export CMS_RULE_REGISTRY, FedRegisterDocument, RateExtraction,
        extract_rates_from_text, generate_constants_update, validate_rate_extraction
 
 >>>>>>> origin/claude/p2-all-gaps-2026-04-28
+
+# ─── Charity Care / Financial Assistance Policy ─────────────────────────────
+include("charity_care.jl")
+
+export FPLTier, FinancialAssistancePolicy, CommunityProfile, CharityCareResult,
+       default_fap, calculate_charity_volume, optimize_fap,
+       community_benefit_report, bad_debt_vs_charity,
+       presumptive_eligibility_model, tax_exemption_analysis,
+       fap_compliance_check
+
 end  # module FinanceEngine
