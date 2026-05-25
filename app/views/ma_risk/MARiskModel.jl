@@ -4,6 +4,13 @@
 Stipple reactive model for calculating member-level RAF scores and cohort risk analysis.
 """
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
+    # ──────── Export ────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     # ──────── Inputs ────────
     @in upload_csv::String = ""
     @in annual_capitation::Float64 = 10_000.0

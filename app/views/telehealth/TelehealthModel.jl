@@ -1,5 +1,8 @@
 """Telehealth & RPM Financial Valuation Stipple model"""
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
     @in selected_service::String = "99456"
     @in patient_volume::Int = 100
     @in enrolled_rpm_patients::Int = 200

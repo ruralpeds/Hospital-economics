@@ -1,5 +1,8 @@
 """Medicaid DSH & Supplemental Payment Analyzer Stipple model"""
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
     @in hospital_name::String = "Sample Hospital"
     @in medicare_cases::Int = 1000
     @in medicaid_cases::Int = 1500

@@ -6,6 +6,13 @@ using Stipple, StippleUI, StipplePlotly
 using Dates
 
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
+    # ──────── Export ────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @in alert_severity::String = "all"  # "all", "high", "critical"
     @in auto_refresh::Bool = true
     @in refresh_interval::Int = 60  # seconds

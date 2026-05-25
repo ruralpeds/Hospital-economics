@@ -4,6 +4,13 @@
 Stipple reactive model for ranking capital projects by NPV, IRR, profitability index.
 """
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
+    # ──────── Export ────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     # ──────── Inputs ────────
     @in projects_json::String = "[]"
     @in wacc_input::Float64 = 0.08

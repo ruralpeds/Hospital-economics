@@ -13,6 +13,11 @@ using ...HospitalFinanceToolbox: stratify_patient_risk, RiskStratificationResult
 @app begin
     # ── UI State ────────────────────────────────────────────────────────────
     @in left_drawer_open::Bool = true
+
+    # ── Export ──────────────────────────────────────────────────────────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @in cohort_filter::String = "all"  # "all", "cardiology", "orthopedics", etc.
     @in risk_threshold::Float64 = 0.33  # Filter patients above this risk level
     @in sort_by::String = "risk"  # "risk", "cost", "readmission"

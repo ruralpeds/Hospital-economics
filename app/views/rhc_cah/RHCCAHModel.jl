@@ -1,5 +1,12 @@
 """RHC/CAH comparison Stipple model (A-08) - abbreviated for speed"""
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
+    # ──────── Export ────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @in rhc_visits_json::String = "{}"
     @in ar_volumes_json::String = "{}"
     @in non_ar_volumes_json::String = "{}"

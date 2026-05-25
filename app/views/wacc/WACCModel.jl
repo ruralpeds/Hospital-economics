@@ -5,6 +5,13 @@ Stipple reactive model for calculating weighted average cost of capital
 tailored for rural nonprofit hospitals.
 """
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
+    # ──────── Export ────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     # ──────── Inputs ────────
     @in ccn::String = ""
     @in fiscal_year::Int = 2023

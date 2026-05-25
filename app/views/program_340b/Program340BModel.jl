@@ -1,5 +1,8 @@
 """340B Drug Program Savings Estimator Stipple model"""
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
     @in load_sample_btn::Bool = false
     @in upload_csv::String = ""
     @in managed_care_cap::Float64 = 0.15

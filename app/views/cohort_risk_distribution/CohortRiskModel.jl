@@ -6,6 +6,13 @@ using Stipple, StippleUI, StipplePlotly
 using Dates, Statistics
 
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
+    # ──────── Export ────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @in cohort_name::String = "all"
     @in aggregation_level::String = "overall"  # "overall", "service_line", "age_group"
     @in recalculate::Bool = false

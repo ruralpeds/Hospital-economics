@@ -1,120 +1,89 @@
 """
 Anomaly Alert Board Dashboard View
 """
-module AnomalyAlertBoard
+function ui_anomaly_alerts(model)
+    app_layout(model, "Anomaly Alerts", [
+        row(class="q-mb-md items-center", [
+            cell(class="col", [
+                h5("Real-Time Anomaly Alert Board", class="q-mb-none"),
+                p("Monitor readmission risk, cost anomalies, and complications in real time",
+                  class="text-grey-7"),
+            ]),
+            cell(class="col-auto", [
+                textfield(:alert_severity, label="Severity Filter", placeholder="all",
+                          filled=true, dense=true, class="q-mr-sm"),
+            ]),
+            cell(class="col-auto", [
+                btn("Refresh", icon="refresh", color="primary",
+                    @click(:recalculate)),
+            ]),
+        ]),
 
-using Genie
-using Stipple, StippleUI
-include("AnomalyAlertModel.jl")
+        # ── KPI Cards ──────────────────────────────────────────────────
+        row(class="q-mb-lg q-gutter-md", [
+            cell(class="col-md-3 col-sm-6 col-xs-12", [
+                card([card_section(class="text-center bg-red-1", [
+                    p("Critical Alerts", class="text-overline q-mb-none"),
+                    h4("{{ critical_count }}", class="q-mb-none text-red text-weight-bold"),
+                ])])
+            ]),
+            cell(class="col-md-3 col-sm-6 col-xs-12", [
+                card([card_section(class="text-center bg-orange-1", [
+                    p("High Alerts", class="text-overline q-mb-none"),
+                    h4("{{ high_count }}", class="q-mb-none text-orange text-weight-bold"),
+                ])])
+            ]),
+            cell(class="col-md-3 col-sm-6 col-xs-12", [
+                card([card_section(class="text-center bg-yellow-1", [
+                    p("Medium Alerts", class="text-overline q-mb-none"),
+                    h4("{{ medium_count }}", class="q-mb-none text-weight-bold"),
+                ])])
+            ]),
+            cell(class="col-md-3 col-sm-6 col-xs-12", [
+                card([card_section(class="text-center bg-blue-1", [
+                    p("Unacknowledged", class="text-overline q-mb-none"),
+                    h4("{{ unacknowledged_count }}", class="q-mb-none text-blue text-weight-bold"),
+                ])])
+            ]),
+        ]),
 
-@reactive model = AnomalyAlertModel.Reactive()
+        # ── Charts ─────────────────────────────────────────────────────
+        row(class="q-mb-lg q-gutter-md", [
+            cell(class="col-lg-6 col-xs-12", [
+                card([card_section([
+                    plot(:alert_timeline, layout=:timeline_layout, config="{ responsive: true }")
+                ])])
+            ]),
+            cell(class="col-lg-6 col-xs-12", [
+                card([card_section([
+                    plot(:alert_categories, layout=:categories_layout, config="{ responsive: true }")
+                ])])
+            ]),
+        ]),
 
-html(:div, class="q-pa-md") do
-    [
-        html(:h1, "Real-Time Anomaly Alert Board"),
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col-auto") do
-                    html(:input, "", type="text", placeholder="all", @bind("model.alert_severity"),
-                        class="q-field")
-                end,
-                html(:div, class="col-auto") do
-                    html(:button, "Refresh", @click("model.recalculate = true"),
-                        class="q-btn q-btn-primary")
-                end
-            ]
-        end,
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col-md-3") do
-                    html(:div, class="q-pa-md bg-red-1 rounded-borders") do
-                        [
-                            html(:div, class="text-h6 text-red text-weight-bold", "{{ critical_count }}"),
-                            html(:div, class="text-caption", "Critical Alerts")
-                        ]
-                    end
-                end,
-                html(:div, class="col-md-3") do
-                    html(:div, class="q-pa-md bg-orange-1 rounded-borders") do
-                        [
-                            html(:div, class="text-h6 text-orange text-weight-bold", "{{ high_count }}"),
-                            html(:div, class="text-caption", "High Alerts")
-                        ]
-                    end
-                end,
-                html(:div, class="col-md-3") do
-                    html(:div, class="q-pa-md bg-yellow-1 rounded-borders") do
-                        [
-                            html(:div, class="text-h6 text-weight-bold", "{{ medium_count }}"),
-                            html(:div, class="text-caption", "Medium Alerts")
-                        ]
-                    end
-                end,
-                html(:div, class="col-md-3") do
-                    html(:div, class="q-pa-md bg-blue-1 rounded-borders") do
-                        [
-                            html(:div, class="text-h6 text-blue text-weight-bold", "{{ unacknowledged_count }}"),
-                            html(:div, class="text-caption", "Unacknowledged")
-                        ]
-                    end
-                end
-            ]
-        end,
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col-lg-6") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        plot(:alert_timeline, layout=:timeline_layout)
-                    end
-                end,
-                html(:div, class="col-lg-6") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        plot(:alert_categories, layout=:categories_layout)
-                    end
-                end
-            ]
-        end,
-        html(:div, class="row q-col-gutter-md") do
-            [
-                html(:div, class="col-12") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        [
-                            html(:h5, "Active Alerts"),
-                            html(:table, class="full-width") do
-                                [
-                                    html(:thead) do
-                                        html(:tr) do
-                                            [
-                                                html(:th, "Patient"),
-                                                html(:th, "Type"),
-                                                html(:th, "Severity"),
-                                                html(:th, "Time"),
-                                                html(:th, "Description"),
-                                            ]
-                                        end
-                                    end,
-                                    html(:tbody) do
-                                        [
-                                            html(:tr) do
-                                                [
-                                                    html(:td, "{{ alert.patient_id }}"),
-                                                    html(:td, "{{ alert.alert_type }}"),
-                                                    html(:td, "{{ alert.severity }}"),
-                                                    html(:td, "{{ alert.timestamp }}"),
-                                                    html(:td, "{{ alert.description }}"),
-                                                ]
-                                            end
-                                            for alert in active_alerts
-                                        ]
-                                    end
-                                ]
-                            end
-                        ]
-                    end
-                end
-            ]
-        end
-    ]
-end
+        # ── Active Alerts Table ────────────────────────────────────────
+        row(class="q-mb-lg", [
+            cell(class="col-12", [
+                card([card_section([
+                    h6("Active Alerts", class="q-mb-md"),
+                    table(
+                        :active_alerts,
+                        table_columns=[
+                            (name="patient_id", label="Patient", field="patient_id", align="left"),
+                            (name="alert_type", label="Type", field="alert_type", align="left"),
+                            (name="severity", label="Severity", field="severity", align="center"),
+                            (name="timestamp", label="Time", field="timestamp", align="left"),
+                            (name="description", label="Description", field="description", align="left"),
+                        ],
+                        flat=true,
+                        bordered=true,
+                        dense=true,
+                        pagination=attr(rowsPerPage=25)
+                    )
+                ])])
+            ]),
+        ]),
 
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
+    ])
 end

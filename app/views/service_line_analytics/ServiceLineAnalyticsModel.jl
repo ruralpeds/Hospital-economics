@@ -8,6 +8,11 @@ using Dates, Statistics
 @app begin
     # ── UI State ────────────────────────────────────────────────────────────
     @in left_drawer_open::Bool = true
+
+    # ── Export ──────────────────────────────────────────────────────────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     @in selected_service_line::String = "all"  # "all" or specific service line
     @in comparison_type::String = "cost_vs_risk"  # "cost_vs_risk", "quality", "volume"
     @in date_range_start::String = "2024-01-01"

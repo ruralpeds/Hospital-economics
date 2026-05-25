@@ -4,6 +4,13 @@
 Stipple reactive model for fitting priors, sampling posteriors, and comparing scenarios.
 """
 @app begin
+    # ──────── UI state ────────
+    @in left_drawer_open::Bool = true
+
+    # ──────── Export ────────
+    @in do_csv::Bool = false
+    @in do_xlsx::Bool = false
+
     # ──────── Inputs ────────
     @in scenario_name::String = "Test VBC Scenario"
     @in scenario_type::String = "aco"

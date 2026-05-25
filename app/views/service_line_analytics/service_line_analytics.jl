@@ -1,227 +1,151 @@
 """
-Service Line Analytics Dashboard View - HTML/Quasar Interface
+Service Line Analytics Dashboard View
 """
+function ui_service_line_analytics(model)
+    app_layout(model, "Service Lines", [
+        row(class="q-mb-md items-center", [
+            cell(class="col", [
+                h5("Service Line Analytics Dashboard", class="q-mb-none"),
+                p("Analyze cost, risk, quality, and volume across hospital service lines",
+                  class="text-grey-7"),
+            ]),
+            cell(class="col-auto", [
+                btn("Recalculate", icon="refresh", color="primary",
+                    @click("recalculate = true")),
+            ]),
+        ]),
 
-module ServiceLineAnalyticsDashboard
+        # ── Controls ───────────────────────────────────────────────────
+        row(class="q-mb-lg q-gutter-md", [
+            cell(class="col-md-4 col-sm-6 col-xs-12", [
+                textfield(:selected_service_line, label="Select Service Line", placeholder="all",
+                          filled=true, dense=true, class="q-mb-sm"),
+            ]),
+            cell(class="col-md-4 col-sm-6 col-xs-12", [
+                textfield(:comparison_type, label="Comparison Type", placeholder="cost_vs_risk",
+                          filled=true, dense=true, class="q-mb-sm"),
+            ]),
+        ]),
 
-using Genie
-using Stipple, StippleUI
-include("ServiceLineAnalyticsModel.jl")
+        # ── Selected Service Line Summary ──────────────────────────────
+        row(class="q-mb-lg", [
+            cell(class="col-12", [
+                card([card_section(class="bg-blue-1", [
+                    h6("{{ selected_service_name }}", class="q-mb-sm"),
+                    p("Cases: {{ case_volume }} | Avg Cost: \${{ Math.round(avg_cost) }} | Avg LOS: {{ avg_los.toFixed(1) }} days | Quality: {{ (quality_score * 100).toFixed(0) }}%",
+                      class="text-caption text-grey-8"),
+                ])])
+            ]),
+        ]),
 
-# Create model instance
-@reactive model = ServiceLineAnalyticsModel.Reactive(
-    left_drawer_open = true,
-    selected_service_line = "all",
-    comparison_type = "cost_vs_risk"
-)
+        # ── Key Metrics Cards ──────────────────────────────────────────
+        row(class="q-mb-lg q-gutter-md", [
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card([card_section(class="text-center", [
+                    p("Case Volume", class="text-overline q-mb-none"),
+                    h5("{{ case_volume }}", class="q-mb-none"),
+                ])])
+            ]),
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card([card_section(class="text-center", [
+                    p("Avg Cost", class="text-overline q-mb-none"),
+                    h5("\${{ Math.round(avg_cost) }}", class="q-mb-none"),
+                ])])
+            ]),
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card([card_section(class="text-center", [
+                    p("Avg LOS", class="text-overline q-mb-none"),
+                    h5("{{ avg_los.toFixed(1) }} days", class="q-mb-none"),
+                ])])
+            ]),
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card([card_section(class="text-center", [
+                    p("Quality Score", class="text-overline q-mb-none"),
+                    h5("{{ (quality_score * 100).toFixed(0) }}%", class="q-mb-none"),
+                ])])
+            ]),
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card([card_section(class="text-center", [
+                    p("Readmission Rate", class="text-overline q-mb-none"),
+                    h5("{{ (readmission_rate * 100).toFixed(0) }}%", class="q-mb-none"),
+                ])])
+            ]),
+            cell(class="col-md-2 col-sm-4 col-xs-6", [
+                card([card_section(class="text-center", [
+                    p("Avg Risk", class="text-overline q-mb-none"),
+                    h5("{{ (avg_risk_score * 100).toFixed(0) }}%", class="q-mb-none"),
+                ])])
+            ]),
+        ]),
 
-# ── HTML View ───────────────────────────────────────────────────────────────
-html(:div, class="q-pa-md") do
-    [
-        # ── Header ──────────────────────────────────────────────────────────
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col") do
-                    html(:h1, class="q-my-none", "Service Line Analytics Dashboard")
-                end
-            ]
-        end,
+        # ── Charts ─────────────────────────────────────────────────────
+        row(class="q-mb-lg q-gutter-md", [
+            cell(class="col-lg-6 col-xs-12", [
+                card([card_section([
+                    plot(:cost_vs_risk_scatter, layout=:cost_vs_risk_layout, config="{ responsive: true }")
+                ])])
+            ]),
+            cell(class="col-lg-6 col-xs-12", [
+                card([card_section([
+                    plot(:comparison_radar, layout=:comparison_layout, config="{ responsive: true }")
+                ])])
+            ]),
+        ]),
 
-        # ── Controls Section ────────────────────────────────────────────────
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col-md-4 col-sm-6") do
-                    html(:div,
-                        html(:label, "Select Service Line", class="text-weight-bold"),
-                        html(:input, "", type="text", placeholder="all", @bind("selected_service_line"),
-                            class="q-field q-mt-sm full-width"),
-                    class="q-mb-md"
+        # ── Comparison Table ───────────────────────────────────────────
+        row(class="q-mb-lg", [
+            cell(class="col-12", [
+                card([card_section([
+                    h6("Service Line Comparison", class="q-mb-md"),
+                    table(
+                        :comparison_table,
+                        table_columns=[
+                            (name="service_line", label="Service Line", field="service_line", align="left"),
+                            (name="case_volume", label="Cases", field="case_volume", align="center"),
+                            (name="avg_cost", label="Avg Cost", field="avg_cost", align="right"),
+                            (name="avg_los", label="Avg LOS", field="avg_los", align="center"),
+                            (name="quality_score", label="Quality", field="quality_score", align="center"),
+                            (name="readmission_rate", label="Readmission", field="readmission_rate", align="center"),
+                            (name="avg_risk_score", label="Avg Risk", field="avg_risk_score", align="center"),
+                        ],
+                        flat=true,
+                        bordered=true,
+                        dense=true,
                     )
-                end,
-                html(:div, class="col-md-4 col-sm-6") do
-                    html(:div,
-                        html(:label, "Comparison Type", class="text-weight-bold"),
-                        html(:input, "", type="text", placeholder="cost_vs_risk", @bind("comparison_type"),
-                            class="q-field q-mt-sm full-width"),
-                    class="q-mb-md"
+                ])])
+            ]),
+        ]),
+
+        # ── Cost Efficiency & Risk Factors ─────────────────────────────
+        row(class="q-mb-lg q-gutter-md", [
+            cell(class="col-md-6 col-xs-12", [
+                card([card_section([
+                    h6("Cost Efficiency", class="q-mb-md"),
+                    p("Efficiency Score: \${{ Math.round(cost_efficiency.efficiency_score || 0) }} per quality point",
+                      class="text-body2"),
+                    p("Rank: {{ cost_efficiency.rank || 0 }} / 6",
+                      class="text-body2"),
+                    p("Percentile: {{ Math.round(cost_efficiency.percentile || 0) }}th",
+                      class="text-body2"),
+                ])])
+            ]),
+            cell(class="col-md-6 col-xs-12", [
+                card([card_section([
+                    h6("Top Risk Factors", class="q-mb-md"),
+                    table(
+                        :top_risk_factors,
+                        table_columns=[
+                            (name="factor", label="Factor", field="factor", align="left"),
+                            (name="count", label="Patients", field="count", align="right"),
+                        ],
+                        flat=true,
+                        bordered=true,
+                        dense=true,
                     )
-                end,
-                html(:div, class="col-md-4 col-sm-12") do
-                    html(:button, "Recalculate", @click("recalculate = true"),
-                        class="q-btn q-btn-primary")
-                end
-            ]
-        end,
+                ])])
+            ]),
+        ]),
 
-        # ── Selected Service Line Summary ───────────────────────────────────
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col-12") do
-                    html(:div, class="q-pa-md bg-blue-1 rounded-borders") do
-                        [
-                            html(:h5, class="q-my-none q-mb-sm", "{{ selected_service_name }}"),
-                            html(:div, class="row q-col-gutter-md") do
-                                [
-                                    html(:div, class="col-auto") do
-                                        html(:span, class="text-caption text-grey-8", "Cases: {{ case_volume }}")
-                                    end,
-                                    html(:div, class="col-auto") do
-                                        html(:span, class="text-caption text-grey-8", "Avg Cost: \${{ (avg_cost) |> (x -> round(x; digits=0)) |> Int }}")
-                                    end,
-                                    html(:div, class="col-auto") do
-                                        html(:span, class="text-caption text-grey-8", "Avg LOS: {{ (avg_los) |> (x -> round(x; digits=1)) }} days")
-                                    end,
-                                    html(:div, class="col-auto") do
-                                        html(:span, class="text-caption text-grey-8", "Quality: {{ (quality_score * 100) |> (x -> round(x; digits=0)) }}%")
-                                    end
-                                ]
-                            end
-                        ]
-                    end
-                end
-            ]
-        end,
-
-        # ── Key Metrics Cards ───────────────────────────────────────────────
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col-12") do
-                    html(:div, class="row q-col-gutter-md") do
-                        # Dynamically render metric cards
-                        [html(:div, class="col-md-2 col-sm-6") do
-                            html(:div, class="q-pa-md rounded-borders", style="background: rgba(33,150,243,0.1);") do
-                                [
-                                    html(:div, class="text-caption text-grey-8", "{{ metric.label }}"),
-                                    html(:div, class="text-h6 q-mt-sm q-mb-none", "{{ metric.value }}")
-                                ]
-                            end
-                        end for metric in metrics_data]
-                    end
-                end
-            ]
-        end,
-
-        # ── Charts Section ──────────────────────────────────────────────────
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                # Cost vs Risk Scatter
-                html(:div, class="col-lg-6 col-md-12") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        plot(:cost_vs_risk_scatter, layout=:cost_vs_risk_layout)
-                    end
-                end,
-
-                # Comparison Radar Chart
-                html(:div, class="col-lg-6 col-md-12") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        plot(:comparison_radar, layout=:comparison_layout)
-                    end
-                end
-            ]
-        end,
-
-        # ── Service Line Comparison Table ───────────────────────────────────
-        html(:div, class="row q-col-gutter-md q-mb-md") do
-            [
-                html(:div, class="col-12") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        [
-                            html(:h5, class="q-my-none q-mb-md", "Service Line Comparison"),
-                            html(:table, class="full-width") do
-                                [
-                                    html(:thead, style="border-bottom: 2px solid #ddd;") do
-                                        html(:tr, style="background-color: #f5f5f5;") do
-                                            [
-                                                html(:th, class="text-left q-pa-md", "Service Line"),
-                                                html(:th, class="text-center q-pa-md", "Cases"),
-                                                html(:th, class="text-right q-pa-md", "Avg Cost"),
-                                                html(:th, class="text-center q-pa-md", "Avg LOS"),
-                                                html(:th, class="text-center q-pa-md", "Quality"),
-                                                html(:th, class="text-center q-pa-md", "Readmission"),
-                                                html(:th, class="text-center q-pa-md", "Avg Risk"),
-                                            ]
-                                        end
-                                    end,
-                                    html(:tbody) do
-                                        [
-                                            html(:tr, style="border-bottom: 1px solid #eee;") do
-                                                [
-                                                    html(:td, class="q-pa-md text-left", "{{ row.service_line }}"),
-                                                    html(:td, class="q-pa-md text-center", "{{ row.case_volume }}"),
-                                                    html(:td, class="q-pa-md text-right", "\${{ (row.avg_cost) |> (x -> round(x; digits=0)) |> Int }}"),
-                                                    html(:td, class="q-pa-md text-center", "{{ (row.avg_los) |> (x -> round(x; digits=1)) }}"),
-                                                    html(:td, class="q-pa-md text-center", "{{ (row.quality_score * 100) |> (x -> round(x; digits=0)) }}%"),
-                                                    html(:td, class="q-pa-md text-center", "{{ (row.readmission_rate * 100) |> (x -> round(x; digits=0)) }}%"),
-                                                    html(:td, class="q-pa-md text-center", "{{ (row.avg_risk_score * 100) |> (x -> round(x; digits=0)) }}%"),
-                                                ]
-                                            end
-                                        ]
-                                    end
-                                ]
-                            end |> (tbl -> [tbl for _ in comparison_table])
-                        ]
-                    end
-                end
-            ]
-        end,
-
-        # ── Cost Efficiency & Risk Factors ──────────────────────────────────
-        html(:div, class="row q-col-gutter-md") do
-            [
-                html(:div, class="col-md-6 col-sm-12") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        [
-                            html(:h5, class="q-my-none q-mb-md", "Cost Efficiency"),
-                            html(:div, class="q-gutter-md") do
-                                [
-                                    html(:div, class="row items-center") do
-                                        [
-                                            html(:div, class="col text-grey-8", "Efficiency Score:"),
-                                            html(:div, class="col-auto text-weight-bold",
-                                                "\${{ (cost_efficiency['efficiency_score']) |> (x -> round(x; digits=0)) |> Int }} per quality point")
-                                        ]
-                                    end,
-                                    html(:div, class="row items-center") do
-                                        [
-                                            html(:div, class="col text-grey-8", "Rank:"),
-                                            html(:div, class="col-auto text-weight-bold",
-                                                "{{ cost_efficiency['rank'] }} / 6")
-                                        ]
-                                    end,
-                                    html(:div, class="row items-center") do
-                                        [
-                                            html(:div, class="col text-grey-8", "Percentile:"),
-                                            html(:div, class="col-auto text-weight-bold",
-                                                "{{ (cost_efficiency['percentile']) |> (x -> round(x; digits=0)) }}th")
-                                        ]
-                                    end
-                                ]
-                            end
-                        ]
-                    end
-                end,
-
-                html(:div, class="col-md-6 col-sm-12") do
-                    html(:div, class="q-pa-md bg-white rounded-borders") do
-                        [
-                            html(:h5, class="q-my-none q-mb-md", "Top Risk Factors"),
-                            html(:div, class="q-gutter-sm") do
-                                [
-                                    html(:div, class="row items-center") do
-                                        [
-                                            html(:div, class="col text-grey-8", "{{ factor['factor'] }}:"),
-                                            html(:div, class="col-auto text-weight-bold", "{{ factor['count'] }} patients")
-                                        ]
-                                    end
-                                    for factor in top_risk_factors
-                                ]
-                            end
-                        ]
-                    end
-                end
-            ]
-        end
-    ]
+        export_bar(csv_field=:do_csv, xlsx_field=:do_xlsx),
+    ])
 end
-
-end # module
