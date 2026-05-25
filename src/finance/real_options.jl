@@ -1,3 +1,5 @@
+using Distributions
+
 # Real Options Valuation — Black-Scholes-Merton
 #
 # Values strategic flexibility (option to expand, defer, abandon) using the

@@ -1,3 +1,5 @@
+using Statistics
+
 # Value-at-Risk (VaR) and Conditional VaR (CVaR)
 #
 # Historical simulation approach: uses empirical return distribution to estimate

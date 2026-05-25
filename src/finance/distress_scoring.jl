@@ -1,3 +1,5 @@
+using Statistics
+
 # Altman Z'' Score — Modified for Services/Healthcare
 #
 # The Altman Z'' model (1993 revision) removes the sales/total-assets ratio
@@ -16,6 +18,7 @@ Input data for the Altman Z'' distress scoring model. All values in dollars.
     ebit::Float64
     book_equity::Float64
     total_liabilities::Float64
+    revenue::Float64 = 0.0
 end
 
 """

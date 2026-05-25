@@ -1,3 +1,5 @@
+using Statistics
+
 # Physician Compensation Modeling
 #
 # Evaluates physician compensation relative to wRVU productivity, specialty

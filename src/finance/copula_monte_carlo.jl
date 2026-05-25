@@ -1,3 +1,7 @@
+using LinearAlgebra
+using Random
+using Statistics
+
 # Gaussian Copula Monte Carlo Simulation
 #
 # Generates correlated random samples using a Gaussian copula:
