@@ -16,7 +16,6 @@ Input data for the Altman Z'' distress scoring model. All values in dollars.
     ebit::Float64
     book_equity::Float64
     total_liabilities::Float64
-    revenue::Float64
 end
 
 """
@@ -117,15 +116,12 @@ function estimate_distress_timeline(z_scores::Vector{Float64}, years::Vector{Flo
     projected_z_1yr = slope * (years[end] + 1.0) + intercept
 
     distress_threshold = 1.1
-    years_to_distress = if slope >= 0.0
-        Inf  # not declining
+    years_to_distress = if current_z < distress_threshold
+        0.0  # already in distress
+    elseif slope >= 0.0
+        Inf  # not declining toward distress
     else
-        gap = current_z - distress_threshold
-        if gap <= 0.0
-            0.0  # already in distress
-        else
-            gap / abs(slope)
-        end
+        (current_z - distress_threshold) / abs(slope)
     end
 
     return (

@@ -102,6 +102,9 @@ function calculate_lbo(input::LBOInput)::LBOResult
     0.0 < input.equity_pct <= 1.0 || error("equity_pct must be in (0, 1]")
     input.hold_years > 0 || error("hold_years must be positive")
     !isempty(input.debt_terms) || error("at least one debt tranche required")
+    0.0 <= input.cash_sweep_pct <= 1.0 || error("cash_sweep_pct must be in [0, 1]")
+    0.0 <= input.tax_rate <= 1.0 || error("tax_rate must be in [0, 1]")
+    input.exit_multiple > 0.0 || error("exit_multiple must be positive")
 
     # --- Sources & Uses ---
     equity = input.enterprise_value * input.equity_pct
@@ -129,6 +132,13 @@ function calculate_lbo(input::LBOInput)::LBOResult
         ebitda = current_revenue * input.ebitda_margin
         depreciation = current_revenue * input.capex_pct_revenue  # simplified
         capex = current_revenue * input.capex_pct_revenue
+
+        # Enforce maturity: balloon payment on expired tranches
+        for i in 1:n_tranches
+            if yr > input.debt_terms[i].maturity && tranche_balances[i] > 0.0
+                tranche_balances[i] = 0.0
+            end
+        end
 
         # Interest expense across tranches
         interest = sum(tranche_balances[i] * input.debt_terms[i].rate for i in 1:n_tranches)

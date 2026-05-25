@@ -49,24 +49,10 @@ end
 """
     _standard_normal_cdf(x::Float64) -> Float64
 
-Rational approximation of the standard normal CDF (Abramowitz & Stegun 26.2.17).
-Maximum error < 7.5e-8.
+Standard normal CDF using the Distributions.jl Normal distribution.
 """
 function _standard_normal_cdf(x::Float64)::Float64
-    # Constants for the rational approximation
-    a1 = 0.254829592
-    a2 = -0.284496736
-    a3 = 1.421413741
-    a4 = -1.453152027
-    a5 = 1.061405429
-    p = 0.3275911
-
-    sign = x < 0.0 ? -1.0 : 1.0
-    x_abs = abs(x)
-    t = 1.0 / (1.0 + p * x_abs)
-    y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x_abs * x_abs / 2.0)
-
-    return 0.5 * (1.0 + sign * y)
+    return cdf(Normal(0.0, 1.0), x)
 end
 
 """
@@ -89,6 +75,9 @@ d2 = d1 - σ√T
 
 Call = S * e^(-qT) * N(d1) - K * e^(-rT) * N(d2)
 Put  = K * e^(-rT) * N(-d2) - S * e^(-qT) * N(-d1)
+
+Note: The returned Greeks (delta, gamma, vega, theta) correspond to the **call** option,
+following standard BSM convention.
 """
 function calculate_real_option(input::RealOptionInput)::RealOptionResult
     input.underlying_value > 0.0 || error("underlying_value must be positive")
@@ -121,8 +110,8 @@ function calculate_real_option(input::RealOptionInput)::RealOptionResult
     call_value = S * disc_q * nd1 - K * disc_r * nd2
     put_value = K * disc_r * n_neg_d2 - S * disc_q * n_neg_d1
 
-    # Greeks
-    delta = disc_q * nd1  # call delta
+    # Greeks (call-side; put delta = delta - e^(-qT), put theta differs by +rKe^(-rT))
+    delta = disc_q * nd1
     gamma = disc_q * pdf_d1 / (S * σ_sqrt_t)
     vega = S * disc_q * pdf_d1 * sqrt_t / 100.0  # per 1% vol change
     theta = (-(S * disc_q * pdf_d1 * σ / (2.0 * sqrt_t)) -

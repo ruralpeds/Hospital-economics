@@ -56,6 +56,24 @@ using Test
     # V3.1 Optimization module tests
     include("test_capital_scoring.jl")
 
+    # Ported from cah-modeling — CMS Quality Programs
+    include("test_cms_programs.jl")
+
+    # Ported from cah-modeling — SPC Control Charts
+    include("test_spc.jl")
+
+    # Ported from cah-modeling — Advanced Finance
+    include("test_advanced_finance.jl")
+
+    # Ported from cah-modeling — Auth & Compliance
+    include("test_auth_compliance.jl")
+
+    # Ported from cah-modeling — Validation & Scientific Modeling
+    include("test_validation_modeling.jl")
+
+    # Ported from cah-modeling — Collaboration
+    include("test_collaboration.jl")
+
     # Phase 4 — coverage gap tests
     include("test_reimbursement_functions.jl")
 

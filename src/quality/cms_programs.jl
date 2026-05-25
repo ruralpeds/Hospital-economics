@@ -85,19 +85,21 @@ end
     calculate_vbp(clinical::Vector{VBPMeasure}, safety::Vector{VBPMeasure},
                   person_community::Vector{VBPMeasure}, efficiency::Vector{VBPMeasure},
                   base_operating_drg_amount::Float64;
-                  exchange_function_slope::Float64=0.005,
                   withhold_pct::Float64=0.02) -> VBPResult
 
 Compute CMS VBP payment adjustment.
 
 Domain weights: Clinical 0.25, Safety 0.25, Person/Community 0.25, Efficiency 0.25.
-TPS = weighted sum of domain scores. Payment multiplier =
-1 - withhold_pct + (TPS/100) * exchange_function_slope.
+TPS = weighted sum of domain scores. CMS withholds `withhold_pct` (default 2%) of
+base DRG payments and redistributes based on TPS relative to the median (~50):
+
+    multiplier = 1.0 - withhold_pct + (TPS / 50.0) * withhold_pct
+
+At TPS=50 → multiplier=1.0 (break-even), TPS=100 → 1.02 (full bonus), TPS=0 → 0.98 (full penalty).
 """
 function calculate_vbp(clinical::Vector{VBPMeasure}, safety::Vector{VBPMeasure},
                        person_community::Vector{VBPMeasure}, efficiency::Vector{VBPMeasure},
                        base_operating_drg_amount::Float64;
-                       exchange_function_slope::Float64=0.005,
                        withhold_pct::Float64=0.02)::VBPResult
 
     clinical_score = _domain_score(clinical)
@@ -116,9 +118,9 @@ function calculate_vbp(clinical::Vector{VBPMeasure}, safety::Vector{VBPMeasure},
     weights = [0.25, 0.25, 0.25, 0.25]
     tps = sum(scores .* weights)
 
-    # Payment multiplier: withhold is returned via the exchange function
-    # multiplier = 1 - withhold + (TPS/100) * exchange_slope
-    multiplier = 1.0 - withhold_pct + (tps / 100.0) * exchange_function_slope
+    # Payment multiplier: CMS withholds withhold_pct and redistributes based on TPS
+    # relative to the median (~50). At TPS=50 break-even, TPS=100 full bonus, TPS=0 full penalty.
+    multiplier = 1.0 - withhold_pct + (tps / 50.0) * withhold_pct
     net_adj = (multiplier - 1.0) * 100.0  # as percentage
 
     return VBPResult(
@@ -199,14 +201,30 @@ function calculate_hacrp(measures::Vector{HACRPMeasure};
     isempty(measures) && return HACRPResult(
         total_score=0.0, percentile=0.0, penalty_applies=false, penalty_pct=0.0)
 
-    # Winsorize all z-scores
-    winsorized = [_winsorize_z(m.z_score) for m in measures]
+    # Winsorize all z-scores and separate into PSI-90 vs HAI measures
+    psi_scores = Float64[]
+    hai_scores = Float64[]
+    for m in measures
+        wz = _winsorize_z(m.z_score)
+        if startswith(m.measure_id, "PSI")
+            push!(psi_scores, wz)
+        else
+            push!(hai_scores, wz)
+        end
+    end
 
-    # Total score is the simple weighted average of winsorized z-scores.
-    # In the full CMS model, PSI-90 gets psi90_weight and HAI measures
-    # share hai_weight. Here we use equal weights across all measures for
-    # the simplified single-vector interface.
-    total_score = sum(winsorized) / length(winsorized)
+    # Weighted average: PSI-90 measures get psi90_weight, HAI measures get hai_weight
+    total_score = if !isempty(psi_scores) && !isempty(hai_scores)
+        psi_avg = sum(psi_scores) / length(psi_scores)
+        hai_avg = sum(hai_scores) / length(hai_scores)
+        (psi_avg * psi90_weight + hai_avg * hai_weight) / (psi90_weight + hai_weight)
+    elseif !isempty(psi_scores)
+        sum(psi_scores) / length(psi_scores)
+    elseif !isempty(hai_scores)
+        sum(hai_scores) / length(hai_scores)
+    else
+        0.0
+    end
 
     # Estimate percentile from z-score (linear approximation for simplicity)
     # Map z from [-3, 3] to [0, 100]
@@ -238,12 +256,14 @@ A single condition under HRRP evaluation.
 - `predicted::Float64`: predicted readmission count (model-based)
 - `expected::Float64`: expected readmission count (national average adjusted)
 - `dual_eligible_adj::Float64`: dual-eligible proportion adjustment factor (default 1.0)
+- `drg_payments::Float64`: DRG payments for this condition, used for payment-weighted averaging (default 1.0)
 """
 @kwdef struct HRRPCondition
     condition::Symbol
     predicted::Float64
     expected::Float64
     dual_eligible_adj::Float64 = 1.0
+    drg_payments::Float64 = 1.0
 end
 
 """
@@ -268,7 +288,7 @@ HRRP program calculation result.
 # Fields
 - `condition_results::Vector{HRRPConditionResult}`: per-condition ERR values
 - `payment_adjustment::Float64`: multiplicative payment factor (e.g. 0.98 = 2% penalty)
-- `penalty_pct::Float64`: penalty as a percentage (0.0 to -3.0)
+- `penalty_pct::Float64`: penalty as a decimal fraction (0.0 to -0.03)
 """
 @kwdef struct HRRPResult
     condition_results::Vector{HRRPConditionResult}
@@ -295,7 +315,8 @@ function calculate_hrrp(conditions::Vector{HRRPCondition},
     )
 
     results = HRRPConditionResult[]
-    total_excess = 0.0
+    weighted_excess = 0.0
+    total_payments = 0.0
 
     for c in conditions
         err = if c.expected > 0.0
@@ -305,15 +326,16 @@ function calculate_hrrp(conditions::Vector{HRRPCondition},
         end
         push!(results, HRRPConditionResult(condition=c.condition,
                                             excess_readmission_ratio=err))
-        total_excess += max(0.0, err - 1.0)
+        weighted_excess += max(0.0, err - 1.0) * c.drg_payments
+        total_payments += c.drg_payments
     end
 
-    # Average excess across conditions, capped at 3%
-    avg_excess = total_excess / length(conditions)
+    # Payment-weighted excess across conditions, capped at 3%
+    avg_excess = total_payments > 0.0 ? weighted_excess / total_payments : 0.0
     penalty = min(avg_excess, 0.03)
 
     payment_adj = 1.0 - penalty
-    penalty_pct = -penalty * 100.0
+    penalty_pct = -penalty  # decimal fraction (e.g. -0.03 for 3% penalty)
 
     return HRRPResult(
         condition_results=results,
@@ -371,7 +393,7 @@ is mapped to 1-5 stars using evenly spaced thresholds (0.2 intervals).
 """
 function calculate_star_ratings(measures::Vector{StarRatingsMeasure})::StarRatingsResult
     isempty(measures) && return StarRatingsResult(
-        overall_stars=1, group_scores=[], weighted_score=0.0)
+        overall_stars=1, group_scores=NamedTuple{(:group, :score, :weight), Tuple{String, Float64, Float64}}[], weighted_score=0.0)
 
     # Group measures by group name
     groups = Dict{String, Vector{StarRatingsMeasure}}()
@@ -400,9 +422,18 @@ function calculate_star_ratings(measures::Vector{StarRatingsMeasure})::StarRatin
 
     summary_score = total_weight > 0.0 ? weighted_sum / total_weight : 0.0
 
-    # Map summary score to 1-5 stars (rounded to nearest 0.5, then to integer)
-    rounded_half = round(summary_score * 10.0) / 10.0  # nearest 0.1
-    stars = clamp(round(Int, rounded_half * 5.0), 1, 5)
+    # Map summary score to 1-5 stars using explicit threshold bands
+    stars = if summary_score >= 0.8
+        5
+    elseif summary_score >= 0.6
+        4
+    elseif summary_score >= 0.4
+        3
+    elseif summary_score >= 0.2
+        2
+    else
+        1
+    end
 
     return StarRatingsResult(
         overall_stars=stars,
@@ -431,9 +462,9 @@ function star_ratings_sensitivity(measures::Vector{StarRatingsMeasure},
 
     result = Dict{String, Float64}()
     for gs in current.group_scores
-        # Proportional change needed per group (assuming uniform improvement)
+        # Per-group score change needed: gap/weight (since group contributes weight to overall)
         if gs.weight > 0.0
-            result[gs.group] = gap
+            result[gs.group] = gap / gs.weight
         else
             result[gs.group] = 0.0
         end
@@ -607,7 +638,13 @@ function calculate_hai(records::Vector{HAIRecord})::HAIResult
     for (itype, recs) in type_groups
         obs = sum(r.observed_events for r in recs)
         pred = sum(r.predicted_events for r in recs)
-        sir = pred > 0.0 ? obs / pred : 0.0
+        sir = if pred > 0.0
+            obs / pred
+        elseif obs > 0
+            Inf
+        else
+            0.0
+        end
         push!(type_results, HAITypeResult(
             infection_type=itype,
             sir=sir,
@@ -618,7 +655,13 @@ function calculate_hai(records::Vector{HAIRecord})::HAIResult
         total_predicted += pred
     end
 
-    composite = total_predicted > 0.0 ? total_observed / total_predicted : 0.0
+    composite = if total_predicted > 0.0
+        total_observed / total_predicted
+    elseif total_observed > 0
+        Inf
+    else
+        0.0
+    end
     compliance = composite <= 1.0
 
     return HAIResult(
@@ -637,10 +680,12 @@ end
 
 Combined waterfall of all CMS quality payment adjustments.
 
+All individual adjustments are expressed as decimal fractions (e.g. -0.01 = -1%).
+
 # Fields
-- `vbp_adjustment::Float64`: VBP net adjustment as decimal (e.g. -0.002)
-- `hacrp_penalty::Float64`: HACRP penalty as decimal (0.0 or -0.01)
-- `hrrp_penalty::Float64`: HRRP penalty as decimal (0.0 to -0.03)
+- `vbp_adjustment::Float64`: VBP net adjustment as decimal fraction (e.g. -0.002)
+- `hacrp_penalty::Float64`: HACRP penalty as decimal fraction (0.0 or -0.01)
+- `hrrp_penalty::Float64`: HRRP penalty as decimal fraction (0.0 to -0.03)
 - `net_impact_pct::Float64`: combined percentage impact
 - `net_impact_dollars::Float64`: dollar impact on base DRG payments
 """
@@ -665,9 +710,9 @@ function calculate_combined_payment_impact(vbp_result::VBPResult,
                                            hacrp_result::HACRPResult,
                                            hrrp_result::HRRPResult,
                                            base_drg_payments::Float64)::CombinedPaymentResult
-    vbp_adj = vbp_result.net_adjustment_pct / 100.0
-    hacrp_pen = hacrp_result.penalty_pct
-    hrrp_pen = (hrrp_result.payment_adjustment - 1.0)
+    vbp_adj = vbp_result.net_adjustment_pct / 100.0    # VBP net_adjustment_pct is percentage, convert to decimal
+    hacrp_pen = hacrp_result.penalty_pct               # already decimal fraction
+    hrrp_pen = hrrp_result.penalty_pct                  # already decimal fraction
 
     # Multiplicative waterfall: effective = base * (1 + vbp) * (1 + hacrp) * (1 + hrrp)
     combined_multiplier = (1.0 + vbp_adj) * (1.0 + hacrp_pen) * (1.0 + hrrp_pen)

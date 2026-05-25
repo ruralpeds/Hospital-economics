@@ -115,13 +115,13 @@ Classify the acceptability of a given RPN value.
 
 Returns:
 - `:acceptable` when rpn < threshold
-- `:needs_mitigation` when threshold <= rpn < 2*threshold
-- `:unacceptable` when rpn >= 2*threshold
+- `:needs_mitigation` when threshold <= rpn < high_threshold
+- `:unacceptable` when rpn >= high_threshold
 """
-function assess_risk_acceptability(rpn::Int; threshold::Int=100)
+function assess_risk_acceptability(rpn::Int; threshold::Int=50, high_threshold::Int=75)
     if rpn < threshold
         return :acceptable
-    elseif rpn < 2 * threshold
+    elseif rpn < high_threshold
         return :needs_mitigation
     else
         return :unacceptable
@@ -133,7 +133,7 @@ end
 
 Generate an FMEA summary report from a collection of failure modes.
 
-Computes high-risk count (modes with RPN >= 100), average and maximum RPN,
+Computes high-risk count (modes with unacceptable RPN), average and maximum RPN,
 and the overall risk-reduction percentage achieved by controls.
 """
 function generate_fmea_report(modes::Vector{FailureMode})
@@ -141,7 +141,7 @@ function generate_fmea_report(modes::Vector{FailureMode})
         return FMEAReport(modes, 0, 0.0, 0, 0.0)
     end
 
-    high_risk_count = count(m -> assess_risk_acceptability(m.rpn) != :acceptable, modes)
+    high_risk_count = count(m -> assess_risk_acceptability(m.rpn) == :unacceptable, modes)
     rpns = [m.rpn for m in modes]
     average_rpn = sum(rpns) / length(rpns)
     max_rpn = maximum(rpns)

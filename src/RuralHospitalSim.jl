@@ -123,6 +123,64 @@ include("analysis/network_economics.jl")
 include("simulation/scenarios.jl")
 
 # ═══════════════════════════════════════════════════════════════
+# ADVANCED FINANCE (ported from cah-modeling)
+# ═══════════════════════════════════════════════════════════════
+
+include("finance/distress_scoring.jl")
+include("finance/lbo_model.jl")
+include("finance/real_options.jl")
+include("finance/var_cvar.jl")
+include("finance/copula_monte_carlo.jl")
+include("finance/treasury_forecast.jl")
+include("finance/physician_compensation.jl")
+include("finance/revenue_variance.jl")
+include("finance/forecasting.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# CMS QUALITY PROGRAMS (ported from cah-modeling)
+# ═══════════════════════════════════════════════════════════════
+
+include("quality/cms_programs.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# SPC — STATISTICAL PROCESS CONTROL (ported from cah-modeling)
+# ═══════════════════════════════════════════════════════════════
+
+include("spc/control_charts.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# SCIENTIFIC MODELING (ported from cah-modeling)
+# ═══════════════════════════════════════════════════════════════
+
+include("models/pk_ode.jl")
+include("models/bayesian_analysis.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# VALIDATION & VERIFICATION (ported from cah-modeling)
+# ═══════════════════════════════════════════════════════════════
+
+include("validation/fmea.jl")
+include("validation/parity_testing.jl")
+include("validation/requirement_traceability.jl")
+include("validation/verification_registry.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# AUTH & COMPLIANCE (ported from cah-modeling)
+# ═══════════════════════════════════════════════════════════════
+
+include("auth/rbac.jl")
+include("auth/electronic_signatures.jl")
+include("compliance/phi_scrubber.jl")
+include("compliance/hash_chain_audit.jl")
+include("compliance/encrypted_audit.jl")
+
+# ═══════════════════════════════════════════════════════════════
+# COLLABORATION (ported from cah-modeling)
+# ═══════════════════════════════════════════════════════════════
+
+include("network/collaboration.jl")
+
+# ═══════════════════════════════════════════════════════════════
 # DATA IMPORT/EXPORT
 # ═══════════════════════════════════════════════════════════════
 
@@ -282,6 +340,117 @@ export assess_disaster_resilience, disaster_stress_test
 # V3.1 — Capital Replacement Scoring (MCDA)
 export CapitalRequest, CapitalScoreResult
 export score_capital_projects, select_within_budget, replacement_priority_report
+
+# Advanced Finance — Distress Scoring
+export DistressInput, DistressResult
+export calculate_altman_z, estimate_distress_timeline
+
+# Advanced Finance — LBO Model
+export DebtTerm, LBOInput, AnnualProjection, LBOResult
+export calculate_lbo
+
+# Advanced Finance — Real Options
+export RealOptionInput, RealOptionResult
+export calculate_real_option
+
+# Advanced Finance — VaR/CVaR
+export VaRInput, VaRResult
+export calculate_var_cvar
+
+# Advanced Finance — Copula Monte Carlo
+export CopulaInput, CopulaResult
+export generate_copula_samples
+
+# Advanced Finance — Treasury Forecast
+export WeeklyProfile, TreasuryInput, TreasuryResult
+export forecast_treasury
+
+# Advanced Finance — Physician Compensation
+export PhysicianProfile, CompensationResult
+export calculate_physician_compensation, physician_cohort_analysis
+
+# Advanced Finance — Revenue Variance Bridge
+export ServiceLineRevenue, RevenueVarianceResult
+export calculate_revenue_variance
+
+# Advanced Finance — Forecasting
+export simple_exponential_smoothing, holt_double_exponential
+export weighted_moving_average, ForecastAccuracy, forecast_accuracy
+
+# CMS Quality Programs
+export VBPMeasure, VBPDomainScore, VBPResult, calculate_vbp
+export HACRPMeasure, HACRPResult, calculate_hacrp
+export HRRPCondition, HRRPConditionResult, HRRPResult, calculate_hrrp
+export StarRatingsMeasure, StarRatingsResult
+export calculate_star_ratings, star_ratings_sensitivity
+export MIPSCategory, MIPSResult, calculate_mips
+export HAIRecord, HAITypeResult, HAIResult, calculate_hai
+export CombinedPaymentResult, calculate_combined_payment_impact
+
+# SPC — Statistical Process Control
+export IMRResult, calculate_imr
+export PChartResult, calculate_p_chart
+export UChartResult, calculate_u_chart
+export CChartResult, calculate_c_chart
+export NPChartResult, calculate_np_chart
+export LaneyResult, calculate_laney_p_prime, calculate_laney_u_prime
+export GChartResult, calculate_g_chart
+export TChartResult, calculate_t_chart
+export CUSUMResult, calculate_cusum
+export EWMAResult, calculate_ewma
+export FunnelResult, calculate_funnel_proportion, calculate_funnel_rate
+export detect_western_electric_rules
+
+# Scientific Modeling — PK ODE
+export PKParams, PKResult, simulate_pk
+
+# Scientific Modeling — Bayesian Beta-Binomial
+export BayesianBetaBinomialInput, BayesianBetaBinomialResult
+export analyze_beta_binomial
+
+# Validation & Verification — FMEA
+export FailureMode, FMEAReport
+export calculate_rpn, assess_risk_acceptability
+export generate_fmea_report, prioritize_failure_modes
+
+# Validation & Verification — Parity Testing
+export ParityTest, ParityResult, ParityTestSuite
+export run_parity_test, run_parity_suite, parity_report
+
+# Validation & Verification — Requirement Traceability
+export Requirement, TraceabilityMatrix
+export create_traceability_matrix, add_requirement!, mark_verified!
+export coverage_report, find_unverified
+
+# Validation & Verification — Verification Registry
+export VerificationRecord, VerificationRegistry
+export register_verification!, coverage_by_requirement, coverage_by_method
+export generate_coverage_report
+
+# Auth & Compliance — RBAC
+export Principal, AuthorizationPolicy, AuthorizationDecision
+export default_policy, authorize, check_tenant_isolation
+
+# Auth & Compliance — Electronic Signatures
+export ElectronicSignature, SignatureVerification, ApprovalChain
+export sign_document, verify_signature
+export create_approval_chain, add_signature!
+
+# Compliance — PHI Scrubber
+export PHIPattern, default_phi_patterns, scrub_phi, detect_phi
+
+# Compliance — Hash Chain Audit
+export AuditEntry, HashChainAuditLog
+export create_audit_log, append_entry!, verify_chain_integrity
+
+# Compliance — Encrypted Audit
+export EncryptedPayload, EncryptedAuditEntry, EncryptedAuditLog
+export encrypt_detail, decrypt_detail
+export create_encrypted_audit_log, append_encrypted_entry!, decrypt_entry_detail
+
+# Collaboration
+export CollaborationRoom, CollaborationManager
+export create_room!, join_room!, leave_room!, get_active_users
 
 # Data functions
 export parse_hcris_cost_report
