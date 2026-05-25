@@ -43,6 +43,7 @@ include("medicaid_dsh.jl")
 include("rhc_optimization.jl")
 include("network_economics.jl")
 include("physician_compensation.jl")
+include("physician_employment.jl")
 include("operational_efficiency.jl")
 include("population_health.jl")
 include("supply_chain.jl")
@@ -156,6 +157,12 @@ export HospitalNode, NetworkTransfer, NetworkEconomics, NetworkAnalysisResult,
 # Physician Compensation (Ch. 10f)
 export PhysicianProfile, CompensationModel, PhysicianCompensation, SpecialtyBenchmarks,
        calculate_physician_compensation, benchmark_specialty, identify_outliers
+
+# Physician Employment vs IC Economics (Ch. 10g)
+export MGMA_BENCHMARKS_2024,
+       PhysEmploymentProfile, W2EmploymentModel, IndependentContractorModel, EmploymentComparison,
+       total_w2_cost, total_ic_cost, compare_employment,
+       mgma_benchmark_salary, physician_roi, staffing_gap_analysis, compensation_design
 
 # Budgeting (Ch. 10b)
 export operating_budget, flex_budget, volume_variance, price_variance,
@@ -449,8 +456,6 @@ export ScenarioSnapshot, ScenarioDiffRow, ScenarioDiff,
        ScenarioSet, scenario_set_diff,
        rank_scenarios, scenario_diff_table
 
-<<<<<<< HEAD
-=======
 # ─── P2 MBA Gaps ──────────────────────────────────────────────────────────────
 include("lbo_analysis.jl")
 include("blue_ocean.jl")
@@ -506,5 +511,56 @@ export CMS_RULE_REGISTRY, FedRegisterDocument, RateExtraction,
        build_fed_register_api_url, parse_fed_register_response,
        extract_rates_from_text, generate_constants_update, validate_rate_extraction
 
->>>>>>> origin/claude/p2-all-gaps-2026-04-28
+# ─── Managed Care Tiered Contracting ─────────────────────────────────────────
+include("managed_care_contracting.jl")
+
+# Managed Care Contracting — Types
+export CONTRACT_TYPES, REIMBURSEMENT_METHODS,
+       TieredCapitation, ContractTerms, ContractAnalysis, ManagedCarePortfolio
+
+# Managed Care Contracting — Functions
+export analyze_contract, compare_contracts,
+       tiered_capitation_model, capitation_adequacy,
+       ffs_to_capitation_bridge, risk_pool_analysis,
+       contract_negotiation_prep, payer_mix_optimization,
+       rural_hospital_benchmarks
+
+# Managed Care Contracting — Benchmark Data
+export CMS_COMMERCIAL_PMPM_BENCHMARKS, DEMOGRAPHIC_RISK_FACTORS,
+       UTILIZATION_BENCHMARKS
+
+# ─── Charity Care / Financial Assistance Policy ─────────────────────────────
+include("charity_care.jl")
+
+export FPLTier, FinancialAssistancePolicy, CommunityProfile, CharityCareResult,
+       default_fap, calculate_charity_volume, optimize_fap,
+       community_benefit_report, bad_debt_vs_charity,
+       presumptive_eligibility_model, tax_exemption_analysis,
+       fap_compliance_check
+
+# ─── ED Throughput Revenue Linkage ───────────────────────────────────────────
+include("ed_throughput.jl")
+
+export EDConfig, EDRevenueModel, EDThroughputResult,
+       ed_revenue_analysis, lwbs_revenue_impact, boarding_cost_analysis,
+       throughput_optimization, fast_track_roi, staffing_revenue_model,
+       emtala_compliance_cost, ed_expansion_business_case
+
+# ─── Hospital Exit / Transition Planning ─────────────────────────────────────
+include("exit_planning.jl")
+
+export HospitalProfile, ExitScenario, CommunityImpactAssessment, TransitionPlan,
+       assess_viability, community_impact, asset_liquidation,
+       reh_conversion_analysis, merger_analysis, service_line_reduction,
+       regulatory_requirements, transition_timeline, patient_migration_model
+
+# ─── ACO Compliance & Reporting ──────────────────────────────────────────────
+include("aco_compliance.jl")
+
+export ACOTrack, ACOFinancials, ACOPerformance, QualityMeasureResult,
+       mssp_tracks, aco_reach_tracks, calculate_performance,
+       benchmark_calculation, quality_scorecard, aco_quality_measures,
+       financial_reconciliation, rural_aco_considerations,
+       aco_readiness_assessment, track_recommendation
+
 end  # module FinanceEngine

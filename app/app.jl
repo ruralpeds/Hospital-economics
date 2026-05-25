@@ -8,7 +8,7 @@ module HospitalEconomicsApp
 
 using Genie, Genie.Router, Genie.Renderer.Html
 using Stipple, StippleUI, StipplePlotly
-using Logging, Dates
+using Logging, Dates, HTTP
 
 # ---------------------------------------------------------------------------
 # Bootstrap helpers
@@ -21,8 +21,38 @@ function load_config()
     isfile(cfg_path) && include(cfg_path)
     init_path = joinpath(APP_ROOT, "config", "initializers", "logging.jl")
     isfile(init_path) && include(init_path)
+    db_init_path = joinpath(APP_ROOT, "config", "initializers", "db.jl")
+    isfile(db_init_path) && include(db_init_path)
     @info "Loaded configuration for environment: $env"
 end
+
+# ---------------------------------------------------------------------------
+# Security modules (P0-1, P0-2, P1-9)
+# middleware.jl includes auth.jl and rbac.jl internally
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "..", "src", "security", "middleware.jl"))
+include(joinpath(APP_ROOT, "..", "src", "security", "encryption.jl"))
+include(joinpath(APP_ROOT, "..", "src", "security", "rate_limit.jl"))
+include(joinpath(APP_ROOT, "..", "src", "security", "csrf.jl"))
+include(joinpath(APP_ROOT, "..", "src", "security", "secrets.jl"))
+
+using .SecurityMiddleware
+using .SecurityMiddleware.Auth
+using .SecurityMiddleware.RBAC
+using .Encryption
+using .RateLimit
+using .CSRF
+using .SecretsManager
+
+# ---------------------------------------------------------------------------
+# Observability (P0-6, P1-12, P1-13)
+# ---------------------------------------------------------------------------
+include(joinpath(APP_ROOT, "..", "src", "observability", "health.jl"))
+include(joinpath(APP_ROOT, "..", "src", "observability", "structured_logger.jl"))
+include(joinpath(APP_ROOT, "..", "src", "observability", "tracing.jl"))
+using .Health
+using .StructuredLogger
+using .Tracing
 
 # ---------------------------------------------------------------------------
 # Reusable component library  (app/components/)
@@ -302,6 +332,36 @@ function start(; port::Int = 8000, host::String = "0.0.0.0", async::Bool = false
     Genie.config.cors_headers["Access-Control-Allow-Origin"] = allowed_origin
     Genie.config.cors_headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     Genie.config.cors_headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+
+    # Initialize structured logging (P1-12)
+    log_path = get(ENV, "RHSIM_LOG_PATH", "/var/log/rhsim/app.log")
+    try
+        mkpath(dirname(log_path))
+        StructuredLogger.init_logger!(log_path)
+        @info "Structured logger initialized" path=log_path
+    catch e
+        @warn "Could not initialize structured logger — falling back to stderr" exception=e
+    end
+
+    # Register middleware stack (outermost first)
+    Genie.Router.push_middleware!(StructuredLogger.request_logging_middleware)
+    @info "Request logging middleware enabled"
+
+    Genie.Router.push_middleware!(RateLimit.rate_limit_middleware)
+    @info "Rate limiting middleware enabled"
+
+    if get(ENV, "RHSIM_CSRF_ENABLED", "true") == "true"
+        Genie.Router.push_middleware!(CSRF.csrf_middleware)
+        @info "CSRF middleware enabled"
+    end
+
+    if get(ENV, "RHSIM_AUTH_ENABLED", "true") == "true"
+        Genie.Router.push_middleware!(SecurityMiddleware.auth_middleware)
+        @info "Auth middleware enabled"
+    end
+
+    Genie.Router.push_middleware!(SecurityMiddleware.security_headers_middleware)
+    @info "Security headers middleware enabled"
 
     up(port; async = async)
 end

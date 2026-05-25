@@ -1,0 +1,140 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "rhsim.fullname" . }}-db-backup
+  labels:
+    {{- include "rhsim.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 2 * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "rhsim.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backup
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            {{- include "rhsim.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "rhsim.serviceAccountName" . }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: db-backup
+              image: postgres:16-alpine
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                capabilities:
+                  drop:
+                    - ALL
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  apk add --no-cache aws-cli bash && \
+                  bash /scripts/backup.sh {{ .Values.env.GENIE_ENV | default "prod" }}
+              env:
+                - name: DB_HOST
+                  value: {{ .Values.postgresql.host | quote }}
+                - name: DB_PORT
+                  value: {{ .Values.postgresql.port | quote }}
+                - name: DB_NAME
+                  value: {{ .Values.postgresql.database | quote }}
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.existingSecret }}
+                      key: {{ .Values.postgresql.existingSecretUsernameKey }}
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.existingSecret }}
+                      key: {{ .Values.postgresql.existingSecretPasswordKey }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "rhsim.fullname" . }}-aws-backup
+                      key: aws-access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "rhsim.fullname" . }}-aws-backup
+                      key: aws-secret-access-key
+                - name: AWS_DEFAULT_REGION
+                  value: "us-east-1"
+                - name: RETENTION_DAYS
+                  value: "35"
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: 512Mi
+                limits:
+                  cpu: "1"
+                  memory: 1Gi
+          volumes:
+            - name: scripts
+              configMap:
+                name: {{ include "rhsim.fullname" . }}-backup-scripts
+                defaultMode: 0755
+            - name: tmp
+              emptyDir: {}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rhsim.fullname" . }}-backup-scripts
+  labels:
+    {{- include "rhsim.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+data:
+  backup.sh: |
+    {{- .Files.Get "scripts/backup.sh" | nindent 4 }}
+---
+{{/*
+  AWS credentials for the backup CronJob.
+  In production, prefer IRSA (IAM Roles for Service Accounts) instead.
+*/}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "rhsim.fullname" . }}-aws-backup
+  labels:
+    {{- include "rhsim.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+type: Opaque
+data:
+  # Base64-encoded placeholder values -- REPLACE before deploying
+  # echo -n 'CHANGE_ME' | base64
+  aws-access-key-id: Q0hBTkdFX01F
+  aws-secret-access-key: Q0hBTkdFX01F

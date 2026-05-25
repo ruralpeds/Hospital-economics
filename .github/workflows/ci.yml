@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, claude/**]
+    branches: [main, develop, "claude/**"]
   pull_request:
     branches: [main, develop, "claude/**"]
 
@@ -21,6 +21,8 @@ jobs:
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: julia-actions/setup-julia@v2
         with:
@@ -45,20 +47,157 @@ jobs:
             Pkg.test(; coverage=true)
           '
 
-      - name: Process coverage
+      - name: Process coverage and enforce gate
         run: |
           julia --project=. -e '
             using Coverage
+
             coverage    = Coverage.process_folder("src")
             coverage_fe = Coverage.process_folder("packages/FinanceEngine/src")
             all_cov     = vcat(coverage, coverage_fe)
             covered, total = Coverage.get_summary(all_cov)
             pct = total > 0 ? round(100.0 * covered / total, digits=1) : 0.0
-            println("Coverage: $covered / $total lines ($pct%)")
+
+            # Floor gate: absolute minimum
             pct >= 60.0 || error("Coverage $pct% is below the 60% minimum threshold")
+
+            println("Coverage: $covered / $total lines ($pct%)")
+
+            # Write to file for the drop-check step
+            open("coverage_pct.txt", "w") do f
+                println(f, pct)
+            end
           '
 
-  # The Docker build job was removed: it was failing on Docker Hub rate
-  # limits and on registry-mirror tag availability, adding no real signal
-  # beyond the Julia test job. Re-add once a reliable base-image source
-  # is settled (Docker Hub with secrets, or a verified ECR/GHCR mirror).
+      - name: Check coverage drop vs base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          # Fetch base branch coverage from the most recent CI artifact
+          BASE_BRANCH="${{ github.base_ref }}"
+          echo "Checking coverage drop against $BASE_BRANCH"
+
+          CURRENT_PCT=$(cat coverage_pct.txt)
+          echo "Current branch coverage: ${CURRENT_PCT}%"
+
+          # Try to get base branch coverage from Codecov or prior run
+          # For now, enforce a hard floor + warn on drops
+          # Full drop detection requires Codecov's PR comment or a cached baseline
+          if [ -f "base_coverage_pct.txt" ]; then
+            BASE_PCT=$(cat base_coverage_pct.txt)
+            DROP=$(echo "$CURRENT_PCT - $BASE_PCT" | bc -l)
+            echo "Coverage delta: ${DROP}pp"
+            if (( $(echo "$DROP < -1.0" | bc -l) )); then
+              echo "::error::Coverage dropped by more than 1pp: ${DROP}pp (${BASE_PCT}% → ${CURRENT_PCT}%)"
+              exit 1
+            fi
+          else
+            echo "No baseline coverage found — enforcing floor only (${CURRENT_PCT}% >= 60%)"
+          fi
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: false
+
+      - name: Cache coverage for future drop checks
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        uses: actions/cache/save@v4
+        with:
+          path: coverage_pct.txt
+          key: coverage-${{ github.ref_name }}-${{ github.sha }}
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.11"
+
+      - uses: julia-actions/cache@v2
+
+      - name: Install dependencies
+        run: julia --project=. -e "using Pkg; Pkg.instantiate()"
+
+      - name: Run integration tests
+        run: |
+          julia --project=. --threads=auto -e '
+            using Test
+            @testset "Integration" begin
+              include("test/integration/test_auth.jl")
+              include("test/integration/test_health.jl")
+              include("test/integration/test_migrations.jl")
+            end
+          '
+
+  quality:
+    name: Code Quality (Aqua.jl)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.11"
+
+      - uses: julia-actions/cache@v2
+
+      - name: Install dependencies
+        run: julia --project=. -e "using Pkg; Pkg.instantiate()"
+
+      - name: Aqua.jl quality checks
+        run: |
+          julia --project=. -e '
+            using Aqua
+            Aqua.test_all(
+              HospitalFinanceToolbox;
+              ambiguities=false,
+              unbound_args=false,
+              undefined_exports=false,
+              compare_undefined=false,
+              piracies=false
+            )
+          '
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      - name: Trivy Docker image scan
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: docker/
+          severity: CRITICAL,HIGH
+          exit-code: 0
+
+      - name: Trivy Terraform scan
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: terraform/
+          severity: CRITICAL,HIGH
+          exit-code: 0
+
+      - name: Trivy Kubernetes scan
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: k8s/
+          severity: CRITICAL,HIGH
+          exit-code: 0
