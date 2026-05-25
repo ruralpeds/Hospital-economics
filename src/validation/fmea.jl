@@ -115,10 +115,11 @@ Classify the acceptability of a given RPN value.
 
 Returns:
 - `:acceptable` when rpn < threshold
-- `:needs_mitigation` when threshold <= rpn < high_threshold
-- `:unacceptable` when rpn >= high_threshold
+- `:needs_mitigation` when threshold <= rpn < 2*threshold
+- `:unacceptable` when rpn >= 2*threshold
 """
-function assess_risk_acceptability(rpn::Int; threshold::Int=50, high_threshold::Int=75)
+function assess_risk_acceptability(rpn::Int; threshold::Int=100)
+    high_threshold = 2 * threshold
     if rpn < threshold
         return :acceptable
     elseif rpn < high_threshold
