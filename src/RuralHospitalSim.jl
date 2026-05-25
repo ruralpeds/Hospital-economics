@@ -23,6 +23,7 @@ module RuralHospitalSim
 using Dates
 using UUIDs
 using Statistics
+using LinearAlgebra
 using Random
 using Distributions
 using DataFrames
@@ -33,6 +34,7 @@ using HiGHS
 using DifferentialEquations
 using StatsBase
 using Agents
+using SHA
 
 # ═══════════════════════════════════════════════════════════════
 # DOMAIN MODEL (must be loaded first, in dependency order)

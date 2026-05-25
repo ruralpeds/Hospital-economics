@@ -104,7 +104,7 @@ function _copula_normal_inv(u::Float64)::Float64
     else
         q = sqrt(-2.0 * log(1.0 - u))
         return -(((((c[1]*q + c[2])*q + c[3])*q + c[4])*q + c[5])*q + c[6]) /
-                 ((((d[1]*q + d[2])*q + d[3])*q + d[4])*q + 1.0))
+                 ((((d[1]*q + d[2])*q + d[3])*q + d[4])*q + 1.0)
     end
 end
 
