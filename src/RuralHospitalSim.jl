@@ -33,6 +33,7 @@ using HiGHS
 using DifferentialEquations
 using StatsBase
 using Agents
+using Biostatistics
 
 # ═══════════════════════════════════════════════════════════════
 # DOMAIN MODEL (must be loaded first, in dependency order)
@@ -296,5 +297,22 @@ export validate_hospital, validate_payer_mix, validate_cost_report
 export CAH_COST_REIMBURSEMENT_RATE, REH_MONTHLY_FACILITY_PAYMENT
 export REH_OPPS_ADDON, SEQUESTRATION_RATE
 export BAD_DEBT_REIMBURSEMENT_RATE
+
+# ═══════════════════════════════════════════════════════════════
+# BIOSTATISTICS QUALITY INTEGRATION
+# ═══════════════════════════════════════════════════════════════
+
+include("quality/QualityIntegration.jl")
+using .QualityIntegration
+
+# Re-export Biostatistics quality functions
+export QualityResult, ValidationReport, TestResult, BioStatResult, SummaryStats
+export standardize_outcome_rates, funnel_plot_data
+export control_chart_p, control_chart_c, control_chart_u, control_chart_xmr
+export cusum_chart, ewma_chart, reliability_adjust, compute_quality_indicators
+export validate_data, detect_missing, detect_outliers, detect_duplicates, mahalanobis_outliers
+export run_test, check_assumptions, summarize_numeric, table_one
+export cohens_d, power_t_test, format_p_value, apa_string
+export hospital_control_chart, validate_financial_data, facility_funnel_plot, quality_scorecard
 
 end # module RuralHospitalSim

@@ -94,6 +94,9 @@ using Test
     # Phase 3.3: Validation on Real-World Policy Cases
     include("test_policy_validation.jl")
 
+    # Biostatistics quality integration
+    include("test_quality_integration.jl")
+
     # Integration & smoke tests
     include("test_integration.jl")
     include("test_view_integration.jl")
