@@ -456,8 +456,6 @@ export ScenarioSnapshot, ScenarioDiffRow, ScenarioDiff,
        ScenarioSet, scenario_set_diff,
        rank_scenarios, scenario_diff_table
 
-<<<<<<< HEAD
-=======
 # ─── P2 MBA Gaps ──────────────────────────────────────────────────────────────
 include("lbo_analysis.jl")
 include("blue_ocean.jl")
@@ -513,7 +511,23 @@ export CMS_RULE_REGISTRY, FedRegisterDocument, RateExtraction,
        build_fed_register_api_url, parse_fed_register_response,
        extract_rates_from_text, generate_constants_update, validate_rate_extraction
 
->>>>>>> origin/claude/p2-all-gaps-2026-04-28
+# ─── Managed Care Tiered Contracting ─────────────────────────────────────────
+include("managed_care_contracting.jl")
+
+# Managed Care Contracting — Types
+export CONTRACT_TYPES, REIMBURSEMENT_METHODS,
+       TieredCapitation, ContractTerms, ContractAnalysis, ManagedCarePortfolio
+
+# Managed Care Contracting — Functions
+export analyze_contract, compare_contracts,
+       tiered_capitation_model, capitation_adequacy,
+       ffs_to_capitation_bridge, risk_pool_analysis,
+       contract_negotiation_prep, payer_mix_optimization,
+       rural_hospital_benchmarks
+
+# Managed Care Contracting — Benchmark Data
+export CMS_COMMERCIAL_PMPM_BENCHMARKS, DEMOGRAPHIC_RISK_FACTORS,
+       UTILIZATION_BENCHMARKS
 
 # ─── Charity Care / Financial Assistance Policy ─────────────────────────────
 include("charity_care.jl")
