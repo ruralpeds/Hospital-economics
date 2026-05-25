@@ -109,6 +109,20 @@
         }, 250);
     });
 
+    // ── Navigation Search Mixin ────────────────────────────────────────
+    // Injects `nav_search` into every Vue instance so the sidebar filter
+    // input works via v-model without modifying individual Stipple models.
+    // Vue is loaded in <head> so window.Vue is available when this runs.
+    // Stipple creates the Vue app in an inline script after this file,
+    // so the mixin is registered in time.
+    if (window.Vue && window.Vue.mixin) {
+        window.Vue.mixin({
+            data: function () {
+                return { nav_search: "" };
+            },
+        });
+    }
+
     // ── Page Load ───────────────────────────────────────────────────────
     document.addEventListener("DOMContentLoaded", function () {
         console.log(

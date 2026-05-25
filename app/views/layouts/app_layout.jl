@@ -2,9 +2,44 @@
 Shared application layout with navigation sidebar.
 Wraps all page content in a consistent Quasar layout with drawer navigation.
 
+Navigation items are grouped into collapsible categories using q-expansion-item.
+A search/filter input at the top of the drawer lets users find items quickly.
+
 IMPORTANT: This function returns layout elements only. The calling route handler
 wraps the result in `page(model, ui_func) |> html`.
 """
+
+# ── Navigation item helper ──────────────────────────────────────────────
+# Builds a single nav link with active-page highlighting and search filtering.
+function _nav_item(label::String, href::String, icon::String)
+    item(clickable=true, href=href,
+        var"v-show"="!nav_search || '$(lowercase(label))'.includes(nav_search.toLowerCase())",
+        var":class"="window.location.pathname === '$href' ? 'bg-blue-1 text-primary' : ''",
+        dense=true, [
+        item_section(avatar=true, [q__icon(name=icon, size="sm")]),
+        item_section([item_label(label)]),
+    ])
+end
+
+# ── Navigation group helper ─────────────────────────────────────────────
+# Builds a collapsible expansion-item group containing multiple nav items.
+function _nav_group(label::String, icon::String, items::Vector; default_opened::Bool=false)
+    Html.div(
+        var"v-show"="!nav_search || $(join(["'$(lowercase(it[1]))'.includes(nav_search.toLowerCase())" for it in items], " || "))",
+        [
+        quasar(:expansion_item,
+            label=label, icon=icon,
+            var"expand-separator"=true,
+            var"dense-toggle"=true,
+            var"header-class"="text-weight-bold",
+            var"default-opened"=default_opened, [
+            q__list(dense=true, padding=true,
+                [_nav_item(it[1], it[2], it[3]) for it in items]
+            ),
+        ]),
+        separator(),
+    ])
+end
 
 function app_layout(model, page_title::String, content::Vector)
     [
@@ -21,370 +56,170 @@ function app_layout(model, page_title::String, content::Vector)
 
             # ── Left Navigation Drawer ───────────────────────────────
             quasar(:drawer, side="left", var"v-model"="left_drawer_open",
-                bordered=true, var"show-if-above"=true, class="bg-grey-1", [
-                q__list(padding=true, [
-                    item_label(header=true, "Navigation"),
+                bordered=true, var"show-if-above"=true, class="bg-grey-1",
+                var":width"="320", [
 
-                    item(clickable=true, href="/dashboard", [
-                        item_section(avatar=true, [q__icon(name="dashboard")]),
-                        item_section([item_label("Financial Dashboard")]),
-                    ]),
-                    item(clickable=true, href="/cfo", [
-                        item_section(avatar=true, [q__icon(name="speed")]),
-                        item_section([item_label("CFO 1-Pager")]),
-                    ]),
-                    item(clickable=true, href="/profile", [
-                        item_section(avatar=true, [q__icon(name="business")]),
-                        item_section([item_label("Hospital Profile")]),
-                    ]),
-                    item(clickable=true, href="/scenarios", [
-                        item_section(avatar=true, [q__icon(name="science")]),
-                        item_section([item_label("Scenario Builder")]),
-                    ]),
-                    item(clickable=true, href="/simulate", [
-                        item_section(avatar=true, [q__icon(name="play_circle")]),
-                        item_section([item_label("Run Simulation")]),
-                    ]),
-                    item(clickable=true, href="/results", [
-                        item_section(avatar=true, [q__icon(name="assessment")]),
-                        item_section([item_label("Results Explorer")]),
-                    ]),
+                # ── App Logo / Title ────────────────────────────────
+                Html.div(class="q-pa-md text-center bg-primary text-white", [
+                    q__icon(name="local_hospital", size="36px", class="q-mb-xs"),
+                    Html.div(class="text-h6 text-weight-bold", "RHES"),
+                    Html.div(class="text-caption", "Rural Hospital Economics Simulator"),
+                ]),
 
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Finance Tools"),
+                # ── Search / Filter ─────────────────────────────────
+                Html.div(class="q-pa-sm", [
+                    q__input(var"v-model"="nav_search",
+                        dense=true, outlined=true,
+                        placeholder="Filter navigation...",
+                        class="q-mb-xs", [
+                        template("", var"v-slot:prepend"=true, [
+                            q__icon(name="search"),
+                        ]),
+                        template("", var"v-slot:append"=true, [
+                            q__icon(name="close", class="cursor-pointer",
+                                var"v-show"="nav_search",
+                                @click("nav_search = ''")),
+                        ]),
+                    ]),
+                ]),
 
-                    item(clickable=true, href="/financial-sim", [
-                        item_section(avatar=true, [q__icon(name="tune")]),
-                        item_section([item_label("Financial Simulator")]),
-                    ]),
-                    item(clickable=true, href="/cost-structure", [
-                        item_section(avatar=true, [q__icon(name="pie_chart")]),
-                        item_section([item_label("Cost Structure")]),
-                    ]),
-                    item(clickable=true, href="/cost-reimbursement", [
-                        item_section(avatar=true, [q__icon(name="receipt_long")]),
-                        item_section([item_label("Cost Reimbursement")]),
-                    ]),
-                    item(clickable=true, href="/payer-margin", [
-                        item_section(avatar=true, [q__icon(name="payments")]),
-                        item_section([item_label("Payer Margin")]),
-                    ]),
-                    item(clickable=true, href="/break-even", [
-                        item_section(avatar=true, [q__icon(name="balance")]),
-                        item_section([item_label("Break-Even")]),
-                    ]),
-                    item(clickable=true, href="/wacc", [
-                        item_section(avatar=true, [q__icon(name="percent")]),
-                        item_section([item_label("WACC Calculator")]),
-                    ]),
-                    item(clickable=true, href="/capex", [
-                        item_section(avatar=true, [q__icon(name="construction")]),
-                        item_section([item_label("Capital Expenditure")]),
-                    ]),
-                    item(clickable=true, href="/three-statement", [
-                        item_section(avatar=true, [q__icon(name="table_chart")]),
-                        item_section([item_label("Three-Statement Model")]),
-                    ]),
-                    item(clickable=true, href="/dupont", [
-                        item_section(avatar=true, [q__icon(name="account_tree")]),
-                        item_section([item_label("DuPont Analysis")]),
-                    ]),
-                    item(clickable=true, href="/rhc-cah", [
-                        item_section(avatar=true, [q__icon(name="local_hospital")]),
-                        item_section([item_label("RHC vs CAH Comparison")]),
-                    ]),
-                    item(clickable=true, href="/cash-flow", [
-                        item_section(avatar=true, [q__icon(name="account_balance")]),
-                        item_section([item_label("Cash Flow")]),
-                    ]),
-                    item(clickable=true, href="/340b", [
-                        item_section(avatar=true, [q__icon(name="medication")]),
-                        item_section([item_label("340B Program")]),
-                    ]),
-                    item(clickable=true, href="/debt-capacity", [
-                        item_section(avatar=true, [q__icon(name="credit_score")]),
-                        item_section([item_label("Debt Capacity")]),
-                    ]),
-                    item(clickable=true, href="/lbo", [
-                        item_section(avatar=true, [q__icon(name="business_center")]),
-                        item_section([item_label("LBO Analysis")]),
-                    ]),
-                    item(clickable=true, href="/nsa-idr", [
-                        item_section(avatar=true, [q__icon(name="gavel")]),
-                        item_section([item_label("NSA-IDR Arbitration")]),
-                    ]),
-                    item(clickable=true, href="/revenue-cycle", [
-                        item_section(avatar=true, [q__icon(name="loop")]),
-                        item_section([item_label("Revenue Cycle")]),
-                    ]),
-                    item(clickable=true, href="/team-bundled", [
-                        item_section(avatar=true, [q__icon(name="group_work")]),
-                        item_section([item_label("TEAM Bundled Payment")]),
-                    ]),
-                    item(clickable=true, href="/telehealth", [
-                        item_section(avatar=true, [q__icon(name="video_call")]),
-                        item_section([item_label("Telehealth ROI")]),
-                    ]),
-                    item(clickable=true, href="/vbc-transition", [
-                        item_section(avatar=true, [q__icon(name="trending_up")]),
-                        item_section([item_label("VBC Transition")]),
-                    ]),
-                    item(clickable=true, href="/medicaid-supplemental", [
-                        item_section(avatar=true, [q__icon(name="health_and_safety")]),
-                        item_section([item_label("Medicaid Supplemental")]),
-                    ]),
-                    item(clickable=true, href="/rhc-optimization", [
-                        item_section(avatar=true, [q__icon(name="local_hospital")]),
-                        item_section([item_label("RHC Optimization")]),
-                    ]),
+                separator(),
 
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Analysis Tools"),
+                # ── Grouped Navigation ──────────────────────────────
+                Html.div(style="overflow-y:auto; max-height:calc(100vh - 180px);", [
+                    q__list(padding=true, [
 
-                    item(clickable=true, href="/sensitivity", [
-                        item_section(avatar=true, [q__icon(name="swap_vert")]),
-                        item_section([item_label("Sensitivity Analysis")]),
-                    ]),
-                    item(clickable=true, href="/benchmark", [
-                        item_section(avatar=true, [q__icon(name="radar")]),
-                        item_section([item_label("Benchmarking")]),
-                    ]),
-                    item(clickable=true, href="/service-lines", [
-                        item_section(avatar=true, [q__icon(name="view_list")]),
-                        item_section([item_label("Service Lines")]),
-                    ]),
-                    item(clickable=true, href="/workforce", [
-                        item_section(avatar=true, [q__icon(name="engineering")]),
-                        item_section([item_label("Workforce RVU")]),
-                    ]),
-                    item(clickable=true, href="/community-impact", [
-                        item_section(avatar=true, [q__icon(name="people")]),
-                        item_section([item_label("Community Impact")]),
-                    ]),
-                    item(clickable=true, href="/payer-negotiation", [
-                        item_section(avatar=true, [q__icon(name="handshake")]),
-                        item_section([item_label("Payer Negotiation")]),
-                    ]),
-                    item(clickable=true, href="/distress-scoring", [
-                        item_section(avatar=true, [q__icon(name="monitor_heart")]),
-                        item_section([item_label("Distress Scoring")]),
-                    ]),
-                    item(clickable=true, href="/vbc-bayesian", [
-                        item_section(avatar=true, [q__icon(name="psychology")]),
-                        item_section([item_label("VBC Bayesian")]),
-                    ]),
-                    item(clickable=true, href="/ma-risk", [
-                        item_section(avatar=true, [q__icon(name="merge")]),
-                        item_section([item_label("M&A Risk")]),
-                    ]),
-                    item(clickable=true, href="/throughput", [
-                        item_section(avatar=true, [q__icon(name="timeline")]),
-                        item_section([item_label("Throughput / TOC")]),
-                    ]),
-                    item(clickable=true, href="/readmission-risk", [
-                        item_section(avatar=true, [q__icon(name="personal_injury")]),
-                        item_section([item_label("Readmission Risk & HRRP")]),
-                    ]),
-                    item(clickable=true, href="/sdoh", [
-                        item_section(avatar=true, [q__icon(name="diversity_3")]),
-                        item_section([item_label("SDOH Analysis")]),
-                    ]),
-                    item(clickable=true, href="/geographic-access", [
-                        item_section(avatar=true, [q__icon(name="map")]),
-                        item_section([item_label("Geographic Access")]),
-                    ]),
-                    item(clickable=true, href="/community-benefit", [
-                        item_section(avatar=true, [q__icon(name="volunteer_activism")]),
-                        item_section([item_label("Community Benefit")]),
-                    ]),
-                    item(clickable=true, href="/network-economics", [
-                        item_section(avatar=true, [q__icon(name="hub")]),
-                        item_section([item_label("Network Economics")]),
-                    ]),
+                        # ── Core ────────────────────────────────────
+                        _nav_group("Core", "dashboard", [
+                            ("Dashboard",        "/dashboard",   "dashboard"),
+                            ("Hospital Profile", "/profile",     "business"),
+                            ("Scenarios",        "/scenarios",   "science"),
+                            ("Simulate",         "/simulate",    "play_circle"),
+                            ("Results",          "/results",     "assessment"),
+                            ("Education",        "/education",   "school"),
+                        ]; default_opened=true),
 
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Strategic Tools"),
+                        # ── Finance ─────────────────────────────────
+                        _nav_group("Finance", "account_balance", [
+                            ("Financial Sim",         "/financial-sim",         "tune"),
+                            ("Cost Structure",        "/cost-structure",        "pie_chart"),
+                            ("Cost Reimbursement",    "/cost-reimbursement",    "receipt_long"),
+                            ("Break-Even",            "/break-even",            "balance"),
+                            ("Cash Flow",             "/cash-flow",             "account_balance"),
+                            ("Debt Capacity",         "/debt-capacity",         "credit_score"),
+                            ("Revenue Cycle",         "/revenue-cycle",         "loop"),
+                            ("340B Program",          "/340b",                  "medication"),
+                            ("TEAM Bundled",          "/team-bundled",          "group_work"),
+                            ("Telehealth ROI",        "/telehealth",            "video_call"),
+                            ("VBC Transition",        "/vbc-transition",        "trending_up"),
+                            ("Medicaid Supplemental", "/medicaid-supplemental", "health_and_safety"),
+                        ]),
 
-                    item(clickable=true, href="/conversion", [
-                        item_section(avatar=true, [q__icon(name="swap_horiz")]),
-                        item_section([item_label("REH Conversion Wizard")]),
-                    ]),
-                    item(clickable=true, href="/closure-risk", [
-                        item_section(avatar=true, [q__icon(name="warning")]),
-                        item_section([item_label("Closure Risk")]),
-                    ]),
-                    item(clickable=true, href="/staffing", [
-                        item_section(avatar=true, [q__icon(name="groups")]),
-                        item_section([item_label("Staffing Optimizer")]),
-                    ]),
-                    item(clickable=true, href="/strategic-plan", [
-                        item_section(avatar=true, [q__icon(name="map")]),
-                        item_section([item_label("Strategic Planner")]),
-                    ]),
-                    item(clickable=true, href="/policy", [
-                        item_section(avatar=true, [q__icon(name="gavel")]),
-                        item_section([item_label("Policy Impact")]),
-                    ]),
-                    item(clickable=true, href="/disaster-resilience", [
-                        item_section(avatar=true, [q__icon(name="emergency")]),
-                        item_section([item_label("Disaster Resilience")]),
-                    ]),
-                    item(clickable=true, href="/capital-scoring", [
-                        item_section(avatar=true, [q__icon(name="analytics")]),
-                        item_section([item_label("Capital Scoring")]),
-                    ]),
-                    item(clickable=true, href="/blue-ocean", [
-                        item_section(avatar=true, [q__icon(name="waves")]),
-                        item_section([item_label("Blue Ocean Strategy")]),
-                    ]),
-                    item(clickable=true, href="/reh-conversion", [
-                        item_section(avatar=true, [q__icon(name="swap_horiz")]),
-                        item_section([item_label("REH Conversion Decision")]),
-                    ]),
-                    item(clickable=true, href="/scenario-planning", [
-                        item_section(avatar=true, [q__icon(name="explore")]),
-                        item_section([item_label("Scenario Planning")]),
-                    ]),
+                        # ── CFO Analytics ───────────────────────────
+                        _nav_group("CFO Analytics", "analytics", [
+                            ("CFO Dashboard",      "/cfo",               "speed"),
+                            ("Three-Statement",    "/three-statement",   "table_chart"),
+                            ("DuPont Analysis",    "/dupont",            "account_tree"),
+                            ("Distress Scoring",   "/distress-scoring",  "monitor_heart"),
+                            ("WACC Calculator",    "/wacc",              "percent"),
+                            ("Capital Expenditure", "/capex",            "construction"),
+                            ("LBO Analysis",       "/lbo",               "business_center"),
+                            ("Real Options",       "/sensitivity",       "swap_vert"),
+                            ("VaR/CVaR",           "/vbc-bayesian",      "psychology"),
+                            ("Copula MC",          "/ma-risk",           "merge"),
+                            ("Treasury Forecast",  "/cash-flow",         "account_balance"),
+                            ("Forecasting",        "/scenario-lab",      "science"),
+                            ("Revenue Variance",   "/revenue",           "attach_money"),
+                            ("Physician Comp",     "/workforce",         "engineering"),
+                        ]),
 
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Resources"),
+                        # ── Quality ─────────────────────────────────
+                        _nav_group("Quality", "health_and_safety", [
+                            ("CMS Programs",    "/quality",    "health_and_safety"),
+                            ("SPC Charts",      "/benchmark",  "radar"),
+                            ("Benchmarking",    "/benchmark",  "radar"),
+                        ]),
 
-                    item(clickable=true, href="/education", [
-                        item_section(avatar=true, [q__icon(name="school")]),
-                        item_section([item_label("Education Center")]),
-                    ]),
+                        # ── Risk & Strategy ─────────────────────────
+                        _nav_group("Risk & Strategy", "shield", [
+                            ("Closure Risk",          "/closure-risk",          "warning"),
+                            ("REH Conversion",        "/conversion",            "swap_horiz"),
+                            ("Staffing Optimization", "/staffing",              "groups"),
+                            ("Payer Negotiation",     "/payer-negotiation",     "handshake"),
+                            ("Strategic Planner",     "/strategic-plan",        "map"),
+                            ("Policy Impact",         "/policy",                "gavel"),
+                            ("Capital Scoring",       "/capital-scoring",       "analytics"),
+                            ("Scenario Planning",     "/scenario-planning",     "explore"),
+                            ("Blue Ocean",            "/blue-ocean",            "waves"),
+                            ("Disaster Resilience",   "/disaster-resilience",   "emergency"),
+                        ]),
 
-                    # ── Concepts ─────────────────────────────────────
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Data"),
+                        # ── Community & Access ──────────────────────
+                        _nav_group("Community & Access", "people", [
+                            ("Community Impact",  "/community-impact",  "people"),
+                            ("Community Benefit", "/community-benefit", "volunteer_activism"),
+                            ("SDOH",              "/sdoh",              "diversity_3"),
+                            ("Geographic Access", "/geographic-access", "map"),
+                            ("Network Economics", "/network-economics", "hub"),
+                        ]),
 
-                    item(clickable=true, href="/data/intake", [
-                        item_section(avatar=true, [q__icon(name="upload_file")]),
-                        item_section([item_label("Data Intake")]),
-                    ]),
-                    item(clickable=true, href="/cohorts", [
-                        item_section(avatar=true, [q__icon(name="group")]),
-                        item_section([item_label("Cohort Builder")]),
-                    ]),
+                        # ── Clinical ────────────────────────────────
+                        _nav_group("Clinical", "medical_services", [
+                            ("PK ODE",            "/throughput",       "timeline"),
+                            ("Bayesian Analysis", "/vbc-bayesian",     "psychology"),
+                            ("FMEA",              "/readmission-risk", "personal_injury"),
+                        ]),
 
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Financial"),
+                        # ── Data & Analytics ────────────────────────
+                        _nav_group("Data & Analytics", "storage", [
+                            ("Data Intake",   "/data/intake",    "upload_file"),
+                            ("Data Prepare",  "/data/prepare",   "build"),
+                            ("Cohorts",       "/cohorts",        "group"),
+                            ("Cost Analysis", "/cost-analysis",  "price_change"),
+                            ("Revenue",       "/revenue",        "attach_money"),
+                            ("Profitability", "/profitability",  "trending_up"),
+                        ]),
 
-                    item(clickable=true, href="/cost-analysis", [
-                        item_section(avatar=true, [q__icon(name="price_change")]),
-                        item_section([item_label("Cost Analysis")]),
-                    ]),
-                    item(clickable=true, href="/revenue", [
-                        item_section(avatar=true, [q__icon(name="attach_money")]),
-                        item_section([item_label("Revenue & Reimbursement")]),
-                    ]),
-                    item(clickable=true, href="/profitability", [
-                        item_section(avatar=true, [q__icon(name="trending_up")]),
-                        item_section([item_label("Profitability & Operations")]),
-                    ]),
+                        # ── Statistical ─────────────────────────────
+                        _nav_group("Statistical", "functions", [
+                            ("Statistics",        "/stats",       "bar_chart"),
+                            ("Regression",        "/regression",  "show_chart"),
+                            ("Causal Inference",  "/causal",      "device_hub"),
+                            ("CEA",               "/cea",         "compare_arrows"),
+                            ("CBA",               "/cba",         "account_balance_wallet"),
+                            ("Comparative",       "/comparative", "difference"),
+                        ]),
 
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Clinical"),
+                        # ── Advanced ────────────────────────────────
+                        _nav_group("Advanced", "science", [
+                            ("ML",            "/ml",           "psychology"),
+                            ("Systems",       "/systems",      "account_tree"),
+                            ("Scenario Lab",  "/scenario-lab", "science"),
+                            ("Functions",     "/functions",    "functions"),
+                            ("Visualize",     "/visualize",    "insert_chart"),
+                            ("Reports",       "/reports",      "description"),
+                            ("Database",      "/database",     "storage"),
+                        ]),
 
-                    item(clickable=true, href="/quality", [
-                        item_section(avatar=true, [q__icon(name="health_and_safety")]),
-                        item_section([item_label("Quality & Outcomes")]),
-                    ]),
+                        # ── Compliance ──────────────────────────────
+                        _nav_group("Compliance", "verified_user", [
+                            ("Audit Trail", "/audit",   "policy"),
+                            ("MA Risk",     "/ma-risk", "merge"),
+                        ]),
 
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Statistical"),
+                        # ── Dev tools (non-production only) ─────────
+                        if get(ENV, "GENIE_ENV", "dev") != "prod"
+                            [
+                                _nav_group("Developer", "widgets", [
+                                    ("Component Library", "/dev/components", "widgets"),
+                                ]),
+                            ]
+                        else
+                            []
+                        end...,
 
-                    item(clickable=true, href="/stats", [
-                        item_section(avatar=true, [q__icon(name="bar_chart")]),
-                        item_section([item_label("Descriptive & Inferential Stats")]),
                     ]),
-                    item(clickable=true, href="/regression", [
-                        item_section(avatar=true, [q__icon(name="show_chart")]),
-                        item_section([item_label("Regression Lab")]),
-                    ]),
-                    item(clickable=true, href="/causal", [
-                        item_section(avatar=true, [q__icon(name="device_hub")]),
-                        item_section([item_label("Causal Inference Lab")]),
-                    ]),
-
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Economic Evaluation"),
-
-                    item(clickable=true, href="/cea", [
-                        item_section(avatar=true, [q__icon(name="compare_arrows")]),
-                        item_section([item_label("Cost-Effectiveness (CEA)")]),
-                    ]),
-                    item(clickable=true, href="/cba", [
-                        item_section(avatar=true, [q__icon(name="account_balance_wallet")]),
-                        item_section([item_label("Cost-Benefit (CBA)")]),
-                    ]),
-                    item(clickable=true, href="/comparative", [
-                        item_section(avatar=true, [q__icon(name="difference")]),
-                        item_section([item_label("Comparative Effectiveness")]),
-                    ]),
-
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Advanced"),
-
-                    item(clickable=true, href="/visualize", [
-                        item_section(avatar=true, [q__icon(name="insert_chart")]),
-                        item_section([item_label("Visualization Workbench")]),
-                    ]),
-                    item(clickable=true, href="/reports", [
-                        item_section(avatar=true, [q__icon(name="description")]),
-                        item_section([item_label("Reports & Export")]),
-                    ]),
-                    item(clickable=true, href="/database", [
-                        item_section(avatar=true, [q__icon(name="storage")]),
-                        item_section([item_label("Database & Queries")]),
-                    ]),
-                    item(clickable=true, href="/ml", [
-                        item_section(avatar=true, [q__icon(name="psychology")]),
-                        item_section([item_label("Advanced Analytics / ML")]),
-                    ]),
-                    item(clickable=true, href="/climate-risk", [
-                        item_section(avatar=true, [q__icon(name="eco")]),
-                        item_section([item_label("Climate Risk / TCFD")]),
-                    ]),
-                    item(clickable=true, href="/fed-register", [
-                        item_section(avatar=true, [q__icon(name="article")]),
-                        item_section([item_label("Fed Register Parser")]),
-                    ]),
-                    item(clickable=true, href="/systems", [
-                        item_section(avatar=true, [q__icon(name="account_tree")]),
-                        item_section([item_label("Network & Systems")]),
-                    ]),
-                    item(clickable=true, href="/scenario-lab", [
-                        item_section(avatar=true, [q__icon(name="science")]),
-                        item_section([item_label("Scenario & Sensitivity Lab")]),
-                    ]),
-                    item(clickable=true, href="/functions", [
-                        item_section(avatar=true, [q__icon(name="functions")]),
-                        item_section([item_label("Function Explorer")]),
-                    ]),
-
-                    separator(class="q-my-sm"),
-                    item_label(header=true, "Governance"),
-
-                    item(clickable=true, href="/audit", [
-                        item_section(avatar=true, [q__icon(name="policy")]),
-                        item_section([item_label("Audit & Governance")]),
-                    ]),
-
-                    # ── Dev tools (non-production only) ───────────────
-                    if get(ENV, "GENIE_ENV", "dev") != "prod"
-                        [
-                            separator(class="q-my-sm"),
-                            item_label(header=true, "Developer"),
-                            item(clickable=true, href="/dev/components", [
-                                item_section(avatar=true, [q__icon(name="widgets")]),
-                                item_section([item_label("Component Library")]),
-                            ]),
-                        ]
-                    else
-                        []
-                    end...,
-                ])
+                ]),
             ]),
 
             # ── Main Content Area ────────────────────────────────────
