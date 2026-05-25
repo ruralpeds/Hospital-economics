@@ -29,6 +29,8 @@ using ...RuralHospitalSim: project_monthly_cash_flow, find_cash_nadir,
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out monthly_balances::Vector{Float64} = [2100, 1990, 1895, 1820, 1770, 1730, 1380, 1350, 1340, 1355, 1380, 1420, 1475]
     @out nadir_month::Int = 9
     @out nadir_balance::Float64 = 1_340_000.0
@@ -68,6 +70,8 @@ using ...RuralHospitalSim: project_monthly_cash_flow, find_cash_nadir,
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
 
             # Call domain engine for 12-month cash flow projection
             capex_schedule = Dict{Int,Float64}(capex_month => capex_amount)
@@ -106,6 +110,11 @@ using ...RuralHospitalSim: project_monthly_cash_flow, find_cash_nadir,
                     mode="lines", line=PlotDataLine(dash="dash", color="orange")),
             ]
             @info "Cash flow (domain): nadir \$$(round(Int, nadir_balance/1000))K in month $(nadir_month), $(days_cash_on_hand) days cash"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

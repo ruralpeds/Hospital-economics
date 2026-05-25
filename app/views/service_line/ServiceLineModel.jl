@@ -39,6 +39,8 @@ using ...RuralHospitalSim: optimize_service_portfolio, PortfolioParams, Portfoli
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out sl_names::Vector{String} = ["ED", "Inpatient", "Outpatient", "Surgical", "Imaging", "Lab", "Pharmacy", "Rehab"]
     @out sl_margins::Vector{Float64} = [300_000.0, -400_000.0, 500_000.0, 300_000.0, 300_000.0, 250_000.0, 50_000.0, 100_000.0]
     @out sl_margin_pcts::Vector{Float64} = [7.1, -6.9, 16.1, 12.5, 16.7, 20.8, 5.6, 16.7]
@@ -93,6 +95,8 @@ using ...RuralHospitalSim: optimize_service_portfolio, PortfolioParams, Portfoli
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
             revenues = [sl_ed_revenue, sl_inpatient_revenue, sl_outpatient_revenue, sl_surgical_revenue,
                         sl_imaging_revenue, sl_lab_revenue, sl_pharmacy_revenue, sl_rehab_revenue]
             costs = [sl_ed_cost, sl_inpatient_cost, sl_outpatient_cost, sl_surgical_cost,
@@ -128,6 +132,11 @@ using ...RuralHospitalSim: optimize_service_portfolio, PortfolioParams, Portfoli
                 marker = Dict("color" => [m > 0 ? "green" : "red" for m in sl_margins]),
             )]
             @info "Service line P&L (domain): Total contribution: \$$(round(Int, total_contribution/1000))K"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

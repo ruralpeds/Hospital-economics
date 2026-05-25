@@ -45,6 +45,7 @@ using ...RuralHospitalSim: AnalyticsController
 
     @onchange run_analysis begin
         if run_analysis
+            run_analysis = false
             is_loading = true
             error_message = ""
             try
@@ -79,13 +80,14 @@ using ...RuralHospitalSim: AnalyticsController
                     altman = nothing
                     beneish = nothing
                 end
-            catch err
-                error_message = sprint(showerror, err)
+            catch e
+                push!(errors, string(e))
+                error_message = sprint(showerror, e)
                 altman = nothing
                 beneish = nothing
+            finally
+                is_loading = false
             end
-            is_loading = false
-            run_analysis = false
         end
     end
 end

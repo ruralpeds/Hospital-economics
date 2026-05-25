@@ -26,6 +26,8 @@ using ...RuralHospitalSim: DeterministicParams, project_financials, project_sing
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out year_labels::Vector{String} = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
     @out projected_revenue::Vector{Float64} = [18.5, 18.9, 19.3, 19.7, 20.1]
     @out projected_expenses::Vector{Float64} = [19.2, 19.9, 20.6, 21.3, 22.0]
@@ -79,6 +81,8 @@ using ...RuralHospitalSim: DeterministicParams, project_financials, project_sing
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
 
             # Derive base financials from slider inputs
             ip_revenue = ip_discharges * 9350.0 * (1 + avg_length_of_stay / 20.0)
@@ -146,6 +150,11 @@ using ...RuralHospitalSim: DeterministicParams, project_financials, project_sing
                 plot=StipplePlotly.Charts.PLOT_TYPE_PIE, hole=0.5, name="Payer Mix")]
 
             @info "Financial sim (domain): Y5 margin $(round(year5_margin*100, digits=1))%, cumulative OI \$$(round(Int, total_5yr_gap/1000))K"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

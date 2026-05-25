@@ -4,12 +4,13 @@ TEAM Bundled Payment UI - CMS TEAM reconciliation with quality adjustments.
 
 function ui_team_bundled(model)
     app_layout(model, "TEAM Bundled Payment", [
+        loading_overlay("is_loading"),
+
+        page_header("TEAM Bundled Payment Simulation",
+            "CMS Transforming Episode Accountability Model reconciliation calculator",
+            breadcrumbs=["Dashboard" => "/dashboard", "Finance" => "#", "TEAM Bundled Payment" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("TEAM Bundled Payment Simulation", class="q-mb-none"),
-                p("CMS Transforming Episode Accountability Model reconciliation calculator",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Calculate", icon="calculate", color="primary", @click(:recalculate)),
             ]),

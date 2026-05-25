@@ -4,12 +4,13 @@ Monthly Cash Flow Projection UI - monthly bar chart, nadir indicator.
 
 function ui_cash_flow(model)
     app_layout(model, "Cash Flow Projection", [
+        loading_overlay("is_loading"),
+
+        page_header("Monthly Cash Flow Projection",
+            "Project 12-month cash position with seasonal patterns and capital events",
+            breadcrumbs=["Dashboard" => "/dashboard", "Finance" => "#", "Cash Flow Projection" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Monthly Cash Flow Projection", class="q-mb-none"),
-                p("Project 12-month cash position with seasonal patterns and capital events",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Project", icon="account_balance_wallet", color="primary",
                     @click(:recalculate)),

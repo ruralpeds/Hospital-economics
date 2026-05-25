@@ -27,6 +27,8 @@ using ...RuralHospitalSim: calculate_team_reconciliation, TEAMParams, TEAMResult
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out risk_track_options::Vector{Dict{String,Any}} = [
         Dict("label" => "Track 1 (10% cap)", "value" => "track1"),
         Dict("label" => "Track 2 (5% cap)", "value" => "track2"),
@@ -55,35 +57,41 @@ using ...RuralHospitalSim: calculate_team_reconciliation, TEAMParams, TEAMResult
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
+                # Call domain engine
+                params = TEAMParams(;
+                    episode_count=episode_count,
+                    avg_target_price=avg_target_price,
+                    avg_actual_cost=avg_actual_cost,
+                    quality_score=quality_score,
+                    risk_track=risk_track,
+                    discount_factor=discount_factor,
+                    quality_adjustment_pct=quality_adjustment_pct,
+                    low_volume_threshold=low_volume_threshold,
+                )
+                result = calculate_team_reconciliation(params)
 
-            # Call domain engine
-            params = TEAMParams(;
-                episode_count=episode_count,
-                avg_target_price=avg_target_price,
-                avg_actual_cost=avg_actual_cost,
-                quality_score=quality_score,
-                risk_track=risk_track,
-                discount_factor=discount_factor,
-                quality_adjustment_pct=quality_adjustment_pct,
-                low_volume_threshold=low_volume_threshold,
-            )
-            result = calculate_team_reconciliation(params)
+                # Map domain results
+                total_target_price = result.total_target_price
+                total_actual_cost = result.total_actual_cost
+                raw_reconciliation = result.raw_reconciliation
+                quality_adj_reconciliation = result.quality_adj_reconciliation
+                net_payment_adjustment = result.net_payment_adjustment
+                is_low_volume_exempt = result.is_low_volume_exempt
 
-            # Map domain results
-            total_target_price = result.total_target_price
-            total_actual_cost = result.total_actual_cost
-            raw_reconciliation = result.raw_reconciliation
-            quality_adj_reconciliation = result.quality_adj_reconciliation
-            net_payment_adjustment = result.net_payment_adjustment
-            is_low_volume_exempt = result.is_low_volume_exempt
-
-            bar_color = net_payment_adjustment >= 0 ? "#4CAF50" : "#F44336"
-            episode_chart_data = [PlotData(
-                x=["Target Price", "Actual Cost", "Net Adjustment"],
-                y=[total_target_price, total_actual_cost, net_payment_adjustment],
-                plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
-                marker=Dict("color" => ["#2196F3", "#FF9800", bar_color]))]
-            @info "TEAM reconciliation (domain): net adjustment \$$(round(Int, net_payment_adjustment))"
+                bar_color = net_payment_adjustment >= 0 ? "#4CAF50" : "#F44336"
+                episode_chart_data = [PlotData(
+                    x=["Target Price", "Actual Cost", "Net Adjustment"],
+                    y=[total_target_price, total_actual_cost, net_payment_adjustment],
+                    plot=StipplePlotly.Charts.PLOT_TYPE_BAR,
+                    marker=Dict("color" => ["#2196F3", "#FF9800", bar_color]))]
+                @info "TEAM reconciliation (domain): net adjustment \$$(round(Int, net_payment_adjustment))"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

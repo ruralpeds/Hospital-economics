@@ -4,12 +4,13 @@ Closure Risk Assessment UI - multi-factor risk scoring and mitigation recommenda
 
 function ui_closure_risk(model)
     app_layout(model, "Closure Risk Assessment", [
+        loading_overlay("is_loading"),
+
+        page_header("Closure Risk Assessment",
+            "Multi-factor analysis of hospital financial distress and closure probability",
+            breadcrumbs=["Dashboard" => "/dashboard", "Risk" => "#", "Closure Risk" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Closure Risk Assessment", class="q-mb-none"),
-                p("Multi-factor analysis of hospital financial distress and closure probability",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-md-3 col-xs-6", [
                 q__select(:selected_hospital_id, options=:hospital_options,
                     label="Hospital", filled=true, dense=true,

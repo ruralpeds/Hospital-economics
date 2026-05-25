@@ -29,6 +29,8 @@ using ...RuralHospitalSim: calculate_debt_capacity, debt_capacity_sensitivity,
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out current_dscr::Float64 = 2.67
     @out max_annual_debt_service::Float64 = 857_143.0
     @out max_new_borrowing::Float64 = 9_850_000.0
@@ -78,6 +80,8 @@ using ...RuralHospitalSim: calculate_debt_capacity, debt_capacity_sensitivity,
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
 
             # Call domain engine
             params = DebtCapacityParams(;
@@ -121,6 +125,11 @@ using ...RuralHospitalSim: calculate_debt_capacity, debt_capacity_sensitivity,
                 name = "Capital Structure (\$K)",
             )]
             @info "Debt capacity (domain): max borrowing \$$(round(Int, max_new_borrowing/1e6))M, DSCR $(round(current_dscr, digits=2))x"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

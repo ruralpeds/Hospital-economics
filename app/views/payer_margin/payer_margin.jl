@@ -4,12 +4,13 @@ Payer-Specific Margin Analysis UI - margin bars, waterfall chart.
 
 function ui_payer_margin(model)
     app_layout(model, "Payer Margin Analysis", [
+        loading_overlay("is_loading"),
+
+        page_header("Payer-Specific Margin Analysis",
+            "Analyze profitability by payer class and identify cross-subsidization",
+            breadcrumbs=["Dashboard" => "/dashboard", "Finance" => "#", "Payer Margin" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Payer-Specific Margin Analysis", class="q-mb-none"),
-                p("Analyze profitability by payer class and identify cross-subsidization",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Analyze", icon="payments", color="primary",
                     @click(:recalculate)),

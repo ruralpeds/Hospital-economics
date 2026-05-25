@@ -4,12 +4,13 @@ Break-Even Analysis UI - dual-axis chart, target volume indicator.
 
 function ui_break_even(model)
     app_layout(model, "Break-Even Analysis", [
+        loading_overlay("is_loading"),
+
+        page_header("Break-Even Analysis",
+            "Calculate break-even volume and margin of safety",
+            breadcrumbs=["Dashboard" => "/dashboard", "Finance" => "#", "Break-Even Analysis" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Break-Even Analysis", class="q-mb-none"),
-                p("Calculate break-even volume and margin of safety",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Calculate", icon="balance", color="primary",
                     @click(:recalculate)),

@@ -23,6 +23,8 @@ using ...RuralHospitalSim: calculate_break_even, BreakEvenResult
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out break_even_volume::Int = 73_529
     @out contribution_margin_per_unit::Float64 = 170.0
     @out current_net_income::Float64 = 1_440_000.0
@@ -67,6 +69,8 @@ using ...RuralHospitalSim: calculate_break_even, BreakEvenResult
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
 
             # Call domain engine
             result = calculate_break_even(
@@ -104,6 +108,11 @@ using ...RuralHospitalSim: calculate_break_even, BreakEvenResult
                     mode="markers", marker=Dict("size"=>14, "color"=>"orange", "symbol"=>"diamond")),
             ]
             @info "Break-even at $(break_even_volume) encounters, cushion $(round(cushion_pct*100, digits=1))%"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

@@ -4,12 +4,13 @@
 
 function ui_financial_sim(model)
     app_layout(model, "Financial Simulator", [
+        loading_overlay("is_loading"),
+
+        page_header("7-Slider Financial Simulator",
+            "Adjust key operational parameters and project 5-year financial outcomes",
+            breadcrumbs=["Dashboard" => "/dashboard", "Analytics" => "#", "Financial Simulator" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("7-Slider Financial Simulator", class="q-mb-none"),
-                p("Adjust key operational parameters and project 5-year financial outcomes",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Simulate", icon="tune", color="primary",
                     @click(:recalculate)),

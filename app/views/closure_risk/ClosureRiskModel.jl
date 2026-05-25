@@ -19,6 +19,8 @@ using ...RuralHospitalSim: assess_closure_risk, estimate_distress_timeline, Mark
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out hospital_options::Vector{Dict{String,Any}} = [
         Dict("label"=>"Prairie View Community Hospital", "value"=>1),
         Dict("label"=>"Mountain Valley Medical Center", "value"=>2),
@@ -122,6 +124,8 @@ using ...RuralHospitalSim: assess_closure_risk, estimate_distress_timeline, Mark
     @onchange run_assessment begin
         if run_assessment
             run_assessment = false
+            is_loading = true
+            try
             @info "Running closure risk assessment via domain engine..."
 
             # Build MarketData from inputs
@@ -247,6 +251,11 @@ using ...RuralHospitalSim: assess_closure_risk, estimate_distress_timeline, Mark
             recommendations = recs
 
             @info "Closure risk: score=$(overall_risk_score), tier=$(risk_level), P(3yr)=$(closure_probability_3yr)"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

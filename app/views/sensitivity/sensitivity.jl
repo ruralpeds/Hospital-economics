@@ -4,12 +4,13 @@ Sensitivity / Tornado Analysis UI - tornado diagram with ranked variable impacts
 
 function ui_sensitivity(model)
     app_layout(model, "Sensitivity Analysis", [
+        loading_overlay("is_loading"),
+
+        page_header("Sensitivity / Tornado Analysis",
+            "Identify which variables have the greatest impact on financial outcomes",
+            breadcrumbs=["Dashboard" => "/dashboard", "Risk" => "#", "Sensitivity Analysis" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Sensitivity / Tornado Analysis", class="q-mb-none"),
-                p("Identify which variables have the greatest impact on financial outcomes",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Analyze", icon="swap_horiz", color="primary",
                     @click(:recalculate)),

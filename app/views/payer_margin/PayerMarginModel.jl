@@ -31,6 +31,8 @@ using ...RuralHospitalSim: decompose_margin, margin_waterfall, MarginDecompositi
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out total_revenue::Float64 = 18_500_000.0
     @out total_cost::Float64 = 19_200_000.0
     @out blended_margin_pct::Float64 = -0.038
@@ -83,6 +85,8 @@ using ...RuralHospitalSim: decompose_margin, margin_waterfall, MarginDecompositi
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
 
             # Build payer data for domain engine
             payer_data = Dict{String,Dict{String,Float64}}(
@@ -129,6 +133,11 @@ using ...RuralHospitalSim: decompose_margin, margin_waterfall, MarginDecompositi
                 plot=StipplePlotly.Charts.PLOT_TYPE_BAR, name="Margin (\$K)",
                 marker=Dict("color"=>colors))]
             @info "Payer margin (domain): blended $(round(blended_margin_pct*100, digits=1))%, best=$(best_payer)"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end

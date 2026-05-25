@@ -4,6 +4,12 @@ UI for distress scoring (Altman Z″ + Beneish M).
 
 function ui_distress_scoring(model::M) where {M}
     app_layout(model, "Distress Scoring (Altman Z″ + Beneish M)", [
+        loading_overlay("is_loading"),
+
+        page_header("Distress Scoring",
+            "Altman Z-Score and Beneish M-Score financial distress analysis",
+            breadcrumbs=["Dashboard" => "/dashboard", "Analytics" => "#", "Distress Scoring" => ""]),
+
         row([cell(class="col", [
             md"## Current Year Financials",
             card(class="q-mb-md", [

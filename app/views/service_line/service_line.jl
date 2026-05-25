@@ -4,12 +4,13 @@ Service Line P&L Analysis UI - revenue, cost, and margin by service line.
 
 function ui_service_line(model)
     app_layout(model, "Service Line P&L", [
+        loading_overlay("is_loading"),
+
+        page_header("Service Line P&L Analysis",
+            "Evaluate contribution margin and profitability across hospital service lines",
+            breadcrumbs=["Dashboard" => "/dashboard", "Finance" => "#", "Service Line P&L" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Service Line P&L Analysis", class="q-mb-none"),
-                p("Evaluate contribution margin and profitability across hospital service lines",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Recalculate", icon="calculate", color="primary",
                     @click(:recalculate)),

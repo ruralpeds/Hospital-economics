@@ -4,12 +4,13 @@ Debt Capacity Calculator UI - DSCR chart, capital structure doughnut.
 
 function ui_debt_capacity(model)
     app_layout(model, "Debt Capacity Calculator", [
+        loading_overlay("is_loading"),
+
+        page_header("Debt Capacity Calculator",
+            "Determine maximum borrowing capacity based on DSCR and capital structure",
+            breadcrumbs=["Dashboard" => "/dashboard", "Finance" => "#", "Debt Capacity" => ""]),
+
         row(class="q-mb-md items-center", [
-            cell(class="col", [
-                h5("Debt Capacity Calculator", class="q-mb-none"),
-                p("Determine maximum borrowing capacity based on DSCR and capital structure",
-                  class="text-grey-7"),
-            ]),
             cell(class="col-auto", [
                 btn("Calculate", icon="account_balance", color="primary",
                     @click(:recalculate)),

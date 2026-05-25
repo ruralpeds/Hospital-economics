@@ -44,6 +44,8 @@ using ...RuralHospitalSim: run_sensitivity_analysis, build_tornado_data, Sensiti
     @in do_xlsx::Bool = false
     @in errors::Vector{String} = String[]
 
+    @out is_loading::Bool = false
+
     @out base_net_income::Float64 = -700_000.0
     @out most_sensitive_variable::String = "Patient Volume"
     @out max_swing::Float64 = 3_700_000.0
@@ -63,6 +65,8 @@ using ...RuralHospitalSim: run_sensitivity_analysis, build_tornado_data, Sensiti
     @onchange recalculate begin
         if recalculate
             recalculate = false
+            is_loading = true
+            try
             base_net_income = base_revenue - base_expenses
 
             # Build parameter dict for domain engine
@@ -117,6 +121,11 @@ using ...RuralHospitalSim: run_sensitivity_analysis, build_tornado_data, Sensiti
                     name="Downside (\$K)", orientation="h", marker=Dict("color"=>"#F44336")),
             ]
             @info "Sensitivity analysis: most sensitive to $(most_sensitive_variable), swing=\$$(round(Int, max_swing))"
+            catch e
+                push!(errors, string(e))
+            finally
+                is_loading = false
+            end
         end
     end
 end
