@@ -345,7 +345,7 @@ export score_capital_projects, select_within_budget, replacement_priority_report
 
 # Advanced Finance — Distress Scoring
 export DistressInput, DistressResult
-export calculate_altman_z, estimate_distress_timeline
+export calculate_altman_z
 
 # Advanced Finance — LBO Model
 export DebtTerm, LBOInput, AnnualProjection, LBOResult
