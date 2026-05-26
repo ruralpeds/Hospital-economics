@@ -127,6 +127,18 @@ struct FormulaParseError <: RuralHealthError
     message::String
 end
 
+"""
+    NotImplementedError(message::String)
+
+Thrown when a feature requires an unloaded extension or is not yet implemented.
+"""
+struct NotImplementedError <: RuralHealthError
+    message::String
+end
+
+InsufficientSampleError(msg::String) = InsufficientSampleError(0, 0, msg)
+InsufficientSampleError(context::String, requirement::String) = InsufficientSampleError(0, 0, "$context — $requirement")
+
 # Custom error display
 Base.showerror(io::IO, e::DataValidationError) = print(io, "DataValidationError: ", e.message)
 Base.showerror(io::IO, e::DomainValidationError) = print(io, "DomainValidationError (", e.field, "): ", e.message)
@@ -140,3 +152,4 @@ Base.showerror(io::IO, e::InsufficientSampleError) = print(io, "InsufficientSamp
 Base.showerror(io::IO, e::StatisticalAssumptionError) = print(io, "StatisticalAssumptionError: ", e.message)
 Base.showerror(io::IO, e::ConvergenceError) = print(io, "ConvergenceError: ", e.message)
 Base.showerror(io::IO, e::FormulaParseError) = print(io, "FormulaParseError: ", e.message)
+Base.showerror(io::IO, e::NotImplementedError) = print(io, "NotImplementedError: ", e.message)

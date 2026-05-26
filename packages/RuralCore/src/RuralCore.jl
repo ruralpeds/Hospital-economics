@@ -38,7 +38,8 @@ export RuralHealthError,
     NetworkError,
     StateError,
     CalculationError,
-    AuditError
+    AuditError,
+    NotImplementedError
 
 # ── Geographic Keys ────────────────────────────────────────────────────────
 export CountyKey, TimeKey, CountyYearKey, state_fips, county_fips
