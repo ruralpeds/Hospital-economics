@@ -120,4 +120,14 @@ using Test
     include("views/test_cohort_picker.jl")
     include("views/test_scenario_picker.jl")
     include("views/test_audit_log_viewer.jl")
+
+    # Validation & compliance framework (ported from Cah-modeling)
+    include("test_hash_chain_audit.jl")
+    include("test_parity.jl")
+    include("test_verification_registry.jl")
+    include("test_requirements_traceability.jl")
+    include("test_fmea.jl")
+    include("test_validation_harness.jl")
+    include("test_phi_scrubber.jl")
+    include("test_esignature.jl")
 end
