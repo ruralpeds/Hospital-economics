@@ -1,0 +1,12 @@
+{
+  "IA": {"total_cahs": 82, "closures_since_2010": 1, "avg_beds": 20, "avg_margin": 0.02},
+  "GA": {"total_cahs": 31, "closures_since_2010": 9, "avg_beds": 23, "avg_margin": -0.05},
+  "OK": {"total_cahs": 41, "closures_since_2010": 7, "avg_beds": 21, "avg_margin": -0.04},
+  "AL": {"total_cahs": 20, "closures_since_2010": 5, "avg_beds": 22, "avg_margin": -0.04},
+  "TX": {"total_cahs": 86, "closures_since_2010": 21, "avg_beds": 22, "avg_margin": -0.03},
+  "MO": {"total_cahs": 36, "closures_since_2010": 5, "avg_beds": 22, "avg_margin": -0.02},
+  "MS": {"total_cahs": 28, "closures_since_2010": 6, "avg_beds": 21, "avg_margin": -0.06},
+  "TN": {"total_cahs": 22, "closures_since_2010": 6, "avg_beds": 24, "avg_margin": -0.03},
+  "NE": {"total_cahs": 64, "closures_since_2010": 2, "avg_beds": 18, "avg_margin": 0.01},
+  "KS": {"total_cahs": 83, "closures_since_2010": 4, "avg_beds": 20, "avg_margin": -0.01}
+}

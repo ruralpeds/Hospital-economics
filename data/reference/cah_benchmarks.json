@@ -1,0 +1,16 @@
+{
+  "source": "Flex Monitoring Team / Chartis Center for Rural Health",
+  "year": 2023,
+  "benchmarks": {
+    "average_age_of_plant": {"p25": 8.5, "median": 12.8, "p75": 18.2, "mean": 13.5},
+    "debt_to_capitalization": {"p25": 0.12, "median": 0.32, "p75": 0.52, "mean": 0.33},
+    "days_cash_on_hand": {"p25": 42.0, "median": 95.0, "p75": 185.0, "mean": 128.0},
+    "outpatient_revenue_share": {"p25": 0.62, "median": 0.72, "p75": 0.82, "mean": 0.72},
+    "medicare_cost_to_charge": {"p25": 0.34, "median": 0.42, "p75": 0.52, "mean": 0.43},
+    "current_ratio": {"p25": 1.55, "median": 2.45, "p75": 4.1, "mean": 3.2},
+    "operating_margin": {"p25": -0.065, "median": -0.005, "p75": 0.042, "mean": -0.012},
+    "fte_per_adjusted_occupied_bed": {"p25": 4.8, "median": 6.2, "p75": 8.1, "mean": 6.5},
+    "salary_to_revenue": {"p25": 0.46, "median": 0.52, "p75": 0.59, "mean": 0.52},
+    "total_margin": {"p25": -0.008, "median": 0.024, "p75": 0.058, "mean": 0.022}
+  }
+}

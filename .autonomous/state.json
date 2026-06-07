@@ -1,0 +1,46 @@
+{
+  "plan": "PRODUCTION_READINESS_PLAN.md",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": "P0-1",
+      "name": "Auth & Auth Enforcement",
+      "status": "pending"
+    },
+    {
+      "id": "P0-2",
+      "name": "Encryption at rest",
+      "status": "pending"
+    },
+    {
+      "id": "P0-3",
+      "name": "Persist audit logs",
+      "status": "pending"
+    },
+    {
+      "id": "P0-4",
+      "name": "Real DB layer",
+      "status": "pending"
+    },
+    {
+      "id": "P0-5",
+      "name": "Kubernetes + IaC",
+      "status": "pending"
+    },
+    {
+      "id": "P0-6",
+      "name": "Health/Metrics endpoints",
+      "status": "pending"
+    },
+    {
+      "id": "P0-7",
+      "name": "Integration & E2E tests",
+      "status": "pending"
+    },
+    {
+      "id": "P0-8",
+      "name": "Repo hygiene",
+      "status": "pending"
+    }
+  ]
+}

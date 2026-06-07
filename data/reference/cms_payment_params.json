@@ -1,0 +1,15 @@
+{
+  "opps_conversion_factor": 89.93,
+  "sequestration_rate": 0.02,
+  "outlier_threshold": 33166.0,
+  "market_basket_update": 0.032,
+  "ipps_base_rate": 6378.76,
+  "productivity_adjustment": -0.004,
+  "reh_opps_addon": 0.05,
+  "cah_cost_reimbursement_rate": 1.01,
+  "ffy": 2024,
+  "bad_debt_reimbursement_rate": 0.65,
+  "cola_cap": 1.25,
+  "net_update_factor": 0.028,
+  "reh_monthly_facility_payment": 272866.3
+}
